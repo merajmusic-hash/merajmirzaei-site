@@ -210,6 +210,14 @@ body.fa .article blockquote{padding:0 20px 0 0}
   background:var(--panel-2);border:1px solid var(--line);
   display:block;object-fit:cover}
 .thumb.big{width:58px;height:58px;border-radius:4px}
+.thumb-fallback{fill:var(--brass);opacity:.55;transform-box:fill-box;transform-origin:center}
+@media (prefers-reduced-motion:no-preference){
+  .thumb-fallback{animation:thumb-pulse 3s ease-in-out infinite}
+}
+@keyframes thumb-pulse{
+  0%,100%{opacity:.4;transform:scale(1) translateY(0)}
+  50%{opacity:.8;transform:scale(1.08) translateY(-1.5px)}
+}
 button.track{gap:12px}
 button.rel{display:flex;align-items:center;gap:14px}
 .rmeta{flex:1;min-width:0}
@@ -1795,6 +1803,19 @@ footer a:hover{color:var(--brass)}
   t.addEventListener('click', function(){
     try{ localStorage.setItem('mm_lang', t.dataset.to); }catch(e){}
   });
+})();
+</script>
+<script>
+(function(){
+  if(!document.querySelector('img.thumb')) return;
+  var svg = '<svg class="thumb{BIG} thumb-fallback" data-slug="{SLUG}" viewBox="0 0 42 42" role="img" aria-label="No cover art available" xmlns="http://www.w3.org/2000/svg"><circle class="note-head" cx="17" cy="31" r="5.5"/><rect class="note-stem" x="21" y="9" width="2.6" height="23" rx="1.3"/><path class="note-flag" d="M23.6 9c5.5 1.2 8 5 6.8 10-1.1-3.4-3.6-5.2-6.8-6.2z"/></svg>';
+  document.addEventListener('error', function(e){
+    var img = e.target;
+    if(img.tagName !== 'IMG' || !img.classList.contains('thumb')) return;
+    var slug = (img.getAttribute('src') || '').replace(/^.*\//, '').replace(/\.jpg$/, '');
+    var big = img.classList.contains('big') ? ' big' : '';
+    img.outerHTML = svg.replace('{BIG}', big).replace('{SLUG}', slug);
+  }, true);
 })();
 </script>
 </body>

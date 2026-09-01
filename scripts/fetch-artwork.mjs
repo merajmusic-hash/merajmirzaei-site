@@ -9,6 +9,13 @@
 //      radiojavan.com, then nex1music.ir, then musicdel.ir. The first
 //      search result's og:image is used.
 //
+// Afterwards, syncs each page's thumbnail markup to match what's on
+// disk: a track with no cover anywhere gets the inline animated
+// music-note placeholder instead of an <img> pointing at a file that
+// doesn't exist; a track that used to be missing but now has a file
+// (found this run, or added by hand) gets its <img> back. Tracks that
+// already have a working cover are left completely untouched.
+//
 // Usage: node scripts/fetch-artwork.mjs
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -36,6 +43,11 @@ const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
 const SOURCE_ORDER = ["spotify", "radiojavan", "nex1music", "musicdel"];
+
+// Pages whose thumbnail markup gets synced to match images/covers/ after
+// the download pass (index/fa-index currently have no thumb elements, but
+// are included so they pick this up automatically if that changes).
+const THUMB_PAGES = PAGES.map((p) => p.file);
 
 // Only run when invoked directly (`node scripts/fetch-artwork.mjs`), not
 // when another script imports this module's parsing helpers.
@@ -101,6 +113,8 @@ async function main() {
     await sleep(REQUEST_DELAY_MS);
   }
 
+  const changedPages = await syncThumbnailMarkup();
+
   console.log("");
   console.log("== Summary ==");
   for (const source of SOURCE_ORDER) {
@@ -108,6 +122,63 @@ async function main() {
   }
   console.log(`already present: ${skipped.length}`);
   console.log(`not found anywhere: ${missing.length}${missing.length ? " — " + missing.join(", ") : ""}`);
+  console.log(`pages with updated thumbnail markup: ${changedPages.length}${changedPages.length ? " — " + changedPages.join(", ") : ""}`);
+}
+
+// ---- Build-time fallback placeholder -------------------------------------
+//
+// Rewrites each track's thumbnail markup in place to match what's on disk:
+// <img class="thumb..."> for a slug with a real cover, or the inline
+// animated music-note <svg> for a slug with none. This keeps the same
+// fallback markup used by the onerror handler in sync, but applied at
+// build time so a browser never even attempts a doomed request for a
+// cover that's known not to exist. A track whose markup already matches
+// the current on-disk state is left byte-for-byte untouched.
+async function syncThumbnailMarkup() {
+  const changed = [];
+  for (const file of THUMB_PAGES) {
+    if (!existsSync(file)) continue;
+    const html = await readFile(file, "utf8");
+    const rewritten = rewriteThumbMarkup(html);
+    if (rewritten !== html) {
+      await writeFile(file, rewritten);
+      changed.push(relPath(file));
+    }
+  }
+  return changed;
+}
+
+function rewriteThumbMarkup(html) {
+  // A real cover <img> whose file has since gone missing -> placeholder.
+  html = html.replace(
+    /<img class="thumb([^"]*)" src="\/images\/covers\/([a-z0-9-]+)\.jpg" loading="lazy" alt="">/g,
+    (full, classTail, slug) => {
+      if (existsSync(path.join(COVERS_DIR, `${slug}.jpg`))) return full;
+      return fallbackSvg(slug, classTail);
+    }
+  );
+  // A placeholder whose file has since appeared -> real cover <img>.
+  html = html.replace(
+    /<svg class="thumb([^"]*) thumb-fallback" data-slug="([a-z0-9-]+)"[^>]*>[\s\S]*?<\/svg>/g,
+    (full, classTail, slug) => {
+      if (!existsSync(path.join(COVERS_DIR, `${slug}.jpg`))) return full;
+      return `<img class="thumb${classTail}" src="/images/covers/${slug}.jpg" loading="lazy" alt="">`;
+    }
+  );
+  return html;
+}
+
+// Kept in sync with the client-side copy used by the onerror handler in
+// each page's <script> (see FALLBACK_SVG_TEMPLATE in the pages themselves).
+function fallbackSvg(slug, classTail) {
+  return (
+    `<svg class="thumb${classTail} thumb-fallback" data-slug="${slug}" viewBox="0 0 42 42" ` +
+    `role="img" aria-label="No cover art available" xmlns="http://www.w3.org/2000/svg">` +
+    `<circle class="note-head" cx="17" cy="31" r="5.5"/>` +
+    `<rect class="note-stem" x="21" y="9" width="2.6" height="23" rx="1.3"/>` +
+    `<path class="note-flag" d="M23.6 9c5.5 1.2 8 5 6.8 10-1.1-3.4-3.6-5.2-6.8-6.2z"/>` +
+    `</svg>`
+  );
 }
 
 // ---- Artwork sources, tried in order ------------------------------------
