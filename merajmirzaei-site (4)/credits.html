@@ -1787,14 +1787,12 @@ footer a:hover{color:var(--brass)}
   var slots = document.querySelectorAll('.thumb[data-art]');
   if(!slots.length) return;
 
-  var cache = {};
-
   function paint(el, url){
     var img = document.createElement('img');
     img.loading = 'lazy';
     img.alt = '';
     img.onload = function(){ el.appendChild(img); el.classList.add('has'); };
-    img.onerror = function(){ console.warn('Cover art image failed to load:', url); };
+    img.onerror = function(){ console.warn('Cover art request failed:', url); };
     img.src = url;
   }
 
@@ -1807,25 +1805,6 @@ footer a:hover{color:var(--brass)}
     return artistEl.textContent.trim() + ' ' + trackEl.textContent.trim();
   }
 
-  // One in-flight/cached request per search term, however many tracks share it.
-  function artFor(term){
-    if(!cache[term]){
-      cache[term] = fetch('https://itunes.apple.com/search?term=' + encodeURIComponent(term) + '&entity=song&limit=1')
-        .then(function(r){ return r.ok ? r.json() : null; })
-        .then(function(j){
-          var hit = j && j.results && j.results[0];
-          if(hit && hit.artworkUrl100) return hit.artworkUrl100.replace('100x100', '600x600');
-          console.warn('No iTunes cover art found for "' + term + '"');
-          return null;
-        })
-        .catch(function(err){
-          console.warn('iTunes cover art lookup failed for "' + term + '"', err);
-          return null;
-        });
-    }
-    return cache[term];
-  }
-
   var io = new IntersectionObserver(function(entries){
     entries.forEach(function(entry){
       if(!entry.isIntersecting) return;
@@ -1833,7 +1812,7 @@ footer a:hover{color:var(--brass)}
       io.unobserve(el);
       var term = termFor(el);
       if(!term){ console.warn('Could not determine artist/track for cover art', el); return; }
-      artFor(term).then(function(url){ if(url) paint(el, url); });
+      paint(el, '/api/art?q=' + encodeURIComponent(term));
     });
   }, {rootMargin: '200px 0px'});
 
