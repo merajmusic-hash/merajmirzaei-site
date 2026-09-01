@@ -369,6 +369,23 @@ footer a:hover{color:var(--brass)}
 
 <div class="wrap">
 <section>
+  <div class="rail"><p class="eyebrow">تماشا</p><div class="ticks"></div><div class="peak"></div></div>
+  <h2>ویدیوها.</h2>
+  <p>موزیک ویدیوها و لحظه‌های استودیو از ریلیزهای خودم با نام MIRAGE.</p>
+  <div class="reel">
+    <div class="reelstage"><div id="reel-player"></div></div>
+    <div class="reelnav" id="reel-nav"><button type="button" data-i="0">پیوستگی</button>
+      <button type="button" data-i="1">فرنگیس</button>
+      <button type="button" data-i="2" class="on">لبت بخنده</button>
+      <button type="button" data-i="3">باز بارون</button></div>
+  </div>
+  <div class="linkrow">
+    <a class="btn" href="https://www.instagram.com/merajmirzaei_music/">دنبال کردن در اینستاگرام</a>
+    <a class="btn" href="releases.html">ریلیزهای جدید</a>
+  </div>
+</section>
+
+<section>
   <div class="rail"><p class="eyebrow">آرتیست‌های منتخب</p><div class="ticks"></div><div class="peak"></div></div>
   <div class="roster">
     <a href="credits.html#a1">گوگوش</a>
@@ -399,25 +416,6 @@ footer a:hover{color:var(--brass)}
 </section>
 
 <section>
-  <div class="rail"><p class="eyebrow">تماشا</p><div class="ticks"></div><div class="peak"></div></div>
-  <h2>ویدیوها.</h2>
-  <p>موزیک ویدیوها و لحظه‌های استودیو از ریلیزهای خودم با نام MIRAGE.</p>
-  <div class="reel">
-    <div class="reelstage"><div id="reel-player"></div></div>
-    <div class="reelnav" id="reel-nav"><button type="button" data-i="0">پیوستگی</button>
-      <button type="button" data-i="1">فرنگیس</button>
-      <button type="button" data-i="2" class="on">لبت بخنده</button>
-      <button type="button" data-i="3">باز بارون (ریمیکس)</button>
-      <button type="button" data-i="4">باز بارون</button>
-      <button type="button" data-i="5">تاندر</button></div>
-  </div>
-  <div class="linkrow">
-    <a class="btn" href="https://www.instagram.com/merajmirzaei_music/">دنبال کردن در اینستاگرام</a>
-    <a class="btn" href="releases.html">ریلیزهای جدید</a>
-  </div>
-</section>
-
-<section>
   <div class="rail"><p class="eyebrow">دو نام</p><div class="ticks"></div><div class="peak"></div></div>
   <h2>معراج میرزایی مهندس است. MIRAGE آرتیست.</h2>
   <p>هر کاری که میکس و مستر می‌کنم با نام خودم منتشر می‌شود. از سال ۲۰۲۵ موزیک خودم را هم با نام MIRAGE منتشر می‌کنم — دیپ هاوس و الکترونیک با رنگ و بوی شرقی، در کنار ترپ و پاپ.</p>
@@ -440,7 +438,7 @@ footer a:hover{color:var(--brass)}
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
 (function(){
-  var IDS = ["cOmoPL2yU2U", "ZBtpmoz0w-Y", "BnXpaotM7VI", "8Hr3frin6iU", "WfmyGSRZkkU", "3swgYtCO7m8"];
+  var IDS = ["cOmoPL2yU2U", "ZBtpmoz0w-Y", "BnXpaotM7VI", "WfmyGSRZkkU"];
   var i = 2, yt = null;
   window.onYouTubeIframeAPIReady = function(){
     yt = new YT.Player('reel-player', {
