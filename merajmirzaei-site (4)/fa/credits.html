@@ -1773,12 +1773,9 @@ footer a:hover{color:var(--brass)}
   var slots = document.querySelectorAll('.thumb[data-art]');
   if(!slots.length) return;
 
-  var CACHE = 'mm_art_v1';
-  var store = {};
-  try{ store = JSON.parse(localStorage.getItem(CACHE) || '{}'); }catch(e){}
+  var cache = {};
 
   function paint(el, url){
-    if(!url) return;
     var img = new Image();
     img.loading = 'lazy';
     img.alt = '';
@@ -1786,32 +1783,27 @@ footer a:hover{color:var(--brass)}
     img.src = url;
   }
 
-  function save(){
-    try{ localStorage.setItem(CACHE, JSON.stringify(store)); }catch(e){}
+  // One in-flight/cached request per Spotify URL, however many tracks share it.
+  function artFor(key){
+    if(!cache[key]){
+      cache[key] = fetch('https://open.spotify.com/oembed?url=' + encodeURIComponent(key))
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(j){ return j && j.thumbnail_url; })
+        .catch(function(){ return null; });
+    }
+    return cache[key];
   }
 
-  var queue = [], pending = 0;
-  slots.forEach(function(el){
-    var key = el.dataset.art;
-    if(store[key]){ paint(el, store[key]); }
-    else{ queue.push(el); }
-  });
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(!entry.isIntersecting) return;
+      var el = entry.target;
+      io.unobserve(el);
+      artFor(el.dataset.art).then(function(url){ if(url) paint(el, url); });
+    });
+  }, {rootMargin: '200px 0px'});
 
-  // Ask Spotify's oEmbed service for the cover, a few at a time.
-  function next(){
-    if(!queue.length || pending > 3) return;
-    var el = queue.shift(); pending++;
-    var key = el.dataset.art;
-    fetch('https://open.spotify.com/oembed?url=' + encodeURIComponent(key))
-      .then(function(r){ return r.ok ? r.json() : null; })
-      .then(function(j){
-        if(j && j.thumbnail_url){ store[key] = j.thumbnail_url; paint(el, j.thumbnail_url); }
-      })
-      .catch(function(){})
-      .then(function(){ pending--; save(); next(); });
-    next();
-  }
-  next();
+  slots.forEach(function(el){ io.observe(el); });
 })();
 </script>
 <footer class="wrap">
