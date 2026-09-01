@@ -1776,22 +1776,40 @@ footer a:hover{color:var(--brass)}
   var cache = {};
 
   function paint(el, url){
-    var img = new Image();
+    var img = document.createElement('img');
     img.loading = 'lazy';
     img.alt = '';
     img.onload = function(){ el.appendChild(img); el.classList.add('has'); };
+    img.onerror = function(){ console.warn('Cover art image failed to load:', url); };
     img.src = url;
   }
 
-  // One in-flight/cached request per Spotify URL, however many tracks share it.
-  function artFor(key){
-    if(!cache[key]){
-      cache[key] = fetch('https://open.spotify.com/oembed?url=' + encodeURIComponent(key))
+  function termFor(el){
+    var btn = el.closest('button');
+    var trackEl = btn ? btn.querySelector('.t-lat') : null;
+    var channel = el.closest('.channel');
+    var artistEl = channel ? channel.querySelector('.aalt') : null;
+    if(!trackEl || !artistEl) return null;
+    return artistEl.textContent.trim() + ' ' + trackEl.textContent.trim();
+  }
+
+  // One in-flight/cached request per search term, however many tracks share it.
+  function artFor(term){
+    if(!cache[term]){
+      cache[term] = fetch('https://itunes.apple.com/search?term=' + encodeURIComponent(term) + '&entity=song&limit=1')
         .then(function(r){ return r.ok ? r.json() : null; })
-        .then(function(j){ return j && j.thumbnail_url; })
-        .catch(function(){ return null; });
+        .then(function(j){
+          var hit = j && j.results && j.results[0];
+          if(hit && hit.artworkUrl100) return hit.artworkUrl100.replace('100x100', '600x600');
+          console.warn('No iTunes cover art found for "' + term + '"');
+          return null;
+        })
+        .catch(function(err){
+          console.warn('iTunes cover art lookup failed for "' + term + '"', err);
+          return null;
+        });
     }
-    return cache[key];
+    return cache[term];
   }
 
   var io = new IntersectionObserver(function(entries){
@@ -1799,7 +1817,9 @@ footer a:hover{color:var(--brass)}
       if(!entry.isIntersecting) return;
       var el = entry.target;
       io.unobserve(el);
-      artFor(el.dataset.art).then(function(url){ if(url) paint(el, url); });
+      var term = termFor(el);
+      if(!term){ console.warn('Could not determine artist/track for cover art', el); return; }
+      artFor(term).then(function(url){ if(url) paint(el, url); });
     });
   }, {rootMargin: '200px 0px'});
 
