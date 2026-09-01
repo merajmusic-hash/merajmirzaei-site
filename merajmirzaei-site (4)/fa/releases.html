@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0D10">
+<title>ریلیزهای جدید — MIRAGE | معراج میرزایی</title>
+<meta name="description" content="جدیدترین ریلیزهای MIRAGE — دیپ هاوس و الکترونیک از معراج میرزایی.">
+<meta property="og:title" content="ریلیزهای جدید — MIRAGE | معراج میرزایی">
+<meta property="og:description" content="جدیدترین ریلیزهای MIRAGE — دیپ هاوس و الکترونیک از معراج میرزایی.">
+<meta property="og:type" content="profile">
+<link rel="alternate" hreflang="en" href="https://merajmirzaei.com/">
+<link rel="alternate" hreflang="fa" href="https://merajmirzaei.com/fa/">
+<link rel="alternate" hreflang="x-default" href="https://merajmirzaei.com/">
+
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Vazirmatn:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0B0D10; --panel:#14181D; --panel-2:#1B2027; --line:#262D36;
+  --brass:#C2A878; --text:#E7E4DE; --muted:#8B95A1;
+  --display:"Archivo",system-ui,sans-serif;
+  --body:"Inter Tight",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+  --fa:"Vazirmatn",system-ui,sans-serif;
+  --pad:20px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:rgba(194,168,120,.12)}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+body{margin:0;background:var(--ink);color:var(--text);font-family:var(--body);
+  font-size:17px;line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body.fa{font-family:var(--fa);direction:rtl}
+body.fa .mono,body.fa .eyebrow,body.fa .kicker,body.fa .nav a,
+body.fa .stat .l,body.fa .btn,body.fa .roster span,body.fa .roster a,
+body.fa .ch,body.fa .role-tag{font-family:var(--mono)}
+.wrap{width:100%;max-width:1080px;margin:0 auto;padding:0 var(--pad)}
+a{color:inherit}
+a:focus-visible,button:focus-visible{outline:2px solid var(--brass);outline-offset:3px}
+img{max-width:100%}
+
+/* masthead */
+.masthead{position:sticky;top:0;z-index:60;background:rgba(11,13,16,.94);
+  backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;justify-content:space-between;padding:14px 0 0}
+.markname{font-family:var(--display);font-weight:800;font-size:13px;
+  letter-spacing:.16em;text-transform:uppercase;text-decoration:none}
+.markname span{color:var(--brass)}
+.langtog{font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  text-decoration:none;color:var(--muted);border:1px solid var(--line);
+  border-radius:2px;padding:5px 10px;white-space:nowrap}
+.langtog:hover{color:var(--brass);border-color:var(--brass)}
+.nav{display:flex;gap:20px;overflow-x:auto;padding:10px 0 12px;
+  scrollbar-width:none;-ms-overflow-style:none}
+.nav::-webkit-scrollbar{display:none}
+.nav a{font-family:var(--mono);font-size:12px;letter-spacing:.09em;
+  text-transform:uppercase;text-decoration:none;color:var(--muted);
+  white-space:nowrap;padding-bottom:4px;border-bottom:1px solid transparent}
+.nav a[aria-current="page"]{color:var(--text);border-bottom-color:var(--brass)}
+
+.rail{display:flex;align-items:center;gap:12px;margin:0 0 22px}
+.rail .ticks{flex:1;height:9px;background-image:repeating-linear-gradient(
+  to right,var(--line) 0 1px,transparent 1px 9px)}
+.rail .peak{width:7px;height:7px;border-radius:50%;background:var(--brass);
+  box-shadow:0 0 12px 1px rgba(194,168,120,.45);flex:none}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--brass);margin:0;white-space:nowrap}
+
+/* hero */
+.hero{padding:44px 0 40px;border-bottom:1px solid var(--line)}
+.herogrid{display:grid;grid-template-columns:1fr;gap:30px;align-items:center}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--brass);margin:0 0 18px}
+.hero h1{font-family:var(--display);font-weight:900;
+  font-size:clamp(38px,10.5vw,68px);line-height:.94;letter-spacing:-.02em;
+  text-transform:uppercase;margin:0 0 12px}
+body.fa .hero h1{font-family:var(--fa);font-weight:800;letter-spacing:0;
+  text-transform:none;font-size:clamp(34px,9.5vw,60px)}
+.altname{font-weight:700;font-size:clamp(20px,5.5vw,28px);line-height:1.3;
+  color:var(--muted);margin:0 0 20px}
+body:not(.fa) .altname{font-family:var(--fa);direction:rtl;text-align:left}
+body.fa .altname{font-family:var(--display);direction:ltr;text-align:right;
+  text-transform:uppercase;letter-spacing:.02em}
+.hr{width:64px;height:1px;background:var(--brass);margin:0 0 20px}
+.role{font-size:clamp(16px,4.2vw,18px);line-height:1.75;max-width:46ch;
+  margin:0 0 26px;color:#B9B5AE}
+.role b{color:var(--text);font-weight:600}
+.portrait{aspect-ratio:4/5;overflow:visible;border:0;background:none}
+.portrait img{width:100%;height:100%;object-fit:cover;display:block;border:0;
+  -webkit-mask-image:radial-gradient(ellipse 58% 56% at 50% 38%,
+    #000 0%, rgba(0,0,0,.92) 30%, rgba(0,0,0,.62) 50%,
+    rgba(0,0,0,.3) 68%, rgba(0,0,0,.08) 84%, transparent 94%);
+  mask-image:radial-gradient(ellipse 58% 56% at 50% 38%,
+    #000 0%, rgba(0,0,0,.92) 30%, rgba(0,0,0,.62) 50%,
+    rgba(0,0,0,.3) 68%, rgba(0,0,0,.08) 84%, transparent 94%)}
+
+.stats{display:flex;flex-wrap:wrap;gap:24px 34px;padding-top:24px;
+  border-top:1px solid var(--line)}
+.stat .n{font-family:var(--display);font-weight:800;font-size:30px;
+  line-height:1;display:block}
+body.fa .stat .n{font-family:var(--fa)}
+.stat .l{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--muted)}
+
+section{padding:48px 0;border-bottom:1px solid var(--line)}
+section h2{font-family:var(--display);font-weight:800;
+  font-size:clamp(26px,6.5vw,40px);letter-spacing:-.02em;line-height:1.15;margin:0 0 16px}
+body.fa section h2{font-family:var(--fa);letter-spacing:0;line-height:1.5}
+section p{max-width:64ch;color:#CFCBC4;margin:0 0 16px}
+
+/* roster plates */
+.roster{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.roster a,.roster span{font-family:var(--mono);font-size:11.5px;
+  letter-spacing:.09em;text-transform:uppercase;color:#B9B5AE;text-decoration:none;
+  border:1px solid var(--line);border-radius:2px;padding:9px 13px;white-space:nowrap;
+  transition:border-color .2s,color .2s}
+body.fa .roster a,body.fa .roster span{font-family:var(--fa);font-size:13px;
+  letter-spacing:0;text-transform:none}
+.roster a:hover{border-color:var(--brass);color:var(--brass)}
+.roster .more{color:var(--brass);border-color:rgba(194,168,120,.3)}
+
+.band{margin:34px 0 0}
+.band img{width:100%;display:block;border-radius:4px;border:1px solid var(--line)}
+
+/* credit sheet */
+.strip{border-top:1px solid var(--line)}
+.channel{padding:20px 0;border-bottom:1px solid var(--line);scroll-margin-top:130px}
+.channel:target{background:var(--panel);box-shadow:inset 3px 0 0 var(--brass)}
+.chline{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.ch{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.08em}
+.role-tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--brass);border:1px solid rgba(194,168,120,.3);
+  border-radius:2px;padding:2px 7px;white-space:nowrap;margin-inline-start:auto}
+.aname{display:block;font-family:var(--display);font-weight:800;font-size:21px;
+  line-height:1.3;text-decoration:none}
+body.fa .aname{font-family:var(--fa)}
+.aname:hover{color:var(--brass)}
+.aalt{display:block;font-size:16px;color:var(--muted);margin-bottom:14px}
+body:not(.fa) .aalt{font-family:var(--fa);direction:rtl;text-align:left}
+body.fa .aalt{font-family:var(--display);direction:ltr;text-align:right}
+.tracks{display:flex;flex-direction:column;gap:7px}
+.track{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:var(--panel);border:1px solid var(--line);border-radius:3px;
+  padding:11px 13px;text-decoration:none;transition:border-color .2s}
+a.track:hover{border-color:var(--brass)}
+.t-fa{font-family:var(--fa);direction:rtl;font-size:16px}
+.t-lat{font-family:var(--mono);font-size:11px;color:var(--muted);
+  text-align:left;direction:ltr}
+.track.album{border-inline-start:2px solid rgba(194,168,120,.5)}
+.play{color:var(--brass);font-size:13px;flex:none}
+.pending{color:var(--muted);font-family:var(--mono);font-size:13px}
+body.fa .pending{font-family:var(--fa)}
+
+/* track rows as expandable players */
+.trackwrap{display:flex;flex-direction:column}
+button.track{font:inherit;width:100%;cursor:pointer;text-align:inherit;
+  color:inherit;font-family:var(--body)}
+body.fa button.track{font-family:var(--fa)}
+button.track:hover{border-color:var(--brass)}
+button.track[aria-expanded="true"]{border-color:var(--brass);
+  border-end-start-radius:0;border-end-end-radius:0}
+button.track[aria-expanded="true"] .play{transform:rotate(90deg)}
+.play{color:var(--brass);font-size:13px;flex:none;transition:transform .2s}
+.t-main{font-family:var(--display);font-weight:600;font-size:16px}
+.t-sub{font-family:var(--fa);direction:rtl;font-size:14px;color:var(--muted)}
+button.rel{font:inherit;width:100%;cursor:pointer;text-align:inherit;
+  color:inherit;background:var(--panel);border:1px solid var(--line);
+  border-radius:3px;padding:16px 14px;margin-bottom:0;font-family:var(--body)}
+body.fa button.rel{font-family:var(--fa)}
+button.rel:hover{border-color:var(--brass)}
+button.rel[aria-expanded="true"]{border-color:var(--brass);
+  border-end-start-radius:0;border-end-end-radius:0}
+button.rel[aria-expanded="true"] .rm{color:var(--text)}
+.trackwrap{margin-bottom:8px}
+.player{overflow:hidden}
+.player iframe{display:block;width:100%;height:152px;border:0;
+  border:1px solid var(--brass);border-top:0;
+  border-end-start-radius:3px;border-end-end-radius:3px}
+
+/* article pages */
+.article{padding:40px 0 20px;max-width:720px}
+.atitle{font-family:var(--display);font-weight:800;
+  font-size:clamp(28px,7vw,44px);line-height:1.14;letter-spacing:-.02em;margin:0 0 16px}
+body.fa .atitle{font-family:var(--fa);letter-spacing:0;line-height:1.5}
+.stand{font-size:clamp(17px,4.4vw,20px);line-height:1.7;color:var(--text);margin:0 0 22px}
+.article h3{font-family:var(--display);font-weight:800;font-size:20px;
+  margin:38px 0 12px;color:var(--text)}
+body.fa .article h3{font-family:var(--fa)}
+.article p{font-size:17px;line-height:1.85;color:#C4C0B9;margin:0 0 18px;max-width:none}
+.article blockquote{margin:30px 0;padding:0 0 0 20px;
+  border-inline-start:2px solid var(--brass);font-size:19px;line-height:1.65;
+  color:var(--brass);font-style:normal}
+body.fa .article blockquote{padding:0 20px 0 0}
+
+/* cover thumbnails */
+.thumb{width:42px;height:42px;flex:none;border-radius:3px;overflow:hidden;
+  background:var(--panel-2);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb.big{width:58px;height:58px;border-radius:4px}
+button.track{gap:12px}
+button.rel{display:flex;align-items:center;gap:14px}
+.rmeta{flex:1;min-width:0}
+
+/* release: video above the audio player */
+.vidtop{border:1px solid var(--brass);border-top:0;padding:14px 14px 0}
+.vidtop+.spslot iframe{border-top:0;border-radius:0}
+
+/* homepage video reel */
+.reel{margin-top:24px}
+.reelstage{position:relative;width:100%;aspect-ratio:9/16;max-width:340px;
+  margin:0 auto;border-radius:6px;overflow:hidden;border:1px solid var(--line);
+  background:#000}
+.reelstage iframe,.reelstage>div{position:absolute;inset:0;width:100%;height:100%;border:0}
+.reelnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;justify-content:center}
+.reelnav button{font:inherit;font-family:var(--mono);font-size:11px;
+  letter-spacing:.08em;text-transform:uppercase;cursor:pointer;
+  background:none;color:var(--muted);border:1px solid var(--line);
+  border-radius:2px;padding:8px 12px;transition:.2s}
+body.fa .reelnav button{font-family:var(--fa);font-size:13px;
+  letter-spacing:0;text-transform:none}
+.reelnav button:hover{color:var(--text);border-color:var(--muted)}
+.reelnav button.on{color:var(--brass);border-color:var(--brass)}
+
+/* release extras: video + telegram */
+.extra{border:1px solid var(--brass);border-top:0;
+  border-end-start-radius:3px;border-end-end-radius:3px;padding:14px}
+.ytwrap{position:relative;width:100%;aspect-ratio:9/16;max-width:280px;
+  margin:0 auto 12px;border-radius:4px;overflow:hidden;background:#000}
+.ytwrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.tg{display:block;margin:0;text-align:center;font-family:var(--mono);font-size:11.5px;
+  letter-spacing:.1em;text-transform:uppercase;text-decoration:none;
+  color:var(--brass);border:1px solid rgba(194,168,120,.4);border-radius:2px;
+  padding:13px;border:1px solid var(--brass);border-top:0;border-end-start-radius:3px;border-end-end-radius:3px}
+body.fa .tg{font-family:var(--fa);font-size:14px;letter-spacing:0;text-transform:none}
+.tg:hover{background:var(--brass);color:var(--ink)}
+.spslot iframe{border-end-start-radius:0;border-end-end-radius:0}
+
+@media(min-width:700px){
+  .reelstage{max-width:300px}
+  .ytwrap{max-width:250px}
+}
+
+/* releases */
+.rel{display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:16px 0;border-bottom:1px solid var(--line);text-decoration:none;
+  transition:padding-inline-start .2s}
+a.rel:hover{padding-inline-start:8px}
+.rt{font-family:var(--display);font-weight:800;font-size:18px;line-height:1.3;display:block}
+body.fa .rt{font-family:var(--fa)}
+.ra{font-size:15px;color:var(--muted);display:block}
+body:not(.fa) .ra{font-family:var(--fa);direction:rtl;text-align:left}
+.rm{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--brass);flex:none}
+
+/* cards, gallery, posts */
+.grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:26px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:22px 20px}
+.card h3{font-family:var(--display);font-weight:800;font-size:18px;margin:0 0 8px}
+body.fa .card h3{font-family:var(--fa)}
+.card p{font-size:15.5px;color:#B9B5AE;margin:0}
+.gal{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:24px}
+.gal figure{margin:0}
+.gal img{width:100%;display:block;border-radius:3px;border:1px solid var(--line)}
+.gal figcaption{font-size:12px;color:var(--muted);margin-top:6px}
+.empty{color:var(--muted);font-size:14px;border:1px dashed var(--line);
+  border-radius:3px;padding:26px;text-align:center}
+.post{display:block;text-decoration:none;border-bottom:1px solid var(--line);padding:20px 0}
+.post .meta{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--brass)}
+.post h3{font-family:var(--display);font-weight:800;font-size:20px;margin:6px 0}
+body.fa .post h3{font-family:var(--fa)}
+.post p{margin:0;font-size:15.5px;color:var(--muted)}
+
+.btn{display:block;text-align:center;font-family:var(--mono);font-size:12px;
+  letter-spacing:.12em;text-transform:uppercase;text-decoration:none;
+  border:1px solid var(--brass);color:var(--brass);padding:15px 20px;border-radius:2px}
+body.fa .btn{font-family:var(--fa);letter-spacing:0;text-transform:none;font-size:14px}
+.linkrow{display:flex;flex-direction:column;gap:10px;margin-top:22px}
+footer{padding:40px 0 60px}
+footer p{font-size:14px;color:var(--muted);margin:0 0 12px}
+footer a{color:var(--muted)}
+footer a:hover{color:var(--brass)}
+
+@media(min-width:700px){
+  :root{--pad:32px}
+  .masthead .wrap{display:flex;align-items:center;gap:28px;height:66px}
+  .bar{padding:0;gap:20px}
+  .nav{padding:0;overflow:visible;margin-inline-start:auto}
+  .hero{padding:76px 0 60px}
+  .herogrid{grid-template-columns:1.15fr .85fr;gap:56px}
+  section{padding:66px 0}
+  .grid{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+  .gal{grid-template-columns:repeat(3,1fr);gap:12px}
+  .linkrow{flex-direction:row}
+  .btn{display:inline-block}
+}
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "New Releases — MIRAGE",
+  "about": {
+    "@type": "MusicGroup",
+    "name": "MIRAGE"
+  }
+}
+</script>
+</head>
+<body class="fa">
+<header class="masthead">
+  <div class="wrap">
+    <div class="bar">
+      <a class="markname" href="index.html">MERAJ MIRZAEI<span>.</span></a>
+      <a class="langtog" id="langtog" data-to="en" href="../index.html">EN</a>
+    </div>
+    <nav class="nav">
+      <a href="index.html">استودیو</a>
+      <a href="credits.html">کارنامه</a>
+      <a href="releases.html" aria-current="page">ریلیزها</a>
+      <a href="mirage.html">MIRAGE</a>
+      <a href="gallery.html">گالری</a>
+      <a href="services.html">خدمات</a>
+      <a href="journal.html">یادداشت‌ها</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+<section>
+  <div class="rail"><p class="eyebrow">ریلیزهای جدید</p><div class="ticks"></div><div class="peak"></div></div>
+  <h2>تازه منتشر شده.</h2>
+  <p>موزیک‌های خودم با نام MIRAGE، از جدیدترین.</p>
+  <div style="margin-top:26px">
+  <div class="trackwrap"><button class="rel sp" type="button" data-embed="https://open.spotify.com/embed/album/3ASKEuIMrHvSN3hazozWAT?utm_source=generator&theme=0" data-uri="spotify:album:3ASKEuIMrHvSN3hazozWAT" data-h="152" data-yt="cOmoPL2yU2U" data-tg="https://t.me/merajmirzaei" data-tglabel="دانلود از تلگرام" aria-expanded="false"><span class="thumb big" data-art="https://open.spotify.com/album/3ASKEuIMrHvSN3hazozWAT"></span><div class="rmeta"><span class="rt">پیوستگی</span><span class="ra">Peyvastegi</span></div><span class="rm">2026</span></button><div class="player"></div></div>
+  <div class="trackwrap"><button class="rel sp" type="button" data-embed="https://open.spotify.com/embed/album/3FfPbwSyTqGsEo5LYF8pcG?utm_source=generator&theme=0" data-uri="spotify:album:3FfPbwSyTqGsEo5LYF8pcG" data-h="152" data-yt="ZBtpmoz0w-Y" data-tg="https://t.me/merajmirzaei" data-tglabel="دانلود از تلگرام" aria-expanded="false"><span class="thumb big" data-art="https://open.spotify.com/album/3FfPbwSyTqGsEo5LYF8pcG"></span><div class="rmeta"><span class="rt">فرنگیس</span><span class="ra">Farangis</span></div><span class="rm">2026</span></button><div class="player"></div></div>
+  <div class="trackwrap"><button class="rel sp" type="button" data-embed="https://open.spotify.com/embed/album/1gsYdGEhH0PnPXbDv7Xw2G?utm_source=generator&theme=0" data-uri="spotify:album:1gsYdGEhH0PnPXbDv7Xw2G" data-h="152" data-yt="BnXpaotM7VI" data-tg="https://t.me/merajmirzaei" data-tglabel="دانلود از تلگرام" aria-expanded="false"><span class="thumb big" data-art="https://open.spotify.com/album/1gsYdGEhH0PnPXbDv7Xw2G"></span><div class="rmeta"><span class="rt">لبت بخنده</span><span class="ra">Labet Bekhandeh</span></div><span class="rm">2025</span></button><div class="player"></div></div>
+  <div class="trackwrap"><button class="rel sp" type="button" data-embed="https://open.spotify.com/embed/album/7DkNOEz2JA8JeTITa5HsxT?utm_source=generator&theme=0" data-uri="spotify:album:7DkNOEz2JA8JeTITa5HsxT" data-h="152" data-yt="8Hr3frin6iU" data-tg="https://t.me/merajmirzaei" data-tglabel="دانلود از تلگرام" aria-expanded="false"><span class="thumb big" data-art="https://open.spotify.com/album/7DkNOEz2JA8JeTITa5HsxT"></span><div class="rmeta"><span class="rt">باز بارون (ریمیکس)</span><span class="ra">Baz Baroon (Remix)</span></div><span class="rm">2025</span></button><div class="player"></div></div>
+  <div class="trackwrap"><button class="rel sp" type="button" data-embed="https://open.spotify.com/embed/album/4UllBwQWPuCZ8TFxdcAsPk?utm_source=generator&theme=0" data-uri="spotify:album:4UllBwQWPuCZ8TFxdcAsPk" data-h="152" data-yt="WfmyGSRZkkU" data-tg="https://t.me/merajmirzaei" data-tglabel="دانلود از تلگرام" aria-expanded="false"><span class="thumb big" data-art="https://open.spotify.com/album/4UllBwQWPuCZ8TFxdcAsPk"></span><div class="rmeta"><span class="rt">باز بارون</span><span class="ra">Baz Baroon</span></div><span class="rm">2025</span></button><div class="player"></div></div>
+  <div class="trackwrap"><button class="rel sp" type="button" data-embed="https://open.spotify.com/embed/album/26bmbPYweL4EwWTcYI6vra?utm_source=generator&theme=0" data-uri="spotify:album:26bmbPYweL4EwWTcYI6vra" data-h="152" data-yt="3swgYtCO7m8" data-tg="https://t.me/merajmirzaei" data-tglabel="دانلود از تلگرام" aria-expanded="false"><span class="thumb big" data-art="https://open.spotify.com/album/26bmbPYweL4EwWTcYI6vra"></span><div class="rmeta"><span class="rt">تاندر</span><span class="ra">Thunder</span></div><span class="rm">2025</span></button><div class="player"></div></div>
+  </div>
+  <div class="linkrow"><a class="btn" href="https://open.spotify.com/artist/3wHa2wASrgywhttuHleFl1">Spotify</a>
+  <a class="btn" href="https://www.youtube.com/@Miragesohi">YouTube</a></div>
+</section>
+</main>
+
+<script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
+<script>
+(function(){
+  var API = null, open = null;
+  window.onSpotifyIframeApiReady = function(IFrameAPI){ API = IFrameAPI; };
+
+  function close(){
+    if(open){
+      open.setAttribute('aria-expanded','false');
+      open.nextElementSibling.innerHTML = '';
+      open = null;
+    }
+  }
+
+  document.addEventListener('click', function(e){
+    var b = e.target.closest('button.sp');
+    if(!b) return;
+    if(b === open){ close(); return; }
+    close();
+
+    var box = b.nextElementSibling;
+    b.setAttribute('aria-expanded','true');
+    open = b;
+
+    var slot = document.createElement('div');
+    slot.className = 'spslot';
+    box.appendChild(slot);
+
+    if(API){
+      API.createController(slot, {
+        uri: b.dataset.uri, width: '100%', height: b.dataset.h || 152
+      }, function(c){
+        c.addListener('ready', function(){
+          if(!b.dataset.yt){ try{ c.play(); }catch(err){} }
+        });
+      });
+    }else{
+      slot.innerHTML = '<iframe src="'+b.dataset.embed+'" '
+        + 'allow="autoplay; clipboard-write; encrypted-media; picture-in-picture" '
+        + 'loading="lazy"></iframe>';
+    }
+
+    // releases: video sits above the audio player, download link below
+    if(b.dataset.yt){
+      var vid = document.createElement('div');
+      vid.className = 'vidtop';
+      vid.innerHTML =
+        '<div class="ytwrap"><iframe src="https://www.youtube.com/embed/'
+        + b.dataset.yt + '?rel=0&autoplay=1&mute=1&playsinline=1" title="video" '
+        + 'allow="accelerometer; autoplay; clipboard-write; encrypted-media; '
+        + 'gyroscope; picture-in-picture" allowfullscreen></iframe></div>';
+      box.insertBefore(vid, slot);
+
+      var dl = document.createElement('a');
+      dl.className = 'tg';
+      dl.href = b.dataset.tg;
+      dl.target = '_blank'; dl.rel = 'noopener';
+      dl.textContent = b.dataset.tglabel || 'Telegram';
+      box.appendChild(dl);
+    }
+  });
+})();
+</script>
+<script>
+(function(){
+  var slots = document.querySelectorAll('.thumb[data-art]');
+  if(!slots.length) return;
+
+  var CACHE = 'mm_art_v1';
+  var store = {};
+  try{ store = JSON.parse(localStorage.getItem(CACHE) || '{}'); }catch(e){}
+
+  function paint(el, url){
+    if(!url) return;
+    var img = new Image();
+    img.loading = 'lazy';
+    img.alt = '';
+    img.onload = function(){ el.appendChild(img); el.classList.add('has'); };
+    img.src = url;
+  }
+
+  function save(){
+    try{ localStorage.setItem(CACHE, JSON.stringify(store)); }catch(e){}
+  }
+
+  var queue = [], pending = 0;
+  slots.forEach(function(el){
+    var key = el.dataset.art;
+    if(store[key]){ paint(el, store[key]); }
+    else{ queue.push(el); }
+  });
+
+  // Ask Spotify's oEmbed service for the cover, a few at a time.
+  function next(){
+    if(!queue.length || pending > 3) return;
+    var el = queue.shift(); pending++;
+    var key = el.dataset.art;
+    fetch('https://open.spotify.com/oembed?url=' + encodeURIComponent(key))
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(j){
+        if(j && j.thumbnail_url){ store[key] = j.thumbnail_url; paint(el, j.thumbnail_url); }
+      })
+      .catch(function(){})
+      .then(function(){ pending--; save(); next(); });
+    next();
+  }
+  next();
+})();
+</script>
+<footer class="wrap">
+  <p>معراج میرزایی — میکس و مسترینگ، لندن.</p>
+  <p><a href="https://www.instagram.com/merajmirzaei_music/">Instagram</a> ·
+     <a href="https://open.spotify.com/artist/3wHa2wASrgywhttuHleFl1">Spotify</a> ·
+     <a href="https://www.youtube.com/@Miragesohi">YouTube</a></p>
+</footer>
+
+<script>
+(function(){
+  var t = document.getElementById('langtog');
+  if(!t) return;
+  t.addEventListener('click', function(){
+    try{ localStorage.setItem('mm_lang', t.dataset.to); }catch(e){}
+  });
+})();
+</script>
+</body>
+</html>

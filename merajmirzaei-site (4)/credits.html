@@ -1,0 +1,1848 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0D10">
+<title>Credits — Meraj Mirzaei | Mix &amp; Mastering Engineer</title>
+<meta name="description" content="Selected mixing and mastering credits for Meraj Mirzaei (MIRAGE) — over 200 artists including Googoosh, Kamyar, Mehrdad Asemani and Black Cats.">
+<meta property="og:title" content="Credits — Meraj Mirzaei | Mix &amp; Mastering Engineer">
+<meta property="og:description" content="Selected mixing and mastering credits for Meraj Mirzaei (MIRAGE) — over 200 artists including Googoosh, Kamyar, Mehrdad Asemani and Black Cats.">
+<meta property="og:type" content="profile">
+<link rel="alternate" hreflang="en" href="https://merajmirzaei.com/">
+<link rel="alternate" hreflang="fa" href="https://merajmirzaei.com/fa/">
+<link rel="alternate" hreflang="x-default" href="https://merajmirzaei.com/">
+
+<script>
+(function(){
+  /* Only run on a real web server — never when opened as a local file. */
+  if(location.protocol !== 'http:' && location.protocol !== 'https:') return;
+  try{
+    var stored = localStorage.getItem('mm_lang');
+    if(stored){ if(stored==='fa'){ location.replace('/fa/'); } return; }
+    var langs = navigator.languages || [navigator.language || ''];
+    for(var i=0;i<langs.length;i++){
+      if(/^fa\b/i.test(langs[i])){ location.replace('/fa/'); return; }
+    }
+  }catch(e){}
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Vazirmatn:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0B0D10; --panel:#14181D; --panel-2:#1B2027; --line:#262D36;
+  --brass:#C2A878; --text:#E7E4DE; --muted:#8B95A1;
+  --display:"Archivo",system-ui,sans-serif;
+  --body:"Inter Tight",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+  --fa:"Vazirmatn",system-ui,sans-serif;
+  --pad:20px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:rgba(194,168,120,.12)}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+body{margin:0;background:var(--ink);color:var(--text);font-family:var(--body);
+  font-size:17px;line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body.fa{font-family:var(--fa);direction:rtl}
+body.fa .mono,body.fa .eyebrow,body.fa .kicker,body.fa .nav a,
+body.fa .stat .l,body.fa .btn,body.fa .roster span,body.fa .roster a,
+body.fa .ch,body.fa .role-tag{font-family:var(--mono)}
+.wrap{width:100%;max-width:1080px;margin:0 auto;padding:0 var(--pad)}
+a{color:inherit}
+a:focus-visible,button:focus-visible{outline:2px solid var(--brass);outline-offset:3px}
+img{max-width:100%}
+
+/* masthead */
+.masthead{position:sticky;top:0;z-index:60;background:rgba(11,13,16,.94);
+  backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;justify-content:space-between;padding:14px 0 0}
+.markname{font-family:var(--display);font-weight:800;font-size:13px;
+  letter-spacing:.16em;text-transform:uppercase;text-decoration:none}
+.markname span{color:var(--brass)}
+.langtog{font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  text-decoration:none;color:var(--muted);border:1px solid var(--line);
+  border-radius:2px;padding:5px 10px;white-space:nowrap}
+.langtog:hover{color:var(--brass);border-color:var(--brass)}
+.nav{display:flex;gap:20px;overflow-x:auto;padding:10px 0 12px;
+  scrollbar-width:none;-ms-overflow-style:none}
+.nav::-webkit-scrollbar{display:none}
+.nav a{font-family:var(--mono);font-size:12px;letter-spacing:.09em;
+  text-transform:uppercase;text-decoration:none;color:var(--muted);
+  white-space:nowrap;padding-bottom:4px;border-bottom:1px solid transparent}
+.nav a[aria-current="page"]{color:var(--text);border-bottom-color:var(--brass)}
+
+.rail{display:flex;align-items:center;gap:12px;margin:0 0 22px}
+.rail .ticks{flex:1;height:9px;background-image:repeating-linear-gradient(
+  to right,var(--line) 0 1px,transparent 1px 9px)}
+.rail .peak{width:7px;height:7px;border-radius:50%;background:var(--brass);
+  box-shadow:0 0 12px 1px rgba(194,168,120,.45);flex:none}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--brass);margin:0;white-space:nowrap}
+
+/* hero */
+.hero{padding:44px 0 40px;border-bottom:1px solid var(--line)}
+.herogrid{display:grid;grid-template-columns:1fr;gap:30px;align-items:center}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--brass);margin:0 0 18px}
+.hero h1{font-family:var(--display);font-weight:900;
+  font-size:clamp(38px,10.5vw,68px);line-height:.94;letter-spacing:-.02em;
+  text-transform:uppercase;margin:0 0 12px}
+body.fa .hero h1{font-family:var(--fa);font-weight:800;letter-spacing:0;
+  text-transform:none;font-size:clamp(34px,9.5vw,60px)}
+.altname{font-weight:700;font-size:clamp(20px,5.5vw,28px);line-height:1.3;
+  color:var(--muted);margin:0 0 20px}
+body:not(.fa) .altname{font-family:var(--fa);direction:rtl;text-align:left}
+body.fa .altname{font-family:var(--display);direction:ltr;text-align:right;
+  text-transform:uppercase;letter-spacing:.02em}
+.hr{width:64px;height:1px;background:var(--brass);margin:0 0 20px}
+.role{font-size:clamp(16px,4.2vw,18px);line-height:1.75;max-width:46ch;
+  margin:0 0 26px;color:#B9B5AE}
+.role b{color:var(--text);font-weight:600}
+.portrait{aspect-ratio:4/5;overflow:visible;border:0;background:none}
+.portrait img{width:100%;height:100%;object-fit:cover;display:block;border:0;
+  -webkit-mask-image:radial-gradient(ellipse 58% 56% at 50% 38%,
+    #000 0%, rgba(0,0,0,.92) 30%, rgba(0,0,0,.62) 50%,
+    rgba(0,0,0,.3) 68%, rgba(0,0,0,.08) 84%, transparent 94%);
+  mask-image:radial-gradient(ellipse 58% 56% at 50% 38%,
+    #000 0%, rgba(0,0,0,.92) 30%, rgba(0,0,0,.62) 50%,
+    rgba(0,0,0,.3) 68%, rgba(0,0,0,.08) 84%, transparent 94%)}
+
+.stats{display:flex;flex-wrap:wrap;gap:24px 34px;padding-top:24px;
+  border-top:1px solid var(--line)}
+.stat .n{font-family:var(--display);font-weight:800;font-size:30px;
+  line-height:1;display:block}
+body.fa .stat .n{font-family:var(--fa)}
+.stat .l{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--muted)}
+
+section{padding:48px 0;border-bottom:1px solid var(--line)}
+section h2{font-family:var(--display);font-weight:800;
+  font-size:clamp(26px,6.5vw,40px);letter-spacing:-.02em;line-height:1.15;margin:0 0 16px}
+body.fa section h2{font-family:var(--fa);letter-spacing:0;line-height:1.5}
+section p{max-width:64ch;color:#CFCBC4;margin:0 0 16px}
+
+/* roster plates */
+.roster{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.roster a,.roster span{font-family:var(--mono);font-size:11.5px;
+  letter-spacing:.09em;text-transform:uppercase;color:#B9B5AE;text-decoration:none;
+  border:1px solid var(--line);border-radius:2px;padding:9px 13px;white-space:nowrap;
+  transition:border-color .2s,color .2s}
+body.fa .roster a,body.fa .roster span{font-family:var(--fa);font-size:13px;
+  letter-spacing:0;text-transform:none}
+.roster a:hover{border-color:var(--brass);color:var(--brass)}
+.roster .more{color:var(--brass);border-color:rgba(194,168,120,.3)}
+
+.band{margin:34px 0 0}
+.band img{width:100%;display:block;border-radius:4px;border:1px solid var(--line)}
+
+/* credit sheet */
+.strip{border-top:1px solid var(--line)}
+.channel{padding:20px 0;border-bottom:1px solid var(--line);scroll-margin-top:130px}
+.channel:target{background:var(--panel);box-shadow:inset 3px 0 0 var(--brass)}
+.chline{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.ch{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.08em}
+.role-tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--brass);border:1px solid rgba(194,168,120,.3);
+  border-radius:2px;padding:2px 7px;white-space:nowrap;margin-inline-start:auto}
+.aname{display:block;font-family:var(--display);font-weight:800;font-size:21px;
+  line-height:1.3;text-decoration:none}
+body.fa .aname{font-family:var(--fa)}
+.aname:hover{color:var(--brass)}
+.aalt{display:block;font-size:16px;color:var(--muted);margin-bottom:14px}
+body:not(.fa) .aalt{font-family:var(--fa);direction:rtl;text-align:left}
+body.fa .aalt{font-family:var(--display);direction:ltr;text-align:right}
+.tracks{display:flex;flex-direction:column;gap:7px}
+.track{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:var(--panel);border:1px solid var(--line);border-radius:3px;
+  padding:11px 13px;text-decoration:none;transition:border-color .2s}
+a.track:hover{border-color:var(--brass)}
+.t-fa{font-family:var(--fa);direction:rtl;font-size:16px}
+.t-lat{font-family:var(--mono);font-size:11px;color:var(--muted);
+  text-align:left;direction:ltr}
+.track.album{border-inline-start:2px solid rgba(194,168,120,.5)}
+.play{color:var(--brass);font-size:13px;flex:none}
+.pending{color:var(--muted);font-family:var(--mono);font-size:13px}
+body.fa .pending{font-family:var(--fa)}
+
+/* track rows as expandable players */
+.trackwrap{display:flex;flex-direction:column}
+button.track{font:inherit;width:100%;cursor:pointer;text-align:inherit;
+  color:inherit;font-family:var(--body)}
+body.fa button.track{font-family:var(--fa)}
+button.track:hover{border-color:var(--brass)}
+button.track[aria-expanded="true"]{border-color:var(--brass);
+  border-end-start-radius:0;border-end-end-radius:0}
+button.track[aria-expanded="true"] .play{transform:rotate(90deg)}
+.play{color:var(--brass);font-size:13px;flex:none;transition:transform .2s}
+.t-main{font-family:var(--display);font-weight:600;font-size:16px}
+.t-sub{font-family:var(--fa);direction:rtl;font-size:14px;color:var(--muted)}
+button.rel{font:inherit;width:100%;cursor:pointer;text-align:inherit;
+  color:inherit;background:var(--panel);border:1px solid var(--line);
+  border-radius:3px;padding:16px 14px;margin-bottom:0;font-family:var(--body)}
+body.fa button.rel{font-family:var(--fa)}
+button.rel:hover{border-color:var(--brass)}
+button.rel[aria-expanded="true"]{border-color:var(--brass);
+  border-end-start-radius:0;border-end-end-radius:0}
+button.rel[aria-expanded="true"] .rm{color:var(--text)}
+.trackwrap{margin-bottom:8px}
+.player{overflow:hidden}
+.player iframe{display:block;width:100%;height:152px;border:0;
+  border:1px solid var(--brass);border-top:0;
+  border-end-start-radius:3px;border-end-end-radius:3px}
+
+/* article pages */
+.article{padding:40px 0 20px;max-width:720px}
+.atitle{font-family:var(--display);font-weight:800;
+  font-size:clamp(28px,7vw,44px);line-height:1.14;letter-spacing:-.02em;margin:0 0 16px}
+body.fa .atitle{font-family:var(--fa);letter-spacing:0;line-height:1.5}
+.stand{font-size:clamp(17px,4.4vw,20px);line-height:1.7;color:var(--text);margin:0 0 22px}
+.article h3{font-family:var(--display);font-weight:800;font-size:20px;
+  margin:38px 0 12px;color:var(--text)}
+body.fa .article h3{font-family:var(--fa)}
+.article p{font-size:17px;line-height:1.85;color:#C4C0B9;margin:0 0 18px;max-width:none}
+.article blockquote{margin:30px 0;padding:0 0 0 20px;
+  border-inline-start:2px solid var(--brass);font-size:19px;line-height:1.65;
+  color:var(--brass);font-style:normal}
+body.fa .article blockquote{padding:0 20px 0 0}
+
+/* cover thumbnails */
+.thumb{width:42px;height:42px;flex:none;border-radius:3px;overflow:hidden;
+  background:var(--panel-2);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb.big{width:58px;height:58px;border-radius:4px}
+button.track{gap:12px}
+button.rel{display:flex;align-items:center;gap:14px}
+.rmeta{flex:1;min-width:0}
+
+/* release: video above the audio player */
+.vidtop{border:1px solid var(--brass);border-top:0;padding:14px 14px 0}
+.vidtop+.spslot iframe{border-top:0;border-radius:0}
+
+/* homepage video reel */
+.reel{margin-top:24px}
+.reelstage{position:relative;width:100%;aspect-ratio:9/16;max-width:340px;
+  margin:0 auto;border-radius:6px;overflow:hidden;border:1px solid var(--line);
+  background:#000}
+.reelstage iframe,.reelstage>div{position:absolute;inset:0;width:100%;height:100%;border:0}
+.reelnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;justify-content:center}
+.reelnav button{font:inherit;font-family:var(--mono);font-size:11px;
+  letter-spacing:.08em;text-transform:uppercase;cursor:pointer;
+  background:none;color:var(--muted);border:1px solid var(--line);
+  border-radius:2px;padding:8px 12px;transition:.2s}
+body.fa .reelnav button{font-family:var(--fa);font-size:13px;
+  letter-spacing:0;text-transform:none}
+.reelnav button:hover{color:var(--text);border-color:var(--muted)}
+.reelnav button.on{color:var(--brass);border-color:var(--brass)}
+
+/* release extras: video + telegram */
+.extra{border:1px solid var(--brass);border-top:0;
+  border-end-start-radius:3px;border-end-end-radius:3px;padding:14px}
+.ytwrap{position:relative;width:100%;aspect-ratio:9/16;max-width:280px;
+  margin:0 auto 12px;border-radius:4px;overflow:hidden;background:#000}
+.ytwrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.tg{display:block;margin:0;text-align:center;font-family:var(--mono);font-size:11.5px;
+  letter-spacing:.1em;text-transform:uppercase;text-decoration:none;
+  color:var(--brass);border:1px solid rgba(194,168,120,.4);border-radius:2px;
+  padding:13px;border:1px solid var(--brass);border-top:0;border-end-start-radius:3px;border-end-end-radius:3px}
+body.fa .tg{font-family:var(--fa);font-size:14px;letter-spacing:0;text-transform:none}
+.tg:hover{background:var(--brass);color:var(--ink)}
+.spslot iframe{border-end-start-radius:0;border-end-end-radius:0}
+
+@media(min-width:700px){
+  .reelstage{max-width:300px}
+  .ytwrap{max-width:250px}
+}
+
+/* releases */
+.rel{display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:16px 0;border-bottom:1px solid var(--line);text-decoration:none;
+  transition:padding-inline-start .2s}
+a.rel:hover{padding-inline-start:8px}
+.rt{font-family:var(--display);font-weight:800;font-size:18px;line-height:1.3;display:block}
+body.fa .rt{font-family:var(--fa)}
+.ra{font-size:15px;color:var(--muted);display:block}
+body:not(.fa) .ra{font-family:var(--fa);direction:rtl;text-align:left}
+.rm{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--brass);flex:none}
+
+/* cards, gallery, posts */
+.grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:26px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:22px 20px}
+.card h3{font-family:var(--display);font-weight:800;font-size:18px;margin:0 0 8px}
+body.fa .card h3{font-family:var(--fa)}
+.card p{font-size:15.5px;color:#B9B5AE;margin:0}
+.gal{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:24px}
+.gal figure{margin:0}
+.gal img{width:100%;display:block;border-radius:3px;border:1px solid var(--line)}
+.gal figcaption{font-size:12px;color:var(--muted);margin-top:6px}
+.empty{color:var(--muted);font-size:14px;border:1px dashed var(--line);
+  border-radius:3px;padding:26px;text-align:center}
+.post{display:block;text-decoration:none;border-bottom:1px solid var(--line);padding:20px 0}
+.post .meta{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--brass)}
+.post h3{font-family:var(--display);font-weight:800;font-size:20px;margin:6px 0}
+body.fa .post h3{font-family:var(--fa)}
+.post p{margin:0;font-size:15.5px;color:var(--muted)}
+
+.btn{display:block;text-align:center;font-family:var(--mono);font-size:12px;
+  letter-spacing:.12em;text-transform:uppercase;text-decoration:none;
+  border:1px solid var(--brass);color:var(--brass);padding:15px 20px;border-radius:2px}
+body.fa .btn{font-family:var(--fa);letter-spacing:0;text-transform:none;font-size:14px}
+.linkrow{display:flex;flex-direction:column;gap:10px;margin-top:22px}
+footer{padding:40px 0 60px}
+footer p{font-size:14px;color:var(--muted);margin:0 0 12px}
+footer a{color:var(--muted)}
+footer a:hover{color:var(--brass)}
+
+@media(min-width:700px){
+  :root{--pad:32px}
+  .masthead .wrap{display:flex;align-items:center;gap:28px;height:66px}
+  .bar{padding:0;gap:20px}
+  .nav{padding:0;overflow:visible;margin-inline-start:auto}
+  .hero{padding:76px 0 60px}
+  .herogrid{grid-template-columns:1.15fr .85fr;gap:56px}
+  section{padding:66px 0}
+  .grid{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+  .gal{grid-template-columns:repeat(3,1fr);gap:12px}
+  .linkrow{flex-direction:row}
+  .btn{display:inline-block}
+}
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Meraj Mirzaei",
+  "alternateName": [
+    "معراج میرزایی",
+    "MIRAGE"
+  ],
+  "jobTitle": "Mix and Mastering Engineer",
+  "description": "Mix and mastering engineer, music producer and sound designer based in London, with over 20 years of work across Persian, electronic and international music.",
+  "url": "https://merajmirzaei.com/",
+  "homeLocation": {
+    "@type": "Place",
+    "name": "London, United Kingdom"
+  },
+  "knowsAbout": [
+    "Audio mixing",
+    "Audio mastering",
+    "Music production",
+    "Sound design",
+    "Deep house",
+    "Persian pop music"
+  ],
+  "sameAs": [
+    "https://www.instagram.com/merajmirzaei_music/",
+    "https://open.spotify.com/artist/3wHa2wASrgywhttuHleFl1",
+    "https://www.youtube.com/@Miragesohi"
+  ],
+  "subjectOf": [
+    {
+      "@type": "MusicRecording",
+      "name": "Naaz Edkeh",
+      "alternateName": "ناز ادکه",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Googoosh",
+        "alternateName": "گوگوش"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/7C3Cly7S3jKV2qT05nxlGD"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Dele Mano Bordi",
+      "alternateName": "دل منو بردی",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Kamyar",
+        "alternateName": "کامیار"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/0mOzF2VdGU7phOhGk7Lwnn"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Sad Darsad",
+      "alternateName": "صد درصد",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Kamyar",
+        "alternateName": "کامیار"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/2dSGu2v4s5heiLFHKLNAF8"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Dokhtar Shirazi",
+      "alternateName": "دختر شیرازی",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Kamyar",
+        "alternateName": "کامیار"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/5YQb2Zz1YuJArSDMJ21Qyb"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Danse",
+      "alternateName": "دنس",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Kamyar",
+        "alternateName": "کامیار"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/42AC3r7GAAUVLwfKLCGLCf"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Khoshhalam (feat. Melani)",
+      "alternateName": "خوشحالم",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Kamyar",
+        "alternateName": "کامیار"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicAlbum",
+      "name": "Range Eshgh",
+      "alternateName": "رنگ عشق",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Mehrdad Asemani",
+        "alternateName": "مهرداد آسمانی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/2dXDIzmw6zocSxGUSixyIO"
+    },
+    {
+      "@type": "MusicAlbum",
+      "name": "Yar Shirin",
+      "alternateName": "یار شیرین",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Mehrdad Asemani",
+        "alternateName": "مهرداد آسمانی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/15MiwmBYZ5gGbxghICqTfM"
+    },
+    {
+      "@type": "MusicAlbum",
+      "name": "Khanomi",
+      "alternateName": "خانومی",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Mehrdad Asemani",
+        "alternateName": "مهرداد آسمانی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Bahaneh",
+      "alternateName": "بهانه",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Mehrdad Asemani",
+        "alternateName": "مهرداد آسمانی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Eshghe Zoleykhaei",
+      "alternateName": "عشق زلیخایی",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Mehrdad Asemani",
+        "alternateName": "مهرداد آسمانی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Del Kandam",
+      "alternateName": "دل کندم",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Mehrdad Asemani",
+        "alternateName": "مهرداد آسمانی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Naaz",
+      "alternateName": "ناز",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Black Cats",
+        "alternateName": "بلک کتس"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/7sXlgl61dXuIWVFRtnJ9yB"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Bonbast",
+      "alternateName": "بن‌بست",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Black Cats",
+        "alternateName": "بلک کتس"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Khosh Be Halam",
+      "alternateName": "خوش به حالم",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Helen",
+        "alternateName": "هلن"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Eshghe Mondegar",
+      "alternateName": "عشق موندگار",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Fataneh",
+        "alternateName": "فتانه"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Bazi",
+      "alternateName": "بازی",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Shahyad",
+        "alternateName": "شهیاد"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Lalaei",
+      "alternateName": "لالایی",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Sahar",
+        "alternateName": "سحر"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Panah",
+      "alternateName": "پناه",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Salar Aghili",
+        "alternateName": "سالار عقیلی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/2j8Le6FLbu2ggphvhIBDmr"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Royaye Man",
+      "alternateName": "رویای من",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Salar Aghili",
+        "alternateName": "سالار عقیلی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/7m83IzEtVxR358DLqAGZtM"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Nafas",
+      "alternateName": "نفس",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Salar Aghili",
+        "alternateName": "سالار عقیلی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/3aujt3HMTvIjFjsYN5Uymj"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Bighararetam",
+      "alternateName": "بیقرارتم",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Reza Sadeghi",
+        "alternateName": "رضا صادقی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/0Ss55b8iRwPG2gpIrQVEac"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Forough",
+      "alternateName": "فروغ",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Amirabbas Golab",
+        "alternateName": "امیرعباس گلاب"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/2CCKtspB26eABvskdSlBwc"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Che Ghad Mehrabooni",
+      "alternateName": "چقدر مهربونی",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Amirabbas Golab",
+        "alternateName": "امیرعباس گلاب"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/7xMaYlzfBrnx9II1wlUdsp"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Paeeze Delam",
+      "alternateName": "پاییز دلم",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Amirabbas Golab",
+        "alternateName": "امیرعباس گلاب"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/4rvNc3tkUrDAYYGGMsJuQ5"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Serial Bipayan",
+      "alternateName": "سریال بی‌پایان",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Amirabbas Golab",
+        "alternateName": "امیرعباس گلاب"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Bi Khabari",
+      "alternateName": "بی‌خبری",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Rastaak Hallaj",
+        "alternateName": "رستاک حلاج"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/5I7zaxYXlYAgDd6ckdqNv2"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Chak",
+      "alternateName": "چک",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Rastaak Hallaj",
+        "alternateName": "رستاک حلاج"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/1mSJack26Wtw2BWZhnvPEK"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Gharaz Az Mozahemat",
+      "alternateName": "غرض از مزاحمت",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Rastaak Hallaj",
+        "alternateName": "رستاک حلاج"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/7JnHVWS6NwFPTQylVtCqvg"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Dokhtarooneh",
+      "alternateName": "دخترونه",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Rastaak Hallaj",
+        "alternateName": "رستاک حلاج"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/365DLa0pSw6YEWfWfewMJt"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Faseleh",
+      "alternateName": "فاصله",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Rastaak Hallaj",
+        "alternateName": "رستاک حلاج"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/1DQI08d6qZRs6HhelECdM0"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Refighe Fab",
+      "alternateName": "رفیق فاب",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Ahmad Saeedi",
+        "alternateName": "احمد سعیدی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/5VX0KGvAVpgeqCCjRAIOTM"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Darya",
+      "alternateName": "دریا",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Ahmad Saeedi",
+        "alternateName": "احمد سعیدی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/3fdjNU6AOztAWCVaP7rwse"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Begoo",
+      "alternateName": "بگو",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Ahmad Saeedi",
+        "alternateName": "احمد سعیدی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/34EncpmkvDbOWs7VgwbhmN"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Yadet Rafteh",
+      "alternateName": "یادت رفته",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Ahmad Saeedi",
+        "alternateName": "احمد سعیدی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Abadan",
+      "alternateName": "آبادان",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Ahmad Saeedi",
+        "alternateName": "احمد سعیدی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Khianat",
+      "alternateName": "خیانت",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Shahram Shokoohi",
+        "alternateName": "شهرام شکوهی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/41UIq5yx3M8sA9GR93n5lZ"
+    },
+    {
+      "@type": "MusicAlbum",
+      "name": "Zendegi",
+      "alternateName": "زندگی",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Arsalan",
+        "alternateName": "ارسلان"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicAlbum",
+      "name": "Live at Studio One, London",
+      "alternateName": "لایو استودیو وان، لندن",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Arsalan",
+        "alternateName": "ارسلان"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/5FuRQRi3ArCp6GALs5f8N4"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Ghafelgir",
+      "alternateName": "غافلگیر",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Arsalan",
+        "alternateName": "ارسلان"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/2dpQVSjaxmnfcdN4dvhrYV"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Gharibe",
+      "alternateName": "غریبه",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Arsalan",
+        "alternateName": "ارسلان"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Lajbazi",
+      "alternateName": "لجبازی",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Milad J",
+        "alternateName": "میلاد جی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/1Hz6lJbM8boBXA4dcb4I8J"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Roya",
+      "alternateName": "رویا",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Milad J",
+        "alternateName": "میلاد جی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/5eM5WlCJxcTc6LFK3zUBWP"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Befarma Eshgham",
+      "alternateName": "بفرما عشقم",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Milad J",
+        "alternateName": "میلاد جی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/6L8SmmaKdWOkOMSX9HuxNk"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Shab Gardi",
+      "alternateName": "شبگردی",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Milad J",
+        "alternateName": "میلاد جی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/2UXkveYmnAlDWSkr3E29OQ"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Soorate Mahet",
+      "alternateName": "سرعت ماهت",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Milad J",
+        "alternateName": "میلاد جی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/75pnPLlQHX6e2u73zrQZ64"
+    },
+    {
+      "@type": "MusicAlbum",
+      "name": "Damam Garm",
+      "alternateName": "صدامو داری دمت گرم",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Milad J",
+        "alternateName": "میلاد جی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/2M12eYuSc1wDnP05PjLMma"
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Becharkhon",
+      "alternateName": "بچرخون",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Milad J",
+        "alternateName": "میلاد جی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Ghose Dar",
+      "alternateName": "غصه‌دار",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Milad J",
+        "alternateName": "میلاد جی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Jange",
+      "alternateName": "جنگه",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Milad J",
+        "alternateName": "میلاد جی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Cheghad Zood Miresi",
+      "alternateName": "چقد زود می‌رسی",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Milad J",
+        "alternateName": "میلاد جی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Cheshat",
+      "alternateName": "چشات",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Sintaj",
+        "alternateName": "سینتاج"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      },
+      "sameAs": "https://open.spotify.com/album/10UhVxVBAXeOwT2Vur4jXI"
+    },
+    {
+      "@type": "MusicAlbum",
+      "name": "Fasle Panjom",
+      "alternateName": "فصل پنجم",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Ahmadreza Nabizadeh",
+        "alternateName": "احمدرضا نبی‌زاده"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Dokhtare Baroon",
+      "alternateName": "دختر بارون",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Ahmadreza Nabizadeh",
+        "alternateName": "احمدرضا نبی‌زاده"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Leyla Khanom (live)",
+      "alternateName": "لیلا خانم (اجرای زنده)",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Amirabbas Hassanzadeh",
+        "alternateName": "امیرعباس حسن‌زاده"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Moje Mosbat",
+      "alternateName": "موج مثبت",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Amirabbas Hassanzadeh",
+        "alternateName": "امیرعباس حسن‌زاده"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Mano To",
+      "alternateName": "منو تو",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Panida",
+        "alternateName": "پانیدا"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Shirin Shirine",
+      "alternateName": "شیرین شیرینه",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Reza Pahlevani",
+        "alternateName": "رضا پهلوانی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Delkhoshi",
+      "alternateName": "دلخوشی",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Majid Rokni",
+        "alternateName": "مجید رکنی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Baba Karam",
+      "alternateName": "بابا کرم",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Iman Sani",
+        "alternateName": "ایمان ثانی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    },
+    {
+      "@type": "MusicRecording",
+      "name": "Davom Nemiyaram",
+      "alternateName": "دووم نمیارم",
+      "byArtist": {
+        "@type": "MusicGroup",
+        "name": "Morteza Lotfi",
+        "alternateName": "مرتضی لطفی"
+      },
+      "contributor": {
+        "@type": "Person",
+        "name": "Meraj Mirzaei",
+        "roleName": "Mix and Mastering Engineer"
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<header class="masthead">
+  <div class="wrap">
+    <div class="bar">
+      <a class="markname" href="index.html">MERAJ MIRZAEI<span>.</span></a>
+      <a class="langtog" id="langtog" data-to="fa" href="fa/index.html">فارسی</a>
+    </div>
+    <nav class="nav">
+      <a href="index.html">Studio</a>
+      <a href="credits.html" aria-current="page">Credits</a>
+      <a href="releases.html">Releases</a>
+      <a href="mirage.html">MIRAGE</a>
+      <a href="gallery.html">Gallery</a>
+      <a href="services.html">Services</a>
+      <a href="journal.html">Journal</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+<section style="border-bottom:none;padding-bottom:28px">
+  <div class="rail"><p class="eyebrow">Credit sheet</p><div class="ticks"></div><div class="peak"></div></div>
+  <h2>Twenty years on the desk.</h2>
+  <p>A selected list. Over twenty years I have mixed and mastered for more than 200 artists — these are the records I keep coming back to. Where a release is on Spotify, the title links to it.</p>
+  <div class="stats" style="margin-top:28px">
+    <div class="stat"><span class="n">200+</span><span class="l">Artists</span></div>
+    <div class="stat"><span class="n">61</span><span class="l">Titles listed</span></div>
+    <div class="stat"><span class="n">20+</span><span class="l">Years mixing</span></div>
+  </div>
+</section>
+
+<div class="strip">
+      <div class="channel" id="a1">
+        <div class="chline">
+          <span class="ch">CH 01</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <a class="aname" href="https://open.spotify.com/artist/07L6XZ7QaTsZLP8jwLoFgY">Googoosh</a>
+        <span class="aalt">گوگوش</span>
+        <div class="tracks">
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/7C3Cly7S3jKV2qT05nxlGD?utm_source=generator&theme=0" data-uri="spotify:album:7C3Cly7S3jKV2qT05nxlGD" data-h="152" data-art="https://open.spotify.com/album/7C3Cly7S3jKV2qT05nxlGD" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/7C3Cly7S3jKV2qT05nxlGD"></span><span class="t-main">Naaz Edkeh</span><span class="t-sub">ناز ادکه</span><span class="play">▶</span></button><div class="player"></div></div>
+        </div>
+      </div>
+      <div class="channel" id="a2">
+        <div class="chline">
+          <span class="ch">CH 02</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <a class="aname" href="https://open.spotify.com/artist/4KDf5VtMN8j55pvQldvh8a">Kamyar</a>
+        <span class="aalt">کامیار</span>
+        <div class="tracks">
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/0mOzF2VdGU7phOhGk7Lwnn?utm_source=generator&theme=0" data-uri="spotify:album:0mOzF2VdGU7phOhGk7Lwnn" data-h="152" data-art="https://open.spotify.com/album/0mOzF2VdGU7phOhGk7Lwnn" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/0mOzF2VdGU7phOhGk7Lwnn"></span><span class="t-main">Dele Mano Bordi</span><span class="t-sub">دل منو بردی</span><span class="play">▶</span></button><div class="player"></div></div>
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/2dSGu2v4s5heiLFHKLNAF8?utm_source=generator&theme=0" data-uri="spotify:album:2dSGu2v4s5heiLFHKLNAF8" data-h="152" data-art="https://open.spotify.com/album/2dSGu2v4s5heiLFHKLNAF8" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/2dSGu2v4s5heiLFHKLNAF8"></span><span class="t-main">Sad Darsad</span><span class="t-sub">صد درصد</span><span class="play">▶</span></button><div class="player"></div></div>
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/5YQb2Zz1YuJArSDMJ21Qyb?utm_source=generator&theme=0" data-uri="spotify:album:5YQb2Zz1YuJArSDMJ21Qyb" data-h="152" data-art="https://open.spotify.com/album/5YQb2Zz1YuJArSDMJ21Qyb" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/5YQb2Zz1YuJArSDMJ21Qyb"></span><span class="t-main">Dokhtar Shirazi</span><span class="t-sub">دختر شیرازی</span><span class="play">▶</span></button><div class="player"></div></div>
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/42AC3r7GAAUVLwfKLCGLCf?utm_source=generator&theme=0" data-uri="spotify:album:42AC3r7GAAUVLwfKLCGLCf" data-h="152" data-art="https://open.spotify.com/album/42AC3r7GAAUVLwfKLCGLCf" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/42AC3r7GAAUVLwfKLCGLCf"></span><span class="t-main">Danse</span><span class="t-sub">دنس</span><span class="play">▶</span></button><div class="player"></div></div>
+        <span class="track"><span class="t-main">Khoshhalam (feat. Melani)</span><span class="t-sub">خوشحالم</span></span>
+        </div>
+      </div>
+      <div class="channel" id="a3">
+        <div class="chline">
+          <span class="ch">CH 03</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <a class="aname" href="https://open.spotify.com/artist/2LsYQSGGqUcRgY9NKXCYsM">Mehrdad Asemani</a>
+        <span class="aalt">مهرداد آسمانی</span>
+        <div class="tracks">
+        <div class="trackwrap"><button class="track album sp" type="button" data-embed="https://open.spotify.com/embed/album/2dXDIzmw6zocSxGUSixyIO?utm_source=generator&theme=0" data-uri="spotify:album:2dXDIzmw6zocSxGUSixyIO" data-h="152" data-art="https://open.spotify.com/album/2dXDIzmw6zocSxGUSixyIO" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/2dXDIzmw6zocSxGUSixyIO"></span><span class="t-main">Range Eshgh</span><span class="t-sub">رنگ عشق</span><span class="play">▶</span></button><div class="player"></div></div>
+        <div class="trackwrap"><button class="track album sp" type="button" data-embed="https://open.spotify.com/embed/album/15MiwmBYZ5gGbxghICqTfM?utm_source=generator&theme=0" data-uri="spotify:album:15MiwmBYZ5gGbxghICqTfM" data-h="152" data-art="https://open.spotify.com/album/15MiwmBYZ5gGbxghICqTfM" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/15MiwmBYZ5gGbxghICqTfM"></span><span class="t-main">Yar Shirin</span><span class="t-sub">یار شیرین</span><span class="play">▶</span></button><div class="player"></div></div>
+        <span class="track album"><span class="t-main">Khanomi</span><span class="t-sub">خانومی</span></span>
+        <span class="track"><span class="t-main">Bahaneh</span><span class="t-sub">بهانه</span></span>
+        <span class="track"><span class="t-main">Eshghe Zoleykhaei</span><span class="t-sub">عشق زلیخایی</span></span>
+        <span class="track"><span class="t-main">Del Kandam</span><span class="t-sub">دل کندم</span></span>
+        </div>
+      </div>
+      <div class="channel" id="a4">
+        <div class="chline">
+          <span class="ch">CH 04</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <a class="aname" href="https://open.spotify.com/artist/1gej3rNdgoHFpH0D4Nxupv">Black Cats</a>
+        <span class="aalt">بلک کتس</span>
+        <div class="tracks">
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/7sXlgl61dXuIWVFRtnJ9yB?utm_source=generator&theme=0" data-uri="spotify:album:7sXlgl61dXuIWVFRtnJ9yB" data-h="152" data-art="https://open.spotify.com/album/7sXlgl61dXuIWVFRtnJ9yB" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/7sXlgl61dXuIWVFRtnJ9yB"></span><span class="t-main">Naaz</span><span class="t-sub">ناز</span><span class="play">▶</span></button><div class="player"></div></div>
+        <span class="track"><span class="t-main">Bonbast</span><span class="t-sub">بن‌بست</span></span>
+        </div>
+      </div>
+      <div class="channel" id="a5">
+        <div class="chline">
+          <span class="ch">CH 05</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <a class="aname" href="https://open.spotify.com/artist/6mi7TeLw6ql10y7gxruned">Helen</a>
+        <span class="aalt">هلن</span>
+        <div class="tracks">
+        <span class="track"><span class="t-main">Khosh Be Halam</span><span class="t-sub">خوش به حالم</span></span>
+        </div>
+      </div>
+      <div class="channel" id="a6">
+        <div class="chline">
+          <span class="ch">CH 06</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <a class="aname" href="https://open.spotify.com/artist/3dWbC6ImEAbvy0qEZkAxPk">Fataneh</a>
+        <span class="aalt">فتانه</span>
+        <div class="tracks">
+        <span class="track"><span class="t-main">Eshghe Mondegar</span><span class="t-sub">عشق موندگار</span></span>
+        </div>
+      </div>
+      <div class="channel" id="a7">
+        <div class="chline">
+          <span class="ch">CH 07</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <span class="aname">Shahyad</span>
+        <span class="aalt">شهیاد</span>
+        <div class="tracks">
+        <span class="track"><span class="t-main">Bazi</span><span class="t-sub">بازی</span></span>
+        </div>
+      </div>
+      <div class="channel" id="a8">
+        <div class="chline">
+          <span class="ch">CH 08</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <span class="aname">Sahar</span>
+        <span class="aalt">سحر</span>
+        <div class="tracks">
+        <span class="track"><span class="t-main">Lalaei</span><span class="t-sub">لالایی</span></span>
+        </div>
+      </div>
+      <div class="channel" id="a9">
+        <div class="chline">
+          <span class="ch">CH 09</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <a class="aname" href="https://open.spotify.com/artist/27dwAgbXmxxoow8Mpn7aQz">Salar Aghili</a>
+        <span class="aalt">سالار عقیلی</span>
+        <div class="tracks">
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/2j8Le6FLbu2ggphvhIBDmr?utm_source=generator&theme=0" data-uri="spotify:album:2j8Le6FLbu2ggphvhIBDmr" data-h="152" data-art="https://open.spotify.com/album/2j8Le6FLbu2ggphvhIBDmr" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/2j8Le6FLbu2ggphvhIBDmr"></span><span class="t-main">Panah</span><span class="t-sub">پناه</span><span class="play">▶</span></button><div class="player"></div></div>
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/7m83IzEtVxR358DLqAGZtM?utm_source=generator&theme=0" data-uri="spotify:album:7m83IzEtVxR358DLqAGZtM" data-h="152" data-art="https://open.spotify.com/album/7m83IzEtVxR358DLqAGZtM" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/7m83IzEtVxR358DLqAGZtM"></span><span class="t-main">Royaye Man</span><span class="t-sub">رویای من</span><span class="play">▶</span></button><div class="player"></div></div>
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/3aujt3HMTvIjFjsYN5Uymj?utm_source=generator&theme=0" data-uri="spotify:album:3aujt3HMTvIjFjsYN5Uymj" data-h="152" data-art="https://open.spotify.com/album/3aujt3HMTvIjFjsYN5Uymj" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/3aujt3HMTvIjFjsYN5Uymj"></span><span class="t-main">Nafas</span><span class="t-sub">نفس</span><span class="play">▶</span></button><div class="player"></div></div>
+        </div>
+      </div>
+      <div class="channel" id="a10">
+        <div class="chline">
+          <span class="ch">CH 10</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <a class="aname" href="https://open.spotify.com/artist/00J3XSB6tD4SGSFflGseDx">Reza Sadeghi</a>
+        <span class="aalt">رضا صادقی</span>
+        <div class="tracks">
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/0Ss55b8iRwPG2gpIrQVEac?utm_source=generator&theme=0" data-uri="spotify:album:0Ss55b8iRwPG2gpIrQVEac" data-h="152" data-art="https://open.spotify.com/album/0Ss55b8iRwPG2gpIrQVEac" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/0Ss55b8iRwPG2gpIrQVEac"></span><span class="t-main">Bighararetam</span><span class="t-sub">بیقرارتم</span><span class="play">▶</span></button><div class="player"></div></div>
+        </div>
+      </div>
+      <div class="channel" id="a11">
+        <div class="chline">
+          <span class="ch">CH 11</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <a class="aname" href="https://open.spotify.com/artist/72YzRGDNjyHcUMLtsmJgKN">Amirabbas Golab</a>
+        <span class="aalt">امیرعباس گلاب</span>
+        <div class="tracks">
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/2CCKtspB26eABvskdSlBwc?utm_source=generator&theme=0" data-uri="spotify:album:2CCKtspB26eABvskdSlBwc" data-h="152" data-art="https://open.spotify.com/album/2CCKtspB26eABvskdSlBwc" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/2CCKtspB26eABvskdSlBwc"></span><span class="t-main">Forough</span><span class="t-sub">فروغ</span><span class="play">▶</span></button><div class="player"></div></div>
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/7xMaYlzfBrnx9II1wlUdsp?utm_source=generator&theme=0" data-uri="spotify:album:7xMaYlzfBrnx9II1wlUdsp" data-h="152" data-art="https://open.spotify.com/album/7xMaYlzfBrnx9II1wlUdsp" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/7xMaYlzfBrnx9II1wlUdsp"></span><span class="t-main">Che Ghad Mehrabooni</span><span class="t-sub">چقدر مهربونی</span><span class="play">▶</span></button><div class="player"></div></div>
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/4rvNc3tkUrDAYYGGMsJuQ5?utm_source=generator&theme=0" data-uri="spotify:album:4rvNc3tkUrDAYYGGMsJuQ5" data-h="152" data-art="https://open.spotify.com/album/4rvNc3tkUrDAYYGGMsJuQ5" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/4rvNc3tkUrDAYYGGMsJuQ5"></span><span class="t-main">Paeeze Delam</span><span class="t-sub">پاییز دلم</span><span class="play">▶</span></button><div class="player"></div></div>
+        <span class="track"><span class="t-main">Serial Bipayan</span><span class="t-sub">سریال بی‌پایان</span></span>
+        </div>
+      </div>
+      <div class="channel" id="a12">
+        <div class="chline">
+          <span class="ch">CH 12</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <a class="aname" href="https://open.spotify.com/artist/0JKWNiyuJ05ZToYcudXlNp">Rastaak Hallaj</a>
+        <span class="aalt">رستاک حلاج</span>
+        <div class="tracks">
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/5I7zaxYXlYAgDd6ckdqNv2?utm_source=generator&theme=0" data-uri="spotify:album:5I7zaxYXlYAgDd6ckdqNv2" data-h="152" data-art="https://open.spotify.com/album/5I7zaxYXlYAgDd6ckdqNv2" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/5I7zaxYXlYAgDd6ckdqNv2"></span><span class="t-main">Bi Khabari</span><span class="t-sub">بی‌خبری</span><span class="play">▶</span></button><div class="player"></div></div>
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/1mSJack26Wtw2BWZhnvPEK?utm_source=generator&theme=0" data-uri="spotify:album:1mSJack26Wtw2BWZhnvPEK" data-h="152" data-art="https://open.spotify.com/album/1mSJack26Wtw2BWZhnvPEK" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/1mSJack26Wtw2BWZhnvPEK"></span><span class="t-main">Chak</span><span class="t-sub">چک</span><span class="play">▶</span></button><div class="player"></div></div>
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/7JnHVWS6NwFPTQylVtCqvg?utm_source=generator&theme=0" data-uri="spotify:album:7JnHVWS6NwFPTQylVtCqvg" data-h="152" data-art="https://open.spotify.com/album/7JnHVWS6NwFPTQylVtCqvg" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/7JnHVWS6NwFPTQylVtCqvg"></span><span class="t-main">Gharaz Az Mozahemat</span><span class="t-sub">غرض از مزاحمت</span><span class="play">▶</span></button><div class="player"></div></div>
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/365DLa0pSw6YEWfWfewMJt?utm_source=generator&theme=0" data-uri="spotify:album:365DLa0pSw6YEWfWfewMJt" data-h="152" data-art="https://open.spotify.com/album/365DLa0pSw6YEWfWfewMJt" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/365DLa0pSw6YEWfWfewMJt"></span><span class="t-main">Dokhtarooneh</span><span class="t-sub">دخترونه</span><span class="play">▶</span></button><div class="player"></div></div>
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/1DQI08d6qZRs6HhelECdM0?utm_source=generator&theme=0" data-uri="spotify:album:1DQI08d6qZRs6HhelECdM0" data-h="152" data-art="https://open.spotify.com/album/1DQI08d6qZRs6HhelECdM0" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/1DQI08d6qZRs6HhelECdM0"></span><span class="t-main">Faseleh</span><span class="t-sub">فاصله</span><span class="play">▶</span></button><div class="player"></div></div>
+        </div>
+      </div>
+      <div class="channel" id="a13">
+        <div class="chline">
+          <span class="ch">CH 13</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <a class="aname" href="https://open.spotify.com/artist/7BVSwfrtT7Mq6yvJF8u8kZ">Ahmad Saeedi</a>
+        <span class="aalt">احمد سعیدی</span>
+        <div class="tracks">
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/5VX0KGvAVpgeqCCjRAIOTM?utm_source=generator&theme=0" data-uri="spotify:album:5VX0KGvAVpgeqCCjRAIOTM" data-h="152" data-art="https://open.spotify.com/album/5VX0KGvAVpgeqCCjRAIOTM" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/5VX0KGvAVpgeqCCjRAIOTM"></span><span class="t-main">Refighe Fab</span><span class="t-sub">رفیق فاب</span><span class="play">▶</span></button><div class="player"></div></div>
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/3fdjNU6AOztAWCVaP7rwse?utm_source=generator&theme=0" data-uri="spotify:album:3fdjNU6AOztAWCVaP7rwse" data-h="152" data-art="https://open.spotify.com/album/3fdjNU6AOztAWCVaP7rwse" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/3fdjNU6AOztAWCVaP7rwse"></span><span class="t-main">Darya</span><span class="t-sub">دریا</span><span class="play">▶</span></button><div class="player"></div></div>
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/34EncpmkvDbOWs7VgwbhmN?utm_source=generator&theme=0" data-uri="spotify:album:34EncpmkvDbOWs7VgwbhmN" data-h="152" data-art="https://open.spotify.com/album/34EncpmkvDbOWs7VgwbhmN" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/34EncpmkvDbOWs7VgwbhmN"></span><span class="t-main">Begoo</span><span class="t-sub">بگو</span><span class="play">▶</span></button><div class="player"></div></div>
+        <span class="track"><span class="t-main">Yadet Rafteh</span><span class="t-sub">یادت رفته</span></span>
+        <span class="track"><span class="t-main">Abadan</span><span class="t-sub">آبادان</span></span>
+        </div>
+      </div>
+      <div class="channel" id="a14">
+        <div class="chline">
+          <span class="ch">CH 14</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <a class="aname" href="https://open.spotify.com/artist/21bYSNzWliPW8JOHPMzx7X">Shahram Shokoohi</a>
+        <span class="aalt">شهرام شکوهی</span>
+        <div class="tracks">
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/41UIq5yx3M8sA9GR93n5lZ?utm_source=generator&theme=0" data-uri="spotify:album:41UIq5yx3M8sA9GR93n5lZ" data-h="152" data-art="https://open.spotify.com/album/41UIq5yx3M8sA9GR93n5lZ" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/41UIq5yx3M8sA9GR93n5lZ"></span><span class="t-main">Khianat</span><span class="t-sub">خیانت</span><span class="play">▶</span></button><div class="player"></div></div>
+        </div>
+      </div>
+      <div class="channel" id="a15">
+        <div class="chline">
+          <span class="ch">CH 15</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <a class="aname" href="https://open.spotify.com/artist/0ollgPCAebYaTLl3cfGs0p">Arsalan</a>
+        <span class="aalt">ارسلان</span>
+        <div class="tracks">
+        <span class="track album"><span class="t-main">Zendegi</span><span class="t-sub">زندگی</span></span>
+        <div class="trackwrap"><button class="track album sp" type="button" data-embed="https://open.spotify.com/embed/album/5FuRQRi3ArCp6GALs5f8N4?utm_source=generator&theme=0" data-uri="spotify:album:5FuRQRi3ArCp6GALs5f8N4" data-h="152" data-art="https://open.spotify.com/album/5FuRQRi3ArCp6GALs5f8N4" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/5FuRQRi3ArCp6GALs5f8N4"></span><span class="t-main">Live at Studio One, London</span><span class="t-sub">لایو استودیو وان، لندن</span><span class="play">▶</span></button><div class="player"></div></div>
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/2dpQVSjaxmnfcdN4dvhrYV?utm_source=generator&theme=0" data-uri="spotify:album:2dpQVSjaxmnfcdN4dvhrYV" data-h="152" data-art="https://open.spotify.com/album/2dpQVSjaxmnfcdN4dvhrYV" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/2dpQVSjaxmnfcdN4dvhrYV"></span><span class="t-main">Ghafelgir</span><span class="t-sub">غافلگیر</span><span class="play">▶</span></button><div class="player"></div></div>
+        <span class="track"><span class="t-main">Gharibe</span><span class="t-sub">غریبه</span></span>
+        </div>
+      </div>
+      <div class="channel" id="a16">
+        <div class="chline">
+          <span class="ch">CH 16</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <a class="aname" href="https://open.spotify.com/artist/1gP4E0vNV3SKKzgvViN5x5">Milad J</a>
+        <span class="aalt">میلاد جی</span>
+        <div class="tracks">
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/1Hz6lJbM8boBXA4dcb4I8J?utm_source=generator&theme=0" data-uri="spotify:album:1Hz6lJbM8boBXA4dcb4I8J" data-h="152" data-art="https://open.spotify.com/album/1Hz6lJbM8boBXA4dcb4I8J" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/1Hz6lJbM8boBXA4dcb4I8J"></span><span class="t-main">Lajbazi</span><span class="t-sub">لجبازی</span><span class="play">▶</span></button><div class="player"></div></div>
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/5eM5WlCJxcTc6LFK3zUBWP?utm_source=generator&theme=0" data-uri="spotify:album:5eM5WlCJxcTc6LFK3zUBWP" data-h="152" data-art="https://open.spotify.com/album/5eM5WlCJxcTc6LFK3zUBWP" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/5eM5WlCJxcTc6LFK3zUBWP"></span><span class="t-main">Roya</span><span class="t-sub">رویا</span><span class="play">▶</span></button><div class="player"></div></div>
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/6L8SmmaKdWOkOMSX9HuxNk?utm_source=generator&theme=0" data-uri="spotify:album:6L8SmmaKdWOkOMSX9HuxNk" data-h="152" data-art="https://open.spotify.com/album/6L8SmmaKdWOkOMSX9HuxNk" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/6L8SmmaKdWOkOMSX9HuxNk"></span><span class="t-main">Befarma Eshgham</span><span class="t-sub">بفرما عشقم</span><span class="play">▶</span></button><div class="player"></div></div>
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/2UXkveYmnAlDWSkr3E29OQ?utm_source=generator&theme=0" data-uri="spotify:album:2UXkveYmnAlDWSkr3E29OQ" data-h="152" data-art="https://open.spotify.com/album/2UXkveYmnAlDWSkr3E29OQ" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/2UXkveYmnAlDWSkr3E29OQ"></span><span class="t-main">Shab Gardi</span><span class="t-sub">شبگردی</span><span class="play">▶</span></button><div class="player"></div></div>
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/75pnPLlQHX6e2u73zrQZ64?utm_source=generator&theme=0" data-uri="spotify:album:75pnPLlQHX6e2u73zrQZ64" data-h="152" data-art="https://open.spotify.com/album/75pnPLlQHX6e2u73zrQZ64" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/75pnPLlQHX6e2u73zrQZ64"></span><span class="t-main">Soorate Mahet</span><span class="t-sub">سرعت ماهت</span><span class="play">▶</span></button><div class="player"></div></div>
+        <div class="trackwrap"><button class="track album sp" type="button" data-embed="https://open.spotify.com/embed/album/2M12eYuSc1wDnP05PjLMma?utm_source=generator&theme=0" data-uri="spotify:album:2M12eYuSc1wDnP05PjLMma" data-h="152" data-art="https://open.spotify.com/album/2M12eYuSc1wDnP05PjLMma" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/2M12eYuSc1wDnP05PjLMma"></span><span class="t-main">Damam Garm</span><span class="t-sub">صدامو داری دمت گرم</span><span class="play">▶</span></button><div class="player"></div></div>
+        <span class="track"><span class="t-main">Becharkhon</span><span class="t-sub">بچرخون</span></span>
+        <span class="track"><span class="t-main">Ghose Dar</span><span class="t-sub">غصه‌دار</span></span>
+        <span class="track"><span class="t-main">Jange</span><span class="t-sub">جنگه</span></span>
+        <span class="track"><span class="t-main">Cheghad Zood Miresi</span><span class="t-sub">چقد زود می‌رسی</span></span>
+        </div>
+      </div>
+      <div class="channel" id="a17">
+        <div class="chline">
+          <span class="ch">CH 17</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <a class="aname" href="https://open.spotify.com/artist/7xRQvmUWDHAGfiTYHmwgYP">Sintaj</a>
+        <span class="aalt">سینتاج</span>
+        <div class="tracks">
+        <div class="trackwrap"><button class="track sp" type="button" data-embed="https://open.spotify.com/embed/album/10UhVxVBAXeOwT2Vur4jXI?utm_source=generator&theme=0" data-uri="spotify:album:10UhVxVBAXeOwT2Vur4jXI" data-h="152" data-art="https://open.spotify.com/album/10UhVxVBAXeOwT2Vur4jXI" aria-expanded="false"><span class="thumb" data-art="https://open.spotify.com/album/10UhVxVBAXeOwT2Vur4jXI"></span><span class="t-main">Cheshat</span><span class="t-sub">چشات</span><span class="play">▶</span></button><div class="player"></div></div>
+        </div>
+      </div>
+      <div class="channel" id="a18">
+        <div class="chline">
+          <span class="ch">CH 18</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <span class="aname">Ahmadreza Nabizadeh</span>
+        <span class="aalt">احمدرضا نبی‌زاده</span>
+        <div class="tracks">
+        <span class="track album"><span class="t-main">Fasle Panjom</span><span class="t-sub">فصل پنجم</span></span>
+        <span class="track"><span class="t-main">Dokhtare Baroon</span><span class="t-sub">دختر بارون</span></span>
+        </div>
+      </div>
+      <div class="channel" id="a19">
+        <div class="chline">
+          <span class="ch">CH 19</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <span class="aname">Amirabbas Hassanzadeh</span>
+        <span class="aalt">امیرعباس حسن‌زاده</span>
+        <div class="tracks">
+        <span class="track"><span class="t-main">Leyla Khanom (live)</span><span class="t-sub">لیلا خانم (اجرای زنده)</span></span>
+        <span class="track"><span class="t-main">Moje Mosbat</span><span class="t-sub">موج مثبت</span></span>
+        </div>
+      </div>
+      <div class="channel" id="a20">
+        <div class="chline">
+          <span class="ch">CH 20</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <span class="aname">Panida</span>
+        <span class="aalt">پانیدا</span>
+        <div class="tracks">
+        <span class="track"><span class="t-main">Mano To</span><span class="t-sub">منو تو</span></span>
+        </div>
+      </div>
+      <div class="channel" id="a21">
+        <div class="chline">
+          <span class="ch">CH 21</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <span class="aname">Reza Pahlevani</span>
+        <span class="aalt">رضا پهلوانی</span>
+        <div class="tracks">
+        <span class="track"><span class="t-main">Shirin Shirine</span><span class="t-sub">شیرین شیرینه</span></span>
+        </div>
+      </div>
+      <div class="channel" id="a22">
+        <div class="chline">
+          <span class="ch">CH 22</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <span class="aname">Majid Rokni</span>
+        <span class="aalt">مجید رکنی</span>
+        <div class="tracks">
+        <span class="track"><span class="t-main">Delkhoshi</span><span class="t-sub">دلخوشی</span></span>
+        </div>
+      </div>
+      <div class="channel" id="a23">
+        <div class="chline">
+          <span class="ch">CH 23</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <span class="aname">Iman Sani</span>
+        <span class="aalt">ایمان ثانی</span>
+        <div class="tracks">
+        <span class="track"><span class="t-main">Baba Karam</span><span class="t-sub">بابا کرم</span></span>
+        </div>
+      </div>
+      <div class="channel" id="a24">
+        <div class="chline">
+          <span class="ch">CH 24</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <span class="aname">Morteza Lotfi</span>
+        <span class="aalt">مرتضی لطفی</span>
+        <div class="tracks">
+        <span class="track"><span class="t-main">Davom Nemiyaram</span><span class="t-sub">دووم نمیارم</span></span>
+        </div>
+      </div>
+      <div class="channel" id="a25">
+        <div class="chline">
+          <span class="ch">CH 25</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <span class="aname">Rastin</span>
+        <span class="aalt">راستین</span>
+        <div class="tracks">
+        <span class="pending">catalogue being verified</span>
+        </div>
+      </div>
+      <div class="channel" id="a26">
+        <div class="chline">
+          <span class="ch">CH 26</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <span class="aname">Milad Mosadegh</span>
+        <span class="aalt">میلاد مصدق</span>
+        <div class="tracks">
+        <span class="pending">catalogue being verified</span>
+        </div>
+      </div>
+      <div class="channel" id="a27">
+        <div class="chline">
+          <span class="ch">CH 27</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <span class="aname">Saman Mansour</span>
+        <span class="aalt">سامان منصور</span>
+        <div class="tracks">
+        <span class="pending">catalogue being verified</span>
+        </div>
+      </div>
+      <div class="channel" id="a28">
+        <div class="chline">
+          <span class="ch">CH 28</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <span class="aname">Afshin Amini</span>
+        <span class="aalt">افشین امینی</span>
+        <div class="tracks">
+        <span class="pending">catalogue being verified</span>
+        </div>
+      </div>
+      <div class="channel" id="a29">
+        <div class="chline">
+          <span class="ch">CH 29</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <span class="aname">Benyamin Baran</span>
+        <span class="aalt">بنیامین باران</span>
+        <div class="tracks">
+        <span class="pending">catalogue being verified</span>
+        </div>
+      </div>
+      <div class="channel" id="a30">
+        <div class="chline">
+          <span class="ch">CH 30</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <span class="aname">Sadreddin</span>
+        <span class="aalt">صدرالدین</span>
+        <div class="tracks">
+        <span class="pending">catalogue being verified</span>
+        </div>
+      </div>
+      <div class="channel" id="a31">
+        <div class="chline">
+          <span class="ch">CH 31</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <span class="aname">Ghazal Enayat</span>
+        <span class="aalt">غزال عنایت</span>
+        <div class="tracks">
+        <span class="pending">catalogue being verified</span>
+        </div>
+      </div>
+      <div class="channel" id="a32">
+        <div class="chline">
+          <span class="ch">CH 32</span>
+          <span class="role-tag">Mix &amp; Master</span>
+        </div>
+        <span class="aname">Ali Panahi</span>
+        <span class="aalt">علی پناهی</span>
+        <div class="tracks">
+        <span class="pending">catalogue being verified</span>
+        </div>
+      </div>
+</div>
+
+<section style="border-bottom:none">
+  <p style="color:var(--muted);font-size:15px">Working from a record I mixed that isn't listed here? Send it over and it goes on the sheet.</p>
+  <div class="linkrow"><a class="btn" href="services.html">Work with me</a></div>
+</section>
+</main>
+
+<script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
+<script>
+(function(){
+  var API = null, open = null;
+  window.onSpotifyIframeApiReady = function(IFrameAPI){ API = IFrameAPI; };
+
+  function close(){
+    if(open){
+      open.setAttribute('aria-expanded','false');
+      open.nextElementSibling.innerHTML = '';
+      open = null;
+    }
+  }
+
+  document.addEventListener('click', function(e){
+    var b = e.target.closest('button.sp');
+    if(!b) return;
+    if(b === open){ close(); return; }
+    close();
+
+    var box = b.nextElementSibling;
+    b.setAttribute('aria-expanded','true');
+    open = b;
+
+    var slot = document.createElement('div');
+    slot.className = 'spslot';
+    box.appendChild(slot);
+
+    if(API){
+      API.createController(slot, {
+        uri: b.dataset.uri, width: '100%', height: b.dataset.h || 152
+      }, function(c){
+        c.addListener('ready', function(){
+          if(!b.dataset.yt){ try{ c.play(); }catch(err){} }
+        });
+      });
+    }else{
+      slot.innerHTML = '<iframe src="'+b.dataset.embed+'" '
+        + 'allow="autoplay; clipboard-write; encrypted-media; picture-in-picture" '
+        + 'loading="lazy"></iframe>';
+    }
+
+    // releases: video sits above the audio player, download link below
+    if(b.dataset.yt){
+      var vid = document.createElement('div');
+      vid.className = 'vidtop';
+      vid.innerHTML =
+        '<div class="ytwrap"><iframe src="https://www.youtube.com/embed/'
+        + b.dataset.yt + '?rel=0&autoplay=1&mute=1&playsinline=1" title="video" '
+        + 'allow="accelerometer; autoplay; clipboard-write; encrypted-media; '
+        + 'gyroscope; picture-in-picture" allowfullscreen></iframe></div>';
+      box.insertBefore(vid, slot);
+
+      var dl = document.createElement('a');
+      dl.className = 'tg';
+      dl.href = b.dataset.tg;
+      dl.target = '_blank'; dl.rel = 'noopener';
+      dl.textContent = b.dataset.tglabel || 'Telegram';
+      box.appendChild(dl);
+    }
+  });
+})();
+</script>
+<script>
+(function(){
+  var slots = document.querySelectorAll('.thumb[data-art]');
+  if(!slots.length) return;
+
+  var CACHE = 'mm_art_v1';
+  var store = {};
+  try{ store = JSON.parse(localStorage.getItem(CACHE) || '{}'); }catch(e){}
+
+  function paint(el, url){
+    if(!url) return;
+    var img = new Image();
+    img.loading = 'lazy';
+    img.alt = '';
+    img.onload = function(){ el.appendChild(img); el.classList.add('has'); };
+    img.src = url;
+  }
+
+  function save(){
+    try{ localStorage.setItem(CACHE, JSON.stringify(store)); }catch(e){}
+  }
+
+  var queue = [], pending = 0;
+  slots.forEach(function(el){
+    var key = el.dataset.art;
+    if(store[key]){ paint(el, store[key]); }
+    else{ queue.push(el); }
+  });
+
+  // Ask Spotify's oEmbed service for the cover, a few at a time.
+  function next(){
+    if(!queue.length || pending > 3) return;
+    var el = queue.shift(); pending++;
+    var key = el.dataset.art;
+    fetch('https://open.spotify.com/oembed?url=' + encodeURIComponent(key))
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(j){
+        if(j && j.thumbnail_url){ store[key] = j.thumbnail_url; paint(el, j.thumbnail_url); }
+      })
+      .catch(function(){})
+      .then(function(){ pending--; save(); next(); });
+    next();
+  }
+  next();
+})();
+</script>
+<footer class="wrap">
+  <p>Meraj Mirzaei — mix &amp; mastering, London.</p>
+  <p><a href="https://www.instagram.com/merajmirzaei_music/">Instagram</a> ·
+     <a href="https://open.spotify.com/artist/3wHa2wASrgywhttuHleFl1">Spotify</a> ·
+     <a href="https://www.youtube.com/@Miragesohi">YouTube</a></p>
+</footer>
+
+<script>
+(function(){
+  var t = document.getElementById('langtog');
+  if(!t) return;
+  t.addEventListener('click', function(){
+    try{ localStorage.setItem('mm_lang', t.dataset.to); }catch(e){}
+  });
+})();
+</script>
+</body>
+</html>
