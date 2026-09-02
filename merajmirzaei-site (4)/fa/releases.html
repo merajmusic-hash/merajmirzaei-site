@@ -365,7 +365,16 @@ footer a:hover{color:var(--brass)}
   // loadVideoById()+playVideo() inside the click handler. Because the
   // click is a real user gesture, unmuted playback isn't blocked, so the
   // video plays with sound instead of needing a manual unmute.
-  var YTReady = false, ytPlayer = null, ytVidTop = null, ytHost = null;
+  // ytPlayerReady/desiredVideoId exist because YT.Player() is asynchronous:
+  // the player isn't actually able to accept loadVideoById() until its
+  // 'ready' event fires (real handshake delay, not instant like a mock), and
+  // a call made before that is silently dropped rather than queued. Without
+  // tracking readiness, clicking a second row before the first row's player
+  // finishes initializing left every row playing whichever video happened
+  // to land first. desiredVideoId always holds the most recently clicked
+  // row's id, so whichever click's loadVideoById wins the race, onReady
+  // (or the next post-ready click) still ends up loading the right video.
+  var YTReady = false, ytPlayer = null, ytPlayerReady = false, ytVidTop = null, ytHost = null, desiredVideoId = null;
   window.onYouTubeIframeAPIReady = function(){ YTReady = true; };
 
   // A row's shared player/video elements are moved here (not destroyed)
@@ -410,16 +419,22 @@ footer a:hover{color:var(--brass)}
         ytVidTop.appendChild(ytWrap);
       }
       box.insertBefore(ytVidTop, refNode);
+      desiredVideoId = b.dataset.yt;
       if(!ytPlayer){
         ytPlayer = new YT.Player(ytHost, {
           videoId: b.dataset.yt,
           playerVars: { rel: 0, playsinline: 1 },
-          events: { onReady: function(e){ try{ e.target.playVideo(); }catch(err){} } }
+          events: { onReady: function(e){
+            ytPlayerReady = true;
+            try{ e.target.loadVideoById(desiredVideoId); e.target.playVideo(); }catch(err){}
+          } }
         });
-      }else{
-        ytPlayer.loadVideoById(b.dataset.yt);
-        try{ ytPlayer.playVideo(); }catch(err){}
+      }else if(ytPlayerReady){
+        try{ ytPlayer.loadVideoById(desiredVideoId); ytPlayer.playVideo(); }catch(err){}
       }
+      // else: the player exists but hasn't fired 'ready' yet. desiredVideoId
+      // is already updated above, so the still-pending onReady handler above
+      // will load the right (most recently clicked) video once it fires.
     }else{
       // Graceful fallback if the YouTube IFrame API failed to load.
       var vid = document.createElement('div');
