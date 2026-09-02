@@ -358,12 +358,13 @@ footer a:hover{color:var(--brass)}
   <div class="trackwrap"><button class="rel sp" type="button" data-embed="https://open.spotify.com/embed/album/4UllBwQWPuCZ8TFxdcAsPk?utm_source=generator&theme=0" data-uri="spotify:album:4UllBwQWPuCZ8TFxdcAsPk" data-h="152" data-yt="WfmyGSRZkkU" data-tg="https://t.me/merajmirzaei" data-tglabel="Download on Telegram" aria-expanded="false"><img class="thumb big" src="/images/covers/mirage-baz-baroon.jpg" loading="lazy" alt=""><div class="rmeta"><span class="rt">Baz Baroon</span><span class="ra">باز بارون</span></div><span class="rm">2025</span></button><div class="player"></div></div>
   <div class="trackwrap"><button class="rel sp" type="button" data-embed="https://open.spotify.com/embed/album/26bmbPYweL4EwWTcYI6vra?utm_source=generator&theme=0" data-uri="spotify:album:26bmbPYweL4EwWTcYI6vra" data-h="152" data-yt="3swgYtCO7m8" data-tg="https://t.me/merajmirzaei" data-tglabel="Download on Telegram" aria-expanded="false"><img class="thumb big" src="/images/covers/mirage-thunder.jpg" loading="lazy" alt=""><div class="rmeta"><span class="rt">Thunder</span><span class="ra">تاندر</span></div><span class="rm">2025</span></button><div class="player"></div></div>
   </div>
-  <div class="linkrow"><a class="btn" href="https://open.spotify.com/artist/3wHa2wASrgywhttuHleFl1">Spotify</a>
-  <a class="btn" href="https://www.youtube.com/@Miragesohi">YouTube</a></div>
+  <div class="linkrow"><a class="btn" href="https://open.spotify.com/artist/3wHa2wASrgywhttuHleFl1" target="_blank" rel="noopener noreferrer">Spotify</a>
+  <a class="btn" href="https://www.youtube.com/@Miragesohi" target="_blank" rel="noopener noreferrer">YouTube</a></div>
 </section>
 </main>
 
 <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
+<script src="https://www.youtube.com/iframe_api" async></script>
 <script>
 (function(){
   // One shared EmbedController per page: reused across tracks via
@@ -374,30 +375,81 @@ footer a:hover{color:var(--brass)}
   var API = null, controller = null, playerHost = null, activeBtn = null;
   window.onSpotifyIframeApiReady = function(IFrameAPI){ API = IFrameAPI; };
 
+  // Same approach for video: one shared YT.Player, reused across rows via
+  // loadVideoById()+playVideo() inside the click handler. Because the
+  // click is a real user gesture, unmuted playback isn't blocked, so the
+  // video plays with sound instead of needing a manual unmute.
+  var YTReady = false, ytPlayer = null, ytVidTop = null, ytHost = null;
+  window.onYouTubeIframeAPIReady = function(){ YTReady = true; };
+
+  // A row's shared player/video elements are moved here (not destroyed)
+  // when that row closes, so reopening any row reuses the same live
+  // controller/player instead of recreating it.
+  var parkingLot = null;
+  function park(el){
+    if(!parkingLot){
+      parkingLot = document.createElement('div');
+      parkingLot.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;';
+      document.body.appendChild(parkingLot);
+    }
+    parkingLot.appendChild(el);
+  }
+
+  function stopVideo(){
+    if(ytPlayer){ try{ ytPlayer.stopVideo(); }catch(err){} }
+  }
+
   function clearExtras(b){
     var box = b.nextElementSibling;
     if(!box) return;
-    var vid = box.querySelector('.vidtop'); if(vid) vid.remove();
+    if(playerHost && playerHost.parentNode === box) park(playerHost);
+    if(ytVidTop && ytVidTop.parentNode === box) park(ytVidTop);
     var dl = box.querySelector('.tg'); if(dl) dl.remove();
     var legacy = box.querySelector('.spslot'); if(legacy) legacy.remove();
+    var legacyVid = box.querySelector('.vidtop'); if(legacyVid) legacyVid.remove();
   }
 
   // releases: video sits above the audio player, download link below
   function addExtras(b, box, refNode){
     if(!b.dataset.yt) return;
-    var vid = document.createElement('div');
-    vid.className = 'vidtop';
-    vid.innerHTML =
-      '<div class="ytwrap"><iframe src="https://www.youtube.com/embed/'
-      + b.dataset.yt + '?rel=0&autoplay=1&mute=1&playsinline=1" title="video" '
-      + 'allow="accelerometer; autoplay; clipboard-write; encrypted-media; '
-      + 'gyroscope; picture-in-picture" allowfullscreen></iframe></div>';
-    box.insertBefore(vid, refNode);
+
+    if(YTReady){
+      if(!ytVidTop){
+        ytVidTop = document.createElement('div');
+        ytVidTop.className = 'vidtop';
+        var ytWrap = document.createElement('div');
+        ytWrap.className = 'ytwrap';
+        ytHost = document.createElement('div');
+        ytWrap.appendChild(ytHost);
+        ytVidTop.appendChild(ytWrap);
+      }
+      box.insertBefore(ytVidTop, refNode);
+      if(!ytPlayer){
+        ytPlayer = new YT.Player(ytHost, {
+          videoId: b.dataset.yt,
+          playerVars: { rel: 0, playsinline: 1 },
+          events: { onReady: function(e){ try{ e.target.playVideo(); }catch(err){} } }
+        });
+      }else{
+        ytPlayer.loadVideoById(b.dataset.yt);
+        try{ ytPlayer.playVideo(); }catch(err){}
+      }
+    }else{
+      // Graceful fallback if the YouTube IFrame API failed to load.
+      var vid = document.createElement('div');
+      vid.className = 'vidtop';
+      vid.innerHTML =
+        '<div class="ytwrap"><iframe src="https://www.youtube.com/embed/'
+        + b.dataset.yt + '?rel=0&playsinline=1&autoplay=1&mute=0" title="video" '
+        + 'allow="accelerometer; autoplay; clipboard-write; encrypted-media; '
+        + 'gyroscope; picture-in-picture" allowfullscreen></iframe></div>';
+      box.insertBefore(vid, refNode);
+    }
 
     var dl = document.createElement('a');
     dl.className = 'tg';
     dl.href = b.dataset.tg;
-    dl.target = '_blank'; dl.rel = 'noopener';
+    dl.target = '_blank'; dl.rel = 'noopener noreferrer';
     dl.textContent = b.dataset.tglabel || 'Telegram';
     box.appendChild(dl);
   }
@@ -462,6 +514,7 @@ footer a:hover{color:var(--brass)}
     var openBtn = document.querySelector('button.sp[aria-expanded="true"]');
     if(openBtn && openBtn !== b){
       if(openBtn === activeBtn && controller){ try{ controller.pause(); }catch(err){} }
+      if(openBtn.dataset.yt) stopVideo();
       clearExtras(openBtn);
       resetRow(openBtn);
       if(openBtn === activeBtn) activeBtn = null;
@@ -469,6 +522,7 @@ footer a:hover{color:var(--brass)}
 
     if(wasOpen){
       if(b === activeBtn && controller){ try{ controller.pause(); }catch(err){} }
+      if(b.dataset.yt) stopVideo();
       clearExtras(b);
       resetRow(b);
       if(b === activeBtn) activeBtn = null;
@@ -481,12 +535,12 @@ footer a:hover{color:var(--brass)}
 </script>
 <footer class="wrap">
   <p>Meraj Mirzaei — mix &amp; mastering, London.</p>
-  <p><a href="https://musicbrainz.org/artist/5d52a3f9-f059-4c47-9f4e-0bdb61317fe3" target="_blank" rel="noopener">MusicBrainz</a> ·
-     <a href="https://www.discogs.com/user/Merajmusic" target="_blank" rel="noopener">Discogs</a> ·
-     <a href="https://genius.com/merajmirzaei" target="_blank" rel="noopener">Genius</a> ·
-     <a href="https://open.spotify.com/artist/3wHa2wASrgywhttuHleFl1" target="_blank" rel="noopener">Spotify</a> ·
-     <a href="https://youtube.com/@miragesohi" target="_blank" rel="noopener">YouTube</a> ·
-     <a href="https://www.instagram.com/merajmirzaei_music" target="_blank" rel="noopener">Instagram</a></p>
+  <p><a href="https://musicbrainz.org/artist/5d52a3f9-f059-4c47-9f4e-0bdb61317fe3" target="_blank" rel="noopener noreferrer">MusicBrainz</a> ·
+     <a href="https://www.discogs.com/user/Merajmusic" target="_blank" rel="noopener noreferrer">Discogs</a> ·
+     <a href="https://genius.com/merajmirzaei" target="_blank" rel="noopener noreferrer">Genius</a> ·
+     <a href="https://open.spotify.com/artist/3wHa2wASrgywhttuHleFl1" target="_blank" rel="noopener noreferrer">Spotify</a> ·
+     <a href="https://youtube.com/@miragesohi" target="_blank" rel="noopener noreferrer">YouTube</a> ·
+     <a href="https://www.instagram.com/merajmirzaei_music" target="_blank" rel="noopener noreferrer">Instagram</a></p>
 </footer>
 
 <script>
