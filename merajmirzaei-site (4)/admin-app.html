@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Credits admin</title>
+<style>
+  :root{
+    --ink:#0B0D10; --panel:#14181D; --panel-2:#1B2027; --line:#262D36;
+    --brass:#C2A878; --text:#E7E4DE; --muted:#8B95A1;
+    --good:#7FBF7F; --bad:#e08585;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ink);color:var(--text);font-family:system-ui,sans-serif;font-size:13px}
+  header{position:sticky;top:0;z-index:10;background:rgba(11,13,16,.97);border-bottom:1px solid var(--line);
+    padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  header h1{font-size:15px;margin:0;font-weight:700;letter-spacing:.02em}
+  header .spacer{flex:1}
+  input[type=text], input[type=search]{background:var(--panel-2);border:1px solid var(--line);
+    color:var(--text);border-radius:4px;padding:6px 9px;font-size:13px}
+  button{font:inherit;cursor:pointer;border-radius:4px;border:1px solid var(--line);
+    background:var(--panel-2);color:var(--text);padding:7px 12px}
+  button:hover{border-color:var(--brass)}
+  button.primary{background:var(--brass);color:var(--ink);border-color:var(--brass);font-weight:700}
+  button.danger{color:var(--bad)}
+  button.small{padding:3px 8px;font-size:11px}
+  .msg{padding:8px 12px;border-radius:4px;font-size:13px;margin:0 16px}
+  .msg.ok{background:rgba(127,191,127,.12);color:var(--good);border:1px solid rgba(127,191,127,.3)}
+  .msg.err{background:rgba(224,133,133,.12);color:var(--bad);border:1px solid rgba(224,133,133,.3)}
+  .wrap{padding:16px;overflow-x:auto}
+  table{border-collapse:collapse;width:100%;min-width:1900px}
+  th, td{border:1px solid var(--line);padding:4px 6px;vertical-align:top;text-align:left}
+  th{background:var(--panel);position:sticky;top:53px;font-size:11px;text-transform:uppercase;
+    letter-spacing:.05em;color:var(--muted);white-space:nowrap;z-index:5}
+  td input[type=text], td input[type=number], td textarea, td select{
+    width:100%;background:var(--panel-2);border:1px solid transparent;color:var(--text);
+    border-radius:3px;padding:4px 5px;font-size:12px;font-family:inherit}
+  td input:focus, td textarea:focus, td select:focus{border-color:var(--brass);outline:none}
+  td textarea{resize:vertical;min-height:32px}
+  .col-narrow input{width:64px}
+  .col-check{text-align:center;width:36px}
+  .col-check input{width:auto}
+  .cover-cell{width:120px}
+  .cover-thumb{width:48px;height:48px;object-fit:cover;border-radius:3px;border:1px solid var(--line);
+    display:block;margin-bottom:4px;background:var(--panel-2)}
+  .links-list{display:flex;flex-direction:column;gap:3px;margin-bottom:4px;min-width:220px}
+  .link-row{display:flex;gap:3px}
+  .link-row input{font-size:11px}
+  .link-row input.label{width:38%}
+  .link-row input.url{flex:1}
+  tr.new-row{background:rgba(194,168,120,.06)}
+  .rowid{color:var(--muted);font-size:10px;white-space:nowrap}
+  footer{padding:16px;display:flex;gap:10px}
+  .hint{color:var(--muted);font-size:11px;margin-top:2px}
+  .upload-input{display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>Credits admin</h1>
+  <input type="search" id="filter" placeholder="Filter by artist or title…" style="width:220px">
+  <span class="spacer"></span>
+  <span id="dirtyFlag" class="hint" style="display:none">Unsaved changes</span>
+  <button id="saveBtn" class="primary">Save</button>
+  <form method="POST" action="/admin/logout"><button type="submit">Log out</button></form>
+</header>
+<div id="msg"></div>
+<div class="wrap">
+  <table id="table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Artist (EN)</th>
+        <th>Artist (FA)</th>
+        <th>Title (EN)</th>
+        <th>Title (FA)</th>
+        <th>Release type</th>
+        <th>Album</th>
+        <th class="col-narrow">Year</th>
+        <th>Label</th>
+        <th class="col-check">Arr.</th>
+        <th class="col-check">Prod.</th>
+        <th class="col-check">Mix</th>
+        <th class="col-check">Master</th>
+        <th>Links</th>
+        <th>Cover</th>
+        <th>MusicBrainz</th>
+        <th>Discogs</th>
+        <th>Genius</th>
+        <th>Notes</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+<footer>
+  <button id="addRowBtn">+ Add row</button>
+  <button id="saveBtn2" class="primary">Save</button>
+</footer>
+
+<script>
+(function(){
+  var RELEASE_TYPES = ['single', 'album track', 'album'];
+  var STATUS_VALUES = ['not started', 'pending', 'done'];
+
+  var state = { entries: [], sha: null, dirty: false };
+  window.__adminState = state; // testability hook only; not a security boundary
+
+  var tbody = document.getElementById('tbody');
+  var msgEl = document.getElementById('msg');
+  var filterEl = document.getElementById('filter');
+  var dirtyFlag = document.getElementById('dirtyFlag');
+
+  function showMsg(text, kind){
+    msgEl.innerHTML = '';
+    if(!text) return;
+    var div = document.createElement('div');
+    div.className = 'msg ' + kind;
+    div.textContent = text;
+    msgEl.appendChild(div);
+  }
+
+  function setDirty(v){
+    state.dirty = v;
+    dirtyFlag.style.display = v ? '' : 'none';
+  }
+
+  function esc(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function opt(value, current, label){
+    return '<option value="'+esc(value)+'"'+(value===current?' selected':'')+'>'+esc(label||value)+'</option>';
+  }
+
+  function blankEntry(){
+    return {
+      id: 'new-' + Date.now() + '-' + Math.random().toString(36).slice(2,7),
+      artist_en:'', artist_fa:'', title_en:'', title_fa:'',
+      release_type:'single', album_name:'', year:'', label:'',
+      role_arrangement:false, role_production:false, role_mix:false, role_mastering:false,
+      links: [], cover_url:'',
+      status_musicbrainz:'not started', status_discogs:'not started', status_genius:'not started',
+      notes:''
+    };
+  }
+
+  function renderLinks(entry, idx){
+    var html = '<div class="links-list">';
+    (entry.links||[]).forEach(function(l, li){
+      html += '<div class="link-row">'
+        + '<input class="label" type="text" placeholder="Label" value="'+esc(l.label)+'" data-idx="'+idx+'" data-li="'+li+'" data-field="link-label">'
+        + '<input class="url" type="text" placeholder="https://…" value="'+esc(l.url)+'" data-idx="'+idx+'" data-li="'+li+'" data-field="link-url">'
+        + '<button type="button" class="small danger" data-idx="'+idx+'" data-li="'+li+'" data-action="remove-link">×</button>'
+        + '</div>';
+    });
+    html += '</div><button type="button" class="small" data-idx="'+idx+'" data-action="add-link">+ link</button>';
+    return html;
+  }
+
+  function renderCover(entry, idx){
+    var thumb = entry.cover_url
+      ? '<img class="cover-thumb" src="'+esc(entry.cover_url)+'" onerror="this.style.opacity=0.2">'
+      : '<div class="cover-thumb"></div>';
+    return thumb
+      + '<input type="text" placeholder="Image URL or path" value="'+esc(entry.cover_url)+'" data-idx="'+idx+'" data-field="cover_url">'
+      + '<button type="button" class="small" data-idx="'+idx+'" data-action="upload-cover">Upload…</button>'
+      + '<input type="file" class="upload-input" accept="image/jpeg,image/png,image/webp" data-idx="'+idx+'">';
+  }
+
+  function renderRow(entry, idx){
+    var tr = document.createElement('tr');
+    if(String(entry.id||'').indexOf('new-') === 0) tr.className = 'new-row';
+    tr.innerHTML =
+      '<td class="rowid">'+esc(entry.id)+'</td>'
+      + '<td><input type="text" value="'+esc(entry.artist_en)+'" data-idx="'+idx+'" data-field="artist_en"></td>'
+      + '<td><input type="text" value="'+esc(entry.artist_fa)+'" data-idx="'+idx+'" data-field="artist_fa" dir="rtl"></td>'
+      + '<td><input type="text" value="'+esc(entry.title_en)+'" data-idx="'+idx+'" data-field="title_en"></td>'
+      + '<td><input type="text" value="'+esc(entry.title_fa)+'" data-idx="'+idx+'" data-field="title_fa" dir="rtl"></td>'
+      + '<td><select data-idx="'+idx+'" data-field="release_type">'
+        + RELEASE_TYPES.map(function(t){ return opt(t, entry.release_type); }).join('')
+        + '</select></td>'
+      + '<td><input type="text" value="'+esc(entry.album_name)+'" data-idx="'+idx+'" data-field="album_name"></td>'
+      + '<td class="col-narrow"><input type="text" value="'+esc(entry.year)+'" data-idx="'+idx+'" data-field="year"></td>'
+      + '<td><input type="text" value="'+esc(entry.label)+'" data-idx="'+idx+'" data-field="label"></td>'
+      + '<td class="col-check"><input type="checkbox" '+(entry.role_arrangement?'checked':'')+' data-idx="'+idx+'" data-field="role_arrangement"></td>'
+      + '<td class="col-check"><input type="checkbox" '+(entry.role_production?'checked':'')+' data-idx="'+idx+'" data-field="role_production"></td>'
+      + '<td class="col-check"><input type="checkbox" '+(entry.role_mix?'checked':'')+' data-idx="'+idx+'" data-field="role_mix"></td>'
+      + '<td class="col-check"><input type="checkbox" '+(entry.role_mastering?'checked':'')+' data-idx="'+idx+'" data-field="role_mastering"></td>'
+      + '<td>'+renderLinks(entry, idx)+'</td>'
+      + '<td class="cover-cell">'+renderCover(entry, idx)+'</td>'
+      + '<td><select data-idx="'+idx+'" data-field="status_musicbrainz">'
+        + STATUS_VALUES.map(function(v){ return opt(v, entry.status_musicbrainz); }).join('') + '</select></td>'
+      + '<td><select data-idx="'+idx+'" data-field="status_discogs">'
+        + STATUS_VALUES.map(function(v){ return opt(v, entry.status_discogs); }).join('') + '</select></td>'
+      + '<td><select data-idx="'+idx+'" data-field="status_genius">'
+        + STATUS_VALUES.map(function(v){ return opt(v, entry.status_genius); }).join('') + '</select></td>'
+      + '<td><textarea data-idx="'+idx+'" data-field="notes">'+esc(entry.notes)+'</textarea></td>'
+      + '<td><button type="button" class="small danger" data-idx="'+idx+'" data-action="delete-row">Delete</button></td>';
+    return tr;
+  }
+
+  function render(){
+    var q = (filterEl.value||'').trim().toLowerCase();
+    tbody.innerHTML = '';
+    state.entries.forEach(function(entry, idx){
+      if(q){
+        var hay = [entry.artist_en, entry.artist_fa, entry.title_en, entry.title_fa].join(' ').toLowerCase();
+        if(hay.indexOf(q) === -1) return;
+      }
+      tbody.appendChild(renderRow(entry, idx));
+    });
+  }
+
+  filterEl.addEventListener('input', render);
+  window.__adminRender = render; // testability hook only; not a security boundary
+
+  // Delegated input/change handling — avoids re-rendering (and losing focus)
+  // on every keystroke; only structural changes (add/remove row or link)
+  // trigger a re-render.
+  tbody.addEventListener('input', function(e){
+    var t = e.target;
+    var idx = t.getAttribute('data-idx');
+    var field = t.getAttribute('data-field');
+    if(idx == null || !field) return;
+    idx = Number(idx);
+    var entry = state.entries[idx];
+    if(!entry) return;
+    setDirty(true);
+    if(field === 'link-label' || field === 'link-url'){
+      var li = Number(t.getAttribute('data-li'));
+      if(!entry.links[li]) return;
+      entry.links[li][field === 'link-label' ? 'label' : 'url'] = t.value;
+      return;
+    }
+    if(t.type === 'checkbox'){ entry[field] = t.checked; return; }
+    entry[field] = t.value;
+    if(field === 'cover_url'){
+      var thumb = t.closest('td').querySelector('.cover-thumb');
+      if(thumb && thumb.tagName === 'IMG') thumb.src = t.value;
+    }
+  });
+
+  tbody.addEventListener('change', function(e){
+    var t = e.target;
+    if(t.tagName === 'SELECT'){
+      var idx = Number(t.getAttribute('data-idx'));
+      var field = t.getAttribute('data-field');
+      if(state.entries[idx]){ state.entries[idx][field] = t.value; setDirty(true); }
+    }
+    if(t.type === 'file'){
+      var idx2 = Number(t.getAttribute('data-idx'));
+      var file = t.files[0];
+      if(!file) return;
+      var allowed = {'image/jpeg':1,'image/png':1,'image/webp':1};
+      if(!allowed[file.type]){ showMsg('Unsupported image type. Use JPEG, PNG or WebP.', 'err'); return; }
+      if(file.size > 8*1024*1024){ showMsg('Image too large (max 8MB).', 'err'); return; }
+      var reader = new FileReader();
+      reader.onload = function(){
+        var base64 = reader.result.split(',')[1];
+        showMsg('Uploading image…', 'ok');
+        fetch('/admin/api/upload-image', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ filenameHint: state.entries[idx2].title_en || state.entries[idx2].artist_en, mime: file.type, contentBase64: base64 })
+        }).then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+          .then(function(res){
+            if(!res.ok){ showMsg('Upload failed: ' + (res.j.error||'unknown error'), 'err'); return; }
+            state.entries[idx2].cover_url = res.j.path;
+            setDirty(true);
+            showMsg('Image uploaded. Remember to Save.', 'ok');
+            render();
+          }).catch(function(err){ showMsg('Upload failed: ' + err.message, 'err'); });
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  tbody.addEventListener('click', function(e){
+    var t = e.target;
+    var action = t.getAttribute('data-action');
+    if(!action) return;
+    var idx = Number(t.getAttribute('data-idx'));
+    var entry = state.entries[idx];
+    if(!entry) return;
+    if(action === 'delete-row'){
+      if(!confirm('Delete this row? This only takes effect once you Save.')) return;
+      state.entries.splice(idx, 1);
+      setDirty(true);
+      render();
+    } else if(action === 'add-link'){
+      entry.links = entry.links || [];
+      entry.links.push({ label:'', url:'' });
+      setDirty(true);
+      render();
+    } else if(action === 'remove-link'){
+      var li = Number(t.getAttribute('data-li'));
+      entry.links.splice(li, 1);
+      setDirty(true);
+      render();
+    } else if(action === 'upload-cover'){
+      var input = t.parentElement.querySelector('.upload-input');
+      if(input) input.click();
+    }
+  });
+
+  document.getElementById('addRowBtn').addEventListener('click', function(){
+    state.entries.push(blankEntry());
+    setDirty(true);
+    render();
+    window.scrollTo(0, document.body.scrollHeight);
+  });
+
+  function save(){
+    showMsg('Saving…', 'ok');
+    fetch('/admin/api/save', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ content: state.entries, sha: state.sha })
+    }).then(function(r){ return r.json().then(function(j){ return {status:r.status, ok:r.ok, j:j}; }); })
+      .then(function(res){
+        if(!res.ok){
+          showMsg('Save failed: ' + (res.j.error || ('HTTP ' + res.status)), 'err');
+          return;
+        }
+        state.sha = res.j.sha || state.sha;
+        setDirty(false);
+        showMsg('Saved. Cloudflare will rebuild the site automatically (usually under a minute).', 'ok');
+      })
+      .catch(function(err){ showMsg('Save failed: ' + err.message, 'err'); });
+  }
+  document.getElementById('saveBtn').addEventListener('click', save);
+  document.getElementById('saveBtn2').addEventListener('click', save);
+
+  window.addEventListener('beforeunload', function(e){
+    if(state.dirty){ e.preventDefault(); e.returnValue = ''; }
+  });
+
+  // initial load
+  showMsg('Loading…', 'ok');
+  fetch('/admin/api/credits').then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+    .then(function(res){
+      if(!res.ok){ showMsg('Load failed: ' + (res.j.error||'unknown error'), 'err'); return; }
+      state.entries = res.j.data || [];
+      state.sha = res.j.sha;
+      showMsg('', '');
+      render();
+    })
+    .catch(function(err){ showMsg('Load failed: ' + err.message, 'err'); });
+})();
+</script>
+</body>
+</html>
