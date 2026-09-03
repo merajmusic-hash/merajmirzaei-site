@@ -1,13 +1,13 @@
 // Renders credits.html / releases.html (both languages) from
-// /data/credits.json. Each page sets window.__CREDITS_CONFIG__ = {
-//   lang: 'en' | 'fa', page: 'credits' | 'releases', mount: '#id'
-// } before loading this script. Markup shape and CSS classes are kept
-// identical to the previous hand-written HTML so the existing stylesheet
-// applies unchanged; only the data source moved from static HTML to JSON.
+// /data/credits.json as a grid of uniform track cards — one component
+// shared by both pages, so every card (client credit or MIRAGE release,
+// with or without audio) has identical structure and size. Each page sets
+// window.__CREDITS_CONFIG__ = { lang: 'en'|'fa', page: 'credits'|'releases',
+// mount: '#id' } before loading this script.
 //
 // Public pages only ever read these fields: artist_en/fa, title_en/fa,
-// release_type, links, cover_url. status_* and notes are admin-only and
-// are never touched here.
+// release_type, links, cover_url, role_*. status_* and notes are
+// admin-only and are never touched here.
 (function(){
   var cfg = window.__CREDITS_CONFIG__;
   if(!cfg) return;
@@ -53,10 +53,10 @@
   }
 
   // Links that are NOT the artist-profile link, NOT the page-level YouTube
-  // channel link, and NOT the playable Spotify/YouTube source render as
-  // ordinary "extra" buttons/links (e.g. a Telegram download), exactly like
-  // the Telegram link already did before this rewrite. All external, so
-  // always target=_blank.
+  // channel link, and NOT the playable Spotify/YouTube source render as an
+  // ordinary "extra" link (e.g. a Telegram download) attached to the card,
+  // exactly like the Telegram link already did before this rewrite. All
+  // external, so always target=_blank.
   function extraLinks(links){
     if(!Array.isArray(links)) return [];
     return links.filter(function(l){
@@ -74,142 +74,115 @@
     fa: { role_arrangement:'تنظیم', role_production:'پروداکشن', role_mix:'میکس', role_mastering:'مستر' },
   };
   var ROLE_ORDER = ['role_arrangement','role_production','role_mix','role_mastering'];
-  function roleLabel(entry){
+  function roleBadges(entry){
     var labels = ROLE_LABELS[lang];
-    var parts = ROLE_ORDER.filter(function(f){ return !!entry[f]; }).map(function(f){ return labels[f]; });
-    if(!parts.length) return '';
-    var sep = lang === 'fa' ? ' و ' : ' & ';
-    return parts.join(sep);
+    return ROLE_ORDER.filter(function(f){ return !!entry[f]; })
+      .map(function(f){ return '<span class="tc-role">'+esc(labels[f])+'</span>'; })
+      .join('');
   }
 
-  function groupByArtist(entries){
-    var order = [], byArtist = {};
-    entries.forEach(function(e){
-      var key = e.artist_en || '';
-      if(!byArtist[key]){ byArtist[key] = []; order.push(key); }
-      byArtist[key].push(e);
-    });
-    return order.map(function(key){ return { artist_en: key, entries: byArtist[key] }; });
+  var PENDING_TEXT = { en:'catalogue being verified', fa:'فهرست آثار در حال تأیید است' };
+
+  // Same fallback glyph already used for a broken cover image elsewhere on
+  // the site (see the onerror handler below), rendered directly here when
+  // an entry simply has no cover_url yet, so every card gets a same-size
+  // cover slot whether or not art exists.
+  function coverFallbackSvg(){
+    return '<svg class="thumb-fallback" viewBox="0 0 42 42" role="img" aria-label="No cover art available" xmlns="http://www.w3.org/2000/svg">'
+      + '<circle class="note-head" cx="17" cy="31" r="5.5"/>'
+      + '<rect class="note-stem" x="21" y="9" width="2.6" height="23" rx="1.3"/>'
+      + '<path class="note-flag" d="M23.6 9c5.5 1.2 8 5 6.8 10-1.1-3.4-3.6-5.2-6.8-6.2z"/>'
+      + '</svg>';
   }
 
-  // ---------------- credits.html ----------------
-  function renderCredits(entries){
-    var groups = groupByArtist(entries.filter(function(e){ return (e.artist_en||'').trim().toUpperCase() !== 'MIRAGE'; }));
-    var html = '';
-    groups.forEach(function(group, gi){
-      var first = group.entries[0];
-      var artistPrimary = lang === 'fa' ? first.artist_fa : first.artist_en;
-      var artistAlt = lang === 'fa' ? first.artist_en : first.artist_fa;
-      var artistLink = findLink(first.links, RE_SPOTIFY_ARTIST);
-      var chNum = lang === 'fa' ? faDigits(String(gi+1).padStart(2,'0')) : String(gi+1).padStart(2,'0');
-      var chLabel = lang === 'fa' ? 'کانال ' + chNum : 'CH ' + chNum;
+  // One card, identical structure whether or not the entry is playable —
+  // only the play button vs. an equal-size empty spacer differs.
+  function renderCard(entry){
+    var sp = spotifyPlayable(entry.links);
+    var yt = youtubeId(entry.links);
+    var playable = !!(sp && sp.kind === 'album');
+    var extras = extraLinks(entry.links);
+    var tg = extras[0];
 
-      var titled = group.entries.filter(function(e){ return e.title_en || e.title_fa; });
-      var role = roleLabel(first);
+    var artistPrimary = lang === 'fa' ? entry.artist_fa : entry.artist_en;
+    var artistAlt = lang === 'fa' ? entry.artist_en : entry.artist_fa;
+    var artistLink = findLink(entry.links, RE_SPOTIFY_ARTIST);
 
-      html += '<div class="channel" id="a'+(gi+1)+'">'
-        + '<div class="chline"><span class="ch">'+esc(chLabel)+'</span>'
-        + (role ? '<span class="role-tag">'+esc(role)+'</span>' : '')
-        + '</div>'
-        + (artistLink
-            ? '<a class="aname" href="'+esc(artistLink.url)+'" target="_blank" rel="noopener noreferrer">'+esc(artistPrimary)+'</a>'
-            : '<span class="aname">'+esc(artistPrimary)+'</span>')
-        + '<span class="aalt">'+esc(artistAlt)+'</span>'
-        + '<div class="tracks">';
+    var hasTitle = !!(entry.title_en || entry.title_fa);
+    var titlePrimary = hasTitle ? (lang === 'fa' ? entry.title_fa : entry.title_en) : PENDING_TEXT[lang];
+    var titleAlt = hasTitle ? (lang === 'fa' ? entry.title_en : entry.title_fa) : '';
+    var titlePrimaryClass = 'tc-title' + (hasTitle ? '' : ' tc-title-pending');
 
-      if(!titled.length){
-        html += lang === 'fa'
-          ? '<span class="pending">فهرست آثار در حال تأیید است</span>'
-          : '<span class="pending">catalogue being verified</span>';
-      } else {
-        titled.forEach(function(e){
-          var isAlbum = e.release_type === 'album track';
-          var sp = spotifyPlayable(e.links);
-          var primary = lang === 'fa' ? e.title_fa : e.title_en;
-          var alt = lang === 'fa' ? e.title_en : e.title_fa;
-          var primaryClass = lang === 'fa' ? 't-fa' : 't-main';
-          var altClass = lang === 'fa' ? 't-lat' : 't-sub';
+    var coverHtml = entry.cover_url
+      ? '<img class="tc-img" src="'+esc(entry.cover_url)+'" loading="lazy" alt="">'
+      : coverFallbackSvg();
 
-          if(sp && sp.kind === 'album'){
-            var embed = 'https://open.spotify.com/embed/album/'+sp.id+'?utm_source=generator&theme=0';
-            html += '<div class="trackwrap"><button class="track'+(isAlbum?' album':'')+' sp" type="button" '
-              + 'data-embed="'+esc(embed)+'" data-uri="spotify:album:'+esc(sp.id)+'" data-h="152" aria-expanded="false">'
-              + (e.cover_url ? '<img class="thumb" src="'+esc(e.cover_url)+'" loading="lazy" alt="">' : '')
-              + '<span class="'+primaryClass+'">'+esc(primary)+'</span>'
-              + '<span class="'+altClass+'">'+esc(alt)+'</span>'
-              + '<span class="play">▶</span></button><div class="player"></div></div>';
-          } else {
-            html += '<span class="track'+(isAlbum?' album':'')+'">'
-              + '<span class="'+primaryClass+'">'+esc(primary)+'</span>'
-              + '<span class="'+altClass+'">'+esc(alt)+'</span></span>';
-          }
-        });
-      }
-      html += '</div></div>';
-    });
-    mount.innerHTML = html;
+    var artistHtml = artistLink
+      ? '<a class="tc-artist" href="'+esc(artistLink.url)+'" target="_blank" rel="noopener noreferrer">'+esc(artistPrimary)+'</a>'
+      : '<span class="tc-artist">'+esc(artistPrimary)+'</span>';
 
-    var titledCount = groups.reduce(function(n, g){
-      return n + g.entries.filter(function(e){ return e.title_en || e.title_fa; }).length;
-    }, 0);
-    var statEl = document.getElementById('titlesCount');
-    if(statEl) statEl.textContent = lang === 'fa' ? faDigits(titledCount) : String(titledCount);
-  }
+    var bodyHtml = '<div class="tc-cover">'+coverHtml+'</div>'
+      + '<div class="tc-body">'
+      + artistHtml
+      + (artistAlt ? '<span class="tc-artist-alt">'+esc(artistAlt)+'</span>' : '')
+      + '<span class="'+titlePrimaryClass+'">'+esc(titlePrimary)+'</span>'
+      + (titleAlt ? '<span class="tc-title-alt">'+esc(titleAlt)+'</span>' : '')
+      + '<span class="tc-roles">'+roleBadges(entry)+'</span>'
+      + '</div>';
 
-  // ---------------- releases.html ----------------
-  function renderReleases(entries){
-    var mirage = entries.filter(function(e){ return (e.artist_en||'').trim().toUpperCase() === 'MIRAGE'; });
-    var rowsHtml = '';
-    mirage.forEach(function(e){
-      var sp = spotifyPlayable(e.links);
-      var yt = youtubeId(e.links);
-      var extras = extraLinks(e.links);
-      var tg = extras[0]; // first non-Spotify/YouTube link (e.g. Telegram)
-      var primary = lang === 'fa' ? e.title_fa : e.title_en;
-      var alt = lang === 'fa' ? e.title_en : e.title_fa;
-
-      var attrs = '';
-      if(sp && sp.kind === 'album'){
-        attrs += ' data-embed="'+esc('https://open.spotify.com/embed/album/'+sp.id+'?utm_source=generator&theme=0')+'"'
-          + ' data-uri="spotify:album:'+esc(sp.id)+'"';
-      }
-      attrs += ' data-h="152"';
-      if(yt) attrs += ' data-yt="'+esc(yt)+'"';
-      if(tg){
-        // Telegram gets the same localized-label treatment as Spotify/YouTube
-        // (detected by URL, not by stored label) so the existing button text
-        // is preserved exactly; any other free-form link uses its own
-        // admin-entered label as-is, since there's no per-language label field.
-        var isTelegram = /t\.me\//i.test(tg.url);
-        var tgLabel = isTelegram ? (lang==='fa'?'دانلود از تلگرام':'Download on Telegram') : (tg.label || tg.url);
-        attrs += ' data-tg="'+esc(tg.url)+'" data-tglabel="'+esc(tgLabel)+'"';
-      }
-
-      rowsHtml += '<div class="trackwrap"><button class="rel sp" type="button"'+attrs+' aria-expanded="false">'
-        + (e.cover_url ? '<img class="thumb big" src="'+esc(e.cover_url)+'" loading="lazy" alt="">' : '')
-        + '<div class="rmeta"><span class="rt">'+esc(primary)+'</span><span class="ra">'+esc(alt)+'</span></div>'
-        + '<span class="rm">'+esc(e.year||'')+'</span></button><div class="player"></div></div>';
-    });
-
-    var artistLink = null, channelLink = null;
-    for(var i=0;i<mirage.length && (!artistLink || !channelLink);i++){
-      artistLink = artistLink || findLink(mirage[i].links, RE_SPOTIFY_ARTIST);
-      channelLink = channelLink || findLink(mirage[i].links, RE_YOUTUBE_CHANNEL);
+    if(!playable){
+      return '<div class="trackcard-wrap"><div class="trackcard">'+bodyHtml+'<span class="tc-play-spacer" aria-hidden="true"></span></div></div>';
     }
-    var linkrowHtml = '';
-    if(artistLink) linkrowHtml += '<a class="btn" href="'+esc(artistLink.url)+'" target="_blank" rel="noopener noreferrer">Spotify</a>\n  ';
-    if(channelLink) linkrowHtml += '<a class="btn" href="'+esc(channelLink.url)+'" target="_blank" rel="noopener noreferrer">YouTube</a>';
 
-    mount.innerHTML = rowsHtml;
-    var linkrowMount = document.querySelector(cfg.linkrowMount);
-    if(linkrowMount) linkrowMount.innerHTML = linkrowHtml;
+    var attrs = ' data-embed="'+esc('https://open.spotify.com/embed/album/'+sp.id+'?utm_source=generator&theme=0')+'"'
+      + ' data-uri="spotify:album:'+esc(sp.id)+'" data-h="152"';
+    if(yt) attrs += ' data-yt="'+esc(yt)+'"';
+    if(tg){
+      // Telegram gets the same localized-label treatment as Spotify/YouTube
+      // (detected by URL, not by stored label) so the existing button text
+      // is preserved exactly; any other free-form link uses its own
+      // admin-entered label as-is, since there's no per-language label field.
+      var isTelegram = /t\.me\//i.test(tg.url);
+      var tgLabel = isTelegram ? (lang==='fa'?'دانلود از تلگرام':'Download on Telegram') : (tg.label || tg.url);
+      attrs += ' data-tg="'+esc(tg.url)+'" data-tglabel="'+esc(tgLabel)+'"';
+    }
+
+    return '<div class="trackcard-wrap"><button class="trackcard sp" type="button"'+attrs+' aria-expanded="false">'
+      + bodyHtml
+      + '<span class="tc-play play">▶</span>'
+      + '</button><div class="player"></div></div>';
+  }
+
+  function renderGrid(entries){
+    mount.innerHTML = entries.map(renderCard).join('');
   }
 
   fetch('/data/credits.json')
     .then(function(r){ return r.json(); })
     .then(function(data){
-      if(page === 'credits') renderCredits(data);
-      else if(page === 'releases') renderReleases(data);
+      var isMirage = function(e){ return (e.artist_en||'').trim().toUpperCase() === 'MIRAGE'; };
+
+      if(page === 'credits'){
+        var credits = data.filter(function(e){ return !isMirage(e); });
+        renderGrid(credits);
+        var titledCount = credits.filter(function(e){ return e.title_en || e.title_fa; }).length;
+        var statEl = document.getElementById('titlesCount');
+        if(statEl) statEl.textContent = lang === 'fa' ? faDigits(titledCount) : String(titledCount);
+      } else if(page === 'releases'){
+        var mirage = data.filter(isMirage);
+        renderGrid(mirage);
+
+        var artistLink = null, channelLink = null;
+        for(var i=0;i<mirage.length && (!artistLink || !channelLink);i++){
+          artistLink = artistLink || findLink(mirage[i].links, RE_SPOTIFY_ARTIST);
+          channelLink = channelLink || findLink(mirage[i].links, RE_YOUTUBE_CHANNEL);
+        }
+        var linkrowHtml = '';
+        if(artistLink) linkrowHtml += '<a class="btn" href="'+esc(artistLink.url)+'" target="_blank" rel="noopener noreferrer">Spotify</a>\n  ';
+        if(channelLink) linkrowHtml += '<a class="btn" href="'+esc(channelLink.url)+'" target="_blank" rel="noopener noreferrer">YouTube</a>';
+        var linkrowMount = document.querySelector(cfg.linkrowMount);
+        if(linkrowMount) linkrowMount.innerHTML = linkrowHtml;
+      }
       document.dispatchEvent(new CustomEvent('credits-rendered'));
     })
     .catch(function(err){
