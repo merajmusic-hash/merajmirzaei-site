@@ -410,6 +410,17 @@ export default {
     const { pathname } = url;
 
     try {
+      if (pathname === '/admin/__diag') {
+        // Temporary, unauthenticated-by-design diagnostic: reveals only
+        // whether each secret binding is present, never its value or
+        // length, so it's safe to leave reachable while debugging a
+        // "not configured" report. Remove once the secrets are confirmed
+        // wired up correctly.
+        return json({
+          hasAdminPassword: !!env.ADMIN_PASSWORD,
+          hasGithubToken: !!env.GITHUB_TOKEN,
+        });
+      }
       if (pathname === '/admin/login' && request.method === 'POST') {
         return await handleLoginPost(request, env);
       }
