@@ -1,13 +1,15 @@
-// Renders credits.html / releases.html (both languages) from
-// /data/credits.json as a grid of uniform track cards — one component
-// shared by both pages, so every card (client credit or MIRAGE release,
-// with or without audio) has identical structure and size. Each page sets
-// window.__CREDITS_CONFIG__ = { lang: 'en'|'fa', page: 'credits'|'releases',
-// mount: '#id' } before loading this script.
+// Renders credits.html / releases.html / the homepage artist wall (both
+// languages) from /data/credits.json. credits.html and releases.html share
+// one uniform track-card component, so every card (client credit or MIRAGE
+// release, with or without audio) has identical structure and size. The
+// homepage ('roster' page) renders a photo-tile grid of selected artists
+// instead. Each page sets window.__CREDITS_CONFIG__ = { lang: 'en'|'fa',
+// page: 'credits'|'releases'|'roster', mount: '#id' } before loading this
+// script.
 //
-// Public pages only ever read these fields: artist_en/fa, title_en/fa,
-// release_type, links, cover_url, role_*. status_* and notes are
-// admin-only and are never touched here.
+// Public pages only ever read these fields: artist_en/fa, artist_image,
+// title_en/fa, release_type, links, cover_url, role_*. status_* and notes
+// are admin-only and are never touched here.
 (function(){
   var cfg = window.__CREDITS_CONFIG__;
   if(!cfg) return;
@@ -19,6 +21,12 @@
     return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
     });
+  }
+
+  // Used both to build each artist tile's filter link on the homepage and
+  // to match the credits page's ?artist= query param back to an artist_en.
+  function slugify(s){
+    return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   }
 
   var FA_DIGITS = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
@@ -95,6 +103,53 @@
       + '</svg>';
   }
 
+  // The homepage's "Selected artists" photo wall — same curated set of
+  // artists the old plain-text roster linked to, keyed by their current
+  // artist_en spelling in credits.json.
+  var SELECTED_ARTISTS = [
+    'Googoosh', 'Kamyar', 'Mehrdad Asemani', 'Black Cats', 'Helen', 'Fataneh',
+    'Shahyad', 'Sahar', 'Salar Aghili', 'Reza Sadeghi', 'Amir Abbas Golab',
+    'Rastak', 'Ahmad Saeedi', 'Shahram Shokoohi', 'Arsalan', 'Milad J',
+  ];
+
+  // A tile's image is the artist's dedicated artist_image if any entry has
+  // one set (an override, for later), otherwise the cover_url of the first
+  // of their entries — in credits.json order — that has one. Artists with
+  // neither get a plain tinted tile.
+  function artistTileImage(entries){
+    for(var i=0;i<entries.length;i++){ if(entries[i].artist_image) return entries[i].artist_image; }
+    for(var i=0;i<entries.length;i++){ if(entries[i].cover_url) return entries[i].cover_url; }
+    return '';
+  }
+
+  function renderArtistTile(nameEn, entries){
+    var nameFa = entries[0].artist_fa || '';
+    var img = artistTileImage(entries);
+    var slug = slugify(nameEn);
+    var cls = 'aw-tile' + (img ? ' has-photo' : '');
+    var imgHtml = img ? '<img class="aw-img" src="'+esc(img)+'" loading="lazy" alt="">' : '';
+    var nameHtml = '<span class="aw-name"><span class="aw-en">'+esc(nameEn)+'</span>'
+      + (nameFa ? '<span class="aw-fa">'+esc(nameFa)+'</span>' : '') + '</span>';
+    return '<a class="'+cls+'" href="credits.html?artist='+slug+'">'+imgHtml+nameHtml+'</a>';
+  }
+
+  var MORE_TEXT = { en:'Full credit sheet →', fa:'کارنامه کامل ←' };
+
+  function renderArtistWall(data){
+    var byArtist = {};
+    data.forEach(function(e){
+      var key = (e.artist_en || '').trim();
+      if(!key || key.toUpperCase() === 'MIRAGE') return;
+      (byArtist[key] = byArtist[key] || []).push(e);
+    });
+    var html = SELECTED_ARTISTS
+      .filter(function(name){ return byArtist[name]; })
+      .map(function(name){ return renderArtistTile(name, byArtist[name]); })
+      .join('');
+    html += '<a class="aw-tile aw-more" href="credits.html">'+esc(MORE_TEXT[lang])+'</a>';
+    mount.innerHTML = html;
+  }
+
   // One card, identical structure whether or not the entry is playable —
   // only the play button vs. an equal-size empty spacer differs.
   function renderCard(entry){
@@ -164,10 +219,34 @@
 
       if(page === 'credits'){
         var credits = data.filter(function(e){ return !isMirage(e); });
-        renderGrid(credits);
+
+        // A tile on the homepage photo wall (or any other link) can carry
+        // ?artist=<slug> to narrow this page to just that artist, matched
+        // against artist_en the same way tile links are built.
+        var shown = credits;
+        var artistParam = null;
+        try{ artistParam = new URLSearchParams(location.search).get('artist'); }catch(e){}
+        var filterBar = document.querySelector(cfg.filterMount || '#filterBar');
+        if(artistParam){
+          var slug = artistParam.toLowerCase();
+          var matches = credits.filter(function(e){ return slugify(e.artist_en) === slug; });
+          if(matches.length){
+            shown = matches;
+            if(filterBar){
+              var label = filterBar.querySelector('.filterbar-label');
+              var name = lang === 'fa' ? matches[0].artist_fa : matches[0].artist_en;
+              if(label) label.textContent = (lang === 'fa' ? 'در حال نمایش: ' : 'Showing: ') + name;
+              filterBar.classList.add('show');
+            }
+          }
+        }
+
+        renderGrid(shown);
         var titledCount = credits.filter(function(e){ return e.title_en || e.title_fa; }).length;
         var statEl = document.getElementById('titlesCount');
         if(statEl) statEl.textContent = lang === 'fa' ? faDigits(titledCount) : String(titledCount);
+      } else if(page === 'roster'){
+        renderArtistWall(data);
       } else if(page === 'releases'){
         var mirage = data.filter(isMirage);
         renderGrid(mirage);
