@@ -45,7 +45,7 @@ body{margin:0;background:var(--ink);color:var(--text);font-family:var(--body);
   font-size:17px;line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 body.fa{font-family:var(--fa);direction:rtl}
 body.fa .mono,body.fa .eyebrow,body.fa .kicker,body.fa .nav a,
-body.fa .stat .l,body.fa .btn,body.fa .roster span,body.fa .roster a,
+body.fa .stat .l,body.fa .btn,
 body.fa .ch,body.fa .role-tag{font-family:var(--mono)}
 .wrap{width:100%;max-width:1080px;margin:0 auto;padding:0 var(--pad)}
 a{color:inherit}
@@ -114,16 +114,30 @@ section h2{font-family:var(--display);font-weight:800;
 body.fa section h2{font-family:var(--fa);letter-spacing:0;line-height:1.5}
 section p{max-width:64ch;color:#CFCBC4;margin:0 0 16px}
 
-/* roster plates */
-.roster{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
-.roster a,.roster span{font-family:var(--mono);font-size:11.5px;
-  letter-spacing:.09em;text-transform:uppercase;color:#B9B5AE;text-decoration:none;
-  border:1px solid var(--line);border-radius:2px;padding:9px 13px;white-space:nowrap;
-  transition:border-color .2s,color .2s}
-body.fa .roster a,body.fa .roster span{font-family:var(--fa);font-size:13px;
-  letter-spacing:0;text-transform:none}
-.roster a:hover{border-color:var(--brass);color:var(--brass)}
-.roster .more{color:var(--brass);border-color:rgba(194,168,120,.3)}
+/* artist photo wall */
+.artist-wall{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:22px}
+@media(min-width:640px){.artist-wall{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:960px){.artist-wall{grid-template-columns:repeat(4,1fr)}}
+.aw-tile{position:relative;display:block;aspect-ratio:1/1;border-radius:4px;overflow:hidden;
+  background:var(--panel);border:1px solid var(--line);text-decoration:none;
+  transition:border-color .2s}
+.aw-tile:hover{border-color:var(--brass)}
+.aw-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
+  transition:transform .35s}
+.aw-tile:hover .aw-img{transform:scale(1.05)}
+.aw-tile.has-photo::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(to top,rgba(11,13,16,.88) 0%,rgba(11,13,16,.4) 42%,transparent 68%)}
+.aw-name{position:absolute;left:11px;right:11px;bottom:10px;z-index:1;
+  display:flex;flex-direction:column;gap:1px}
+.aw-en{font-family:var(--display);font-weight:700;font-size:13px;line-height:1.25;
+  color:var(--text);direction:ltr;text-align:left}
+.aw-fa{font-family:var(--fa);font-size:12px;line-height:1.35;color:rgba(231,228,222,.72);
+  direction:rtl;text-align:left}
+.aw-more{display:flex;align-items:center;justify-content:center;text-align:center;
+  font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--brass);padding:14px;border-color:rgba(194,168,120,.3)}
+body.fa .aw-more{font-family:var(--fa);font-size:13px;letter-spacing:0;text-transform:none}
+.aw-more:hover{background:var(--panel-2)}
 
 .band{margin:34px 0 0}
 .band img{width:100%;display:block;border-radius:4px;border:1px solid var(--line)}
@@ -398,25 +412,7 @@ footer a:hover{color:var(--brass)}
 <div class="wrap">
 <section>
   <div class="rail"><p class="eyebrow">Selected artists</p><div class="ticks"></div><div class="peak"></div></div>
-  <div class="roster">
-    <a href="credits.html#a1">Googoosh</a>
-    <a href="credits.html#a2">Kamyar</a>
-    <a href="credits.html#a3">Mehrdad Asemani</a>
-    <a href="credits.html#a4">Black Cats</a>
-    <a href="credits.html#a5">Helen</a>
-    <a href="credits.html#a6">Fataneh</a>
-    <a href="credits.html#a7">Shahyad</a>
-    <a href="credits.html#a8">Sahar</a>
-    <a href="credits.html#a9">Salar Aghili</a>
-    <a href="credits.html#a10">Reza Sadeghi</a>
-    <a href="credits.html#a11">Amirabbas Golab</a>
-    <a href="credits.html#a12">Rastaak Hallaj</a>
-    <a href="credits.html#a13">Ahmad Saeedi</a>
-    <a href="credits.html#a14">Shahram Shokoohi</a>
-    <a href="credits.html#a15">Arsalan</a>
-    <a href="credits.html#a16">Milad J</a>
-    <a class="more" href="credits.html">Full credit sheet →</a>
-  </div>
+  <div class="artist-wall" id="artistWall"><p class="hint" style="padding:20px;color:var(--muted)">Loading artists…</p></div>
 </section>
 
 <section>
@@ -446,6 +442,8 @@ footer a:hover{color:var(--brass)}
 </div>
 </main>
 
+<script>window.__CREDITS_CONFIG__ = { lang: 'en', page: 'roster', mount: '#artistWall' };</script>
+<script src="/credits-render.js"></script>
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
 (function(){
@@ -497,14 +495,25 @@ footer a:hover{color:var(--brass)}
 </script>
 <script>
 (function(){
-  if(!document.querySelector('img.thumb')) return;
-  var svg = '<svg class="thumb{BIG} thumb-fallback" data-slug="{SLUG}" viewBox="0 0 42 42" role="img" aria-label="No cover art available" xmlns="http://www.w3.org/2000/svg"><circle class="note-head" cx="17" cy="31" r="5.5"/><rect class="note-stem" x="21" y="9" width="2.6" height="23" rx="1.3"/><path class="note-flag" d="M23.6 9c5.5 1.2 8 5 6.8 10-1.1-3.4-3.6-5.2-6.8-6.2z"/></svg>';
+  // No "is there an img.thumb/.tc-img/.aw-img on the page yet" early-exit
+  // guard here — covers and artist-wall photos render asynchronously after
+  // their credits.json fetch resolves, so at script-run time there's
+  // nothing to find yet even though images are coming.
+  var svg = '<svg class="thumb-fallback" viewBox="0 0 42 42" role="img" aria-label="No cover art available" xmlns="http://www.w3.org/2000/svg"><circle class="note-head" cx="17" cy="31" r="5.5"/><rect class="note-stem" x="21" y="9" width="2.6" height="23" rx="1.3"/><path class="note-flag" d="M23.6 9c5.5 1.2 8 5 6.8 10-1.1-3.4-3.6-5.2-6.8-6.2z"/></svg>';
   document.addEventListener('error', function(e){
     var img = e.target;
-    if(img.tagName !== 'IMG' || !img.classList.contains('thumb')) return;
-    var slug = (img.getAttribute('src') || '').replace(/^.*\//, '').replace(/\.jpg$/, '');
-    var big = img.classList.contains('big') ? ' big' : '';
-    img.outerHTML = svg.replace('{BIG}', big).replace('{SLUG}', slug);
+    if(img.tagName !== 'IMG') return;
+    if(img.classList.contains('thumb') || img.classList.contains('tc-img')){
+      img.outerHTML = svg;
+      return;
+    }
+    // A broken artist-wall photo falls back to the plain tinted tile look
+    // (no small icon makes sense over a full-bleed overlay-text tile).
+    if(img.classList.contains('aw-img')){
+      var tile = img.closest('.aw-tile');
+      if(tile) tile.classList.remove('has-photo');
+      img.remove();
+    }
   }, true);
 })();
 </script>

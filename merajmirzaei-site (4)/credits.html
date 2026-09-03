@@ -134,6 +134,16 @@ body.fa .roster a,body.fa .roster span{font-family:var(--fa);font-size:13px;
 .band{margin:34px 0 0}
 .band img{width:100%;display:block;border-radius:4px;border:1px solid var(--line)}
 
+/* artist-filter status, shown above the grid when arriving via ?artist= */
+.filterbar{display:none;align-items:center;gap:10px;margin-top:22px;
+  font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted)}
+.filterbar.show{display:flex}
+body.fa .filterbar{font-family:var(--fa);font-size:14px;letter-spacing:0;text-transform:none}
+.filterbar-clear{color:var(--brass);text-decoration:none;border-bottom:1px solid rgba(194,168,120,.4)}
+.filterbar-clear:hover{border-color:var(--brass)}
+.filterbar.show + .trackcard-grid{margin-top:12px}
+
 /* track cards — one unified component for every credit/release row,
    playable or not; only the play button vs. an equal-size empty spacer
    differs between them */
@@ -1312,6 +1322,7 @@ footer a:hover{color:var(--brass)}
   </div>
 </section>
 
+<div class="filterbar" id="filterBar"><span class="filterbar-label"></span><a class="filterbar-clear" href="credits.html">Show all →</a></div>
 <div class="trackcard-grid" id="creditsRoot"><p class="hint" style="padding:20px;color:var(--muted)">Loading credits…</p></div>
 
 <section style="border-bottom:none">
@@ -1320,7 +1331,7 @@ footer a:hover{color:var(--brass)}
 </section>
 </main>
 
-<script>window.__CREDITS_CONFIG__ = { lang: 'en', page: 'credits', mount: '#creditsRoot' };</script>
+<script>window.__CREDITS_CONFIG__ = { lang: 'en', page: 'credits', mount: '#creditsRoot', filterMount: '#filterBar' };</script>
 <script src="/credits-render.js"></script>
 <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
 <script src="https://www.youtube.com/iframe_api" async></script>

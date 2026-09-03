@@ -169,7 +169,7 @@ function base64FromUtf8(str) {
 
 const STRING_FIELDS = [
   'id', 'artist_en', 'artist_fa', 'title_en', 'title_fa', 'release_type',
-  'album_name', 'year', 'label', 'cover_url',
+  'album_name', 'year', 'label', 'cover_url', 'artist_image',
   'status_musicbrainz', 'status_discogs', 'status_genius', 'notes',
 ];
 const BOOL_FIELDS = ['role_arrangement', 'role_production', 'role_mix', 'role_mastering'];
