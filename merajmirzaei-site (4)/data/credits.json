@@ -2512,7 +2512,12 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "links": [],
+    "links": [
+      {
+        "label": "",
+        "url": "https://open.spotify.com/track/2OkSMbTs382b0uYCROb4BJ?si=d7e8114992cb49cf"
+      }
+    ],
     "start_seconds": "",
     "cover_url": "",
     "status_musicbrainz": "",
@@ -2540,9 +2545,14 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "links": [],
+    "links": [
+      {
+        "label": "",
+        "url": "https://rj.app/m/BqYYdzDq?sid=dd49d5c2c035c435"
+      }
+    ],
     "start_seconds": "",
-    "cover_url": "",
+    "cover_url": "https://www.navahang.com/images/2019/02/Majid-Rokni-Delkhoshi.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
     "status_genius": "",
