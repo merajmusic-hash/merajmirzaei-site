@@ -2451,7 +2451,12 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "links": [],
+    "links": [
+      {
+        "label": "",
+        "url": "https://open.spotify.com/album/7HP0e2eYfdCjyAGslJqkPZ?si=9VI2pPw5RBOL1xAyhfY7FQ"
+      }
+    ],
     "start_seconds": "",
     "cover_url": "",
     "status_musicbrainz": "",
