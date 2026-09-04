@@ -2832,5 +2832,31 @@
     "status_discogs": "",
     "status_genius": "",
     "notes": "credited on release cover; lyrics and music Rastaak, arrangement Farid Mohajerpour"
+  },
+  {
+    "id": "new-1788537823966-vnkd2",
+    "artist_en": "Meraj",
+    "artist_fa": "",
+    "title_en": "",
+    "title_fa": "",
+    "release_type": "single",
+    "album_name": "",
+    "year": "",
+    "label": "",
+    "role_arrangement": true,
+    "role_production": true,
+    "role_mix": true,
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "",
+        "url": "https://open.spotify.com/track/7e4zDInS6tA2jwzphvs2Ay?si=f6fc0534eb8f4766"
+      }
+    ],
+    "cover_url": "/images/covers/meraj-mtn5agrg.jpg",
+    "status_musicbrainz": "not started",
+    "status_discogs": "not started",
+    "status_genius": "not started",
+    "notes": ""
   }
 ]
