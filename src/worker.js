@@ -1,16 +1,16 @@
 // Static-asset passthrough for the public site, plus a password-gated
-// /admin panel for editing data/credits.json. The panel itself is server
-// rendered by this Worker (never a plain static asset) so it can enforce
-// the password check before any admin HTML/JS ever reaches the browser,
-// and its "Save" action commits straight to this repo's GitHub API using a
-// server-side token the browser never sees.
+// /admin panel for editing data/credits.json and data/homepage.json. The
+// panel itself is server rendered by this Worker (never a plain static
+// asset) so it can enforce the password check before any admin HTML/JS
+// ever reaches the browser, and its "Save" actions commit straight to this
+// repo's GitHub API using a server-side token the browser never sees.
 //
 // Required Cloudflare secrets (set via `wrangler secret put NAME`, or the
 // dashboard — never committed to this repo):
 //   ADMIN_PASSWORD  - the /admin login password
 //   GITHUB_TOKEN    - a GitHub token with Contents read/write on this repo
 //
-// Nothing else here is sensitive: repo owner/name/branch and the data path
+// Nothing else here is sensitive: repo owner/name/branch and the data paths
 // are plain constants below.
 
 const GITHUB_OWNER = 'merajmusic-hash';
@@ -20,6 +20,10 @@ const GITHUB_BRANCH = 'main';
 // inside the static-assets directory, so they're also served publicly at
 // /data/credits.json and /images/covers/<file> respectively.
 const DATA_PATH = 'merajmirzaei-site (4)/data/credits.json';
+// The homepage's "Selected artists" photo wall: an ordered list of
+// artist_en names, each of which must also have entries in credits.json to
+// actually render a tile (see credits-render.js's renderArtistWall).
+const HOMEPAGE_PATH = 'merajmirzaei-site (4)/data/homepage.json';
 const COVERS_DIR = 'merajmirzaei-site (4)/images/covers';
 
 const SESSION_COOKIE = 'mm_admin_session';
@@ -175,6 +179,7 @@ const STRING_FIELDS = [
 const BOOL_FIELDS = ['role_arrangement', 'role_production', 'role_mix', 'role_mastering'];
 const RELEASE_TYPES = new Set(['single', 'album track', 'album']);
 const STATUS_VALUES = new Set(['not started', 'pending', 'done']);
+const PAGE_VALUES = new Set(['credits', 'releases']);
 
 function validateEntries(data) {
   if (!Array.isArray(data)) return 'data must be an array';
@@ -192,6 +197,13 @@ function validateEntries(data) {
     for (const f of ['status_musicbrainz', 'status_discogs', 'status_genius']) {
       if (e[f] && !STATUS_VALUES.has(e[f])) return `entry ${i}: invalid ${f}`;
     }
+    if (e.order != null && typeof e.order !== 'number') return `entry ${i}: order must be a number`;
+    if (e.pages != null) {
+      if (!Array.isArray(e.pages)) return `entry ${i}: pages must be an array`;
+      for (const p of e.pages) {
+        if (typeof p !== 'string' || !PAGE_VALUES.has(p)) return `entry ${i}: invalid pages value "${p}"`;
+      }
+    }
     if (e.links != null) {
       if (!Array.isArray(e.links)) return `entry ${i}: links must be an array`;
       if (e.links.length > 50) return `entry ${i}: too many links`;
@@ -201,6 +213,18 @@ function validateEntries(data) {
         if (l.url && !/^https?:\/\//i.test(l.url)) return `entry ${i}: link url must be http(s)`;
       }
     }
+  }
+  return null;
+}
+
+function validateHomepage(data) {
+  if (!Array.isArray(data)) return 'data must be an array';
+  if (data.length > 500) return 'too many entries';
+  for (let i = 0; i < data.length; i++) {
+    const e = data[i];
+    if (!e || typeof e !== 'object') return `entry ${i} is not an object`;
+    if (typeof e.artist_en !== 'string' || !e.artist_en.trim()) return `entry ${i}: artist_en must be a non-empty string`;
+    if (e.order != null && typeof e.order !== 'number') return `entry ${i}: order must be a number`;
   }
   return null;
 }
@@ -343,6 +367,44 @@ async function handleSave(request, env) {
   }
 }
 
+async function handleGetHomepage(env) {
+  const file = await ghGetFile(env, HOMEPAGE_PATH);
+  if (!file) return json({ data: [], sha: null });
+  const content = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
+  let data;
+  try {
+    data = JSON.parse(content);
+  } catch (e) {
+    return json({ error: 'data/homepage.json is not valid JSON: ' + e.message }, 500);
+  }
+  return json({ data, sha: file.sha });
+}
+
+async function handleSaveHomepage(request, env) {
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== 'object') return json({ error: 'Invalid request body' }, 400);
+  const { content, sha } = body;
+  const invalid = validateHomepage(content);
+  if (invalid) return json({ error: invalid }, 400);
+
+  const text = JSON.stringify(content, null, 2) + '\n';
+  try {
+    const result = await ghPutFile(
+      env,
+      HOMEPAGE_PATH,
+      base64FromUtf8(text),
+      sha || undefined,
+      `Update homepage artist list via /admin`
+    );
+    return json({ ok: true, sha: result.content && result.content.sha });
+  } catch (e) {
+    if (e.status === 409) {
+      return json({ error: 'Someone else saved changes since you loaded this page. Reload and try again.' }, 409);
+    }
+    return json({ error: e.message || 'GitHub save failed' }, 502);
+  }
+}
+
 const ALLOWED_IMAGE_TYPES = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -396,6 +458,14 @@ async function routeAdminRequest(request, env, pathname) {
   if (pathname === '/admin/api/save' && request.method === 'POST') {
     if (!env.GITHUB_TOKEN) return json({ error: 'Admin not fully configured (missing GITHUB_TOKEN)' }, 503);
     return handleSave(request, env);
+  }
+  if (pathname === '/admin/api/homepage' && request.method === 'GET') {
+    if (!env.GITHUB_TOKEN) return json({ error: 'Admin not fully configured (missing GITHUB_TOKEN)' }, 503);
+    return handleGetHomepage(env);
+  }
+  if (pathname === '/admin/api/save-homepage' && request.method === 'POST') {
+    if (!env.GITHUB_TOKEN) return json({ error: 'Admin not fully configured (missing GITHUB_TOKEN)' }, 503);
+    return handleSaveHomepage(request, env);
   }
   if (pathname === '/admin/api/upload-image' && request.method === 'POST') {
     if (!env.GITHUB_TOKEN) return json({ error: 'Admin not fully configured (missing GITHUB_TOKEN)' }, 503);

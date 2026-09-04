@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Credits admin</title>
+<title>Site admin</title>
 <style>
   :root{
     --ink:#0B0D10; --panel:#14181D; --panel-2:#1B2027; --line:#262D36;
@@ -17,8 +17,9 @@
     padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
   header h1{font-size:15px;margin:0;font-weight:700;letter-spacing:.02em}
   header .spacer{flex:1}
-  input[type=text], input[type=search]{background:var(--panel-2);border:1px solid var(--line);
+  input[type=text], input[type=search], input[type=number]{background:var(--panel-2);border:1px solid var(--line);
     color:var(--text);border-radius:4px;padding:6px 9px;font-size:13px}
+  select{background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:4px;padding:6px 9px;font-size:13px}
   button{font:inherit;cursor:pointer;border-radius:4px;border:1px solid var(--line);
     background:var(--panel-2);color:var(--text);padding:7px 12px}
   button:hover{border-color:var(--brass)}
@@ -28,8 +29,14 @@
   .msg{padding:8px 12px;border-radius:4px;font-size:13px;margin:0 16px}
   .msg.ok{background:rgba(127,191,127,.12);color:var(--good);border:1px solid rgba(127,191,127,.3)}
   .msg.err{background:rgba(224,133,133,.12);color:var(--bad);border:1px solid rgba(224,133,133,.3)}
+
+  .tabs{display:flex;gap:4px}
+  .tab-btn{background:transparent;border-color:transparent;color:var(--muted)}
+  .tab-btn.active{background:var(--panel-2);border-color:var(--line);color:var(--text);font-weight:700}
+
   .wrap{padding:16px;overflow-x:auto}
   table{border-collapse:collapse;width:100%;min-width:1900px}
+  .homepage-table{min-width:640px}
   th, td{border:1px solid var(--line);padding:4px 6px;vertical-align:top;text-align:left}
   th{background:var(--panel);position:sticky;top:53px;font-size:11px;text-transform:uppercase;
     letter-spacing:.05em;color:var(--muted);white-space:nowrap;z-index:5}
@@ -41,6 +48,9 @@
   .col-narrow input{width:64px}
   .col-check{text-align:center;width:36px}
   .col-check input{width:auto}
+  .col-pages{text-align:center;width:56px;white-space:nowrap}
+  .col-pages label{display:inline-flex;align-items:center;gap:2px;font-size:10px;color:var(--muted);margin-right:4px}
+  .col-pages input{width:auto}
   .cover-cell{width:120px}
   .cover-thumb{width:48px;height:48px;object-fit:cover;border-radius:3px;border:1px solid var(--line);
     display:block;margin-bottom:4px;background:var(--panel-2)}
@@ -50,15 +60,41 @@
   .link-row input.label{width:38%}
   .link-row input.url{flex:1}
   tr.new-row{background:rgba(194,168,120,.06)}
+  tr.dragging{opacity:.35}
+  .artist-block.dragging{opacity:.35}
   .rowid{color:var(--muted);font-size:10px;white-space:nowrap}
-  footer{padding:16px;display:flex;gap:10px}
+  footer{padding:16px;display:flex;gap:10px;align-items:center}
   .hint{color:var(--muted);font-size:11px;margin-top:2px}
   .upload-input{display:none}
+
+  .drag-col{width:22px;text-align:center}
+  .drag-handle{cursor:grab;color:var(--muted);font-size:14px;user-select:none;touch-action:none}
+  .drag-handle:hover{color:var(--brass)}
+  .drag-disabled .drag-handle{visibility:hidden}
+
+  .artist-block{margin-bottom:14px;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .artist-block table{min-width:0}
+  .artist-block-header{display:flex;align-items:center;gap:8px;background:var(--panel);
+    padding:6px 10px;font-size:12px}
+  .artist-block-header .drag-handle{font-size:16px}
+  .artist-block-header .ab-name{font-weight:700}
+  .artist-block-header .ab-count{color:var(--muted)}
+  .filter-active-note{color:var(--muted);font-size:11px;margin:0 16px 8px}
+
+  .thumb-preview{width:32px;height:32px;object-fit:cover;border-radius:3px;border:1px solid var(--line);
+    display:inline-block;vertical-align:middle;background:var(--panel-2)}
+  tr.no-match td{background:rgba(224,133,133,.06)}
+  .add-artist-row{display:flex;gap:8px;align-items:center;padding:10px 16px}
 </style>
 </head>
 <body>
 <header>
-  <h1>Credits admin</h1>
+  <h1>Site admin</h1>
+  <div class="tabs" id="tabs">
+    <button type="button" class="tab-btn" data-tab="credits">Credits</button>
+    <button type="button" class="tab-btn" data-tab="releases">Releases</button>
+    <button type="button" class="tab-btn" data-tab="homepage">Homepage</button>
+  </div>
   <input type="search" id="filter" placeholder="Filter by artist or title…" style="width:220px">
   <span class="spacer"></span>
   <span id="dirtyFlag" class="hint" style="display:none">Unsaved changes</span>
@@ -66,35 +102,8 @@
   <form method="POST" action="/admin/logout"><button type="submit">Log out</button></form>
 </header>
 <div id="msg"></div>
-<div class="wrap">
-  <table id="table">
-    <thead>
-      <tr>
-        <th></th>
-        <th>Artist (EN)</th>
-        <th>Artist (FA)</th>
-        <th>Title (EN)</th>
-        <th>Title (FA)</th>
-        <th>Release type</th>
-        <th>Album</th>
-        <th class="col-narrow">Year</th>
-        <th>Label</th>
-        <th class="col-check">Arr.</th>
-        <th class="col-check">Prod.</th>
-        <th class="col-check">Mix</th>
-        <th class="col-check">Master</th>
-        <th>Links</th>
-        <th>Cover</th>
-        <th>MusicBrainz</th>
-        <th>Discogs</th>
-        <th>Genius</th>
-        <th>Notes</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody id="tbody"></tbody>
-  </table>
-</div>
+<div id="filterNote" class="filter-active-note" style="display:none">Reordering is disabled while a filter is active — clear the filter to drag rows.</div>
+<div class="wrap" id="wrap"></div>
 <footer>
   <button id="addRowBtn">+ Add row</button>
   <button id="saveBtn2" class="primary">Save</button>
@@ -105,13 +114,20 @@
   var RELEASE_TYPES = ['single', 'album track', 'album'];
   var STATUS_VALUES = ['not started', 'pending', 'done'];
 
-  var state = { entries: [], sha: null, dirty: false };
+  var state = {
+    entries: [], entriesSha: null, entriesDirty: false,
+    homepage: [], homepageSha: null, homepageDirty: false,
+    tab: 'credits',
+  };
   window.__adminState = state; // testability hook only; not a security boundary
 
-  var tbody = document.getElementById('tbody');
+  var wrap = document.getElementById('wrap');
   var msgEl = document.getElementById('msg');
   var filterEl = document.getElementById('filter');
+  var filterNote = document.getElementById('filterNote');
   var dirtyFlag = document.getElementById('dirtyFlag');
+  var tabsEl = document.getElementById('tabs');
+  var addRowBtn = document.getElementById('addRowBtn');
 
   function showMsg(text, kind){
     msgEl.innerHTML = '';
@@ -122,8 +138,8 @@
     msgEl.appendChild(div);
   }
 
-  function setDirty(v){
-    state.dirty = v;
+  function setDirty(){
+    var v = state.entriesDirty || state.homepageDirty;
     dirtyFlag.style.display = v ? '' : 'none';
   }
 
@@ -137,125 +153,525 @@
     return '<option value="'+esc(value)+'"'+(value===current?' selected':'')+'>'+esc(label||value)+'</option>';
   }
 
-  function blankEntry(){
+  function entryById(id){
+    for(var i=0;i<state.entries.length;i++){ if(state.entries[i].id === id) return state.entries[i]; }
+    return null;
+  }
+
+  function nextOrder(list){
+    var max = -1;
+    (list||[]).forEach(function(e){ if(typeof e.order === 'number' && e.order > max) max = e.order; });
+    return max + 1;
+  }
+
+  function blankEntry(pages){
     return {
       id: 'new-' + Date.now() + '-' + Math.random().toString(36).slice(2,7),
+      order: nextOrder(state.entries),
+      pages: pages.slice(),
       artist_en:'', artist_fa:'', title_en:'', title_fa:'',
       release_type:'single', album_name:'', year:'', label:'',
       role_arrangement:false, role_production:false, role_mix:false, role_mastering:false,
-      links: [], cover_url:'',
+      links: [], start_seconds:'', cover_url:'',
       status_musicbrainz:'not started', status_discogs:'not started', status_genius:'not started',
       notes:''
     };
   }
 
-  function renderLinks(entry, idx){
+  function hasPage(entry, name){
+    return Array.isArray(entry.pages) && entry.pages.indexOf(name) !== -1;
+  }
+  function setPage(entry, name, on){
+    var pages = Array.isArray(entry.pages) ? entry.pages.slice() : [];
+    var i = pages.indexOf(name);
+    if(on && i === -1) pages.push(name);
+    if(!on && i !== -1) pages.splice(i, 1);
+    entry.pages = pages;
+  }
+
+  // ---------------------------------------------------------------------
+  // shared entry-row rendering (Credits + Releases tabs)
+  // ---------------------------------------------------------------------
+
+  function renderLinks(entry){
     var html = '<div class="links-list">';
     (entry.links||[]).forEach(function(l, li){
       html += '<div class="link-row">'
-        + '<input class="label" type="text" placeholder="Label" value="'+esc(l.label)+'" data-idx="'+idx+'" data-li="'+li+'" data-field="link-label">'
-        + '<input class="url" type="text" placeholder="https://…" value="'+esc(l.url)+'" data-idx="'+idx+'" data-li="'+li+'" data-field="link-url">'
-        + '<button type="button" class="small danger" data-idx="'+idx+'" data-li="'+li+'" data-action="remove-link">×</button>'
+        + '<input class="label" type="text" placeholder="Label" value="'+esc(l.label)+'" data-id="'+esc(entry.id)+'" data-li="'+li+'" data-field="link-label">'
+        + '<input class="url" type="text" placeholder="https://…" value="'+esc(l.url)+'" data-id="'+esc(entry.id)+'" data-li="'+li+'" data-field="link-url">'
+        + '<button type="button" class="small danger" data-id="'+esc(entry.id)+'" data-li="'+li+'" data-action="remove-link">×</button>'
         + '</div>';
     });
-    html += '</div><button type="button" class="small" data-idx="'+idx+'" data-action="add-link">+ link</button>';
+    html += '</div><button type="button" class="small" data-id="'+esc(entry.id)+'" data-action="add-link">+ link</button>';
     return html;
   }
 
-  function renderCover(entry, idx){
+  function renderCover(entry){
     var thumb = entry.cover_url
       ? '<img class="cover-thumb" src="'+esc(entry.cover_url)+'" onerror="this.style.opacity=0.2">'
       : '<div class="cover-thumb"></div>';
     return thumb
-      + '<input type="text" placeholder="Image URL or path" value="'+esc(entry.cover_url)+'" data-idx="'+idx+'" data-field="cover_url">'
-      + '<button type="button" class="small" data-idx="'+idx+'" data-action="upload-cover">Upload…</button>'
-      + '<input type="file" class="upload-input" accept="image/jpeg,image/png,image/webp" data-idx="'+idx+'">';
+      + '<input type="text" placeholder="Image URL or path" value="'+esc(entry.cover_url)+'" data-id="'+esc(entry.id)+'" data-field="cover_url">'
+      + '<button type="button" class="small" data-id="'+esc(entry.id)+'" data-action="upload-cover">Upload…</button>'
+      + '<input type="file" class="upload-input" accept="image/jpeg,image/png,image/webp" data-id="'+esc(entry.id)+'">';
   }
 
-  function renderRow(entry, idx){
+  function renderEntryRow(entry){
     var tr = document.createElement('tr');
-    if(String(entry.id||'').indexOf('new-') === 0) tr.className = 'new-row';
+    tr.setAttribute('data-id', entry.id);
+    tr.className = String(entry.id||'').indexOf('new-') === 0 ? 'new-row' : '';
     tr.innerHTML =
-      '<td class="rowid">'+esc(entry.id)+'</td>'
-      + '<td><input type="text" value="'+esc(entry.artist_en)+'" data-idx="'+idx+'" data-field="artist_en"></td>'
-      + '<td><input type="text" value="'+esc(entry.artist_fa)+'" data-idx="'+idx+'" data-field="artist_fa" dir="rtl"></td>'
-      + '<td><input type="text" value="'+esc(entry.title_en)+'" data-idx="'+idx+'" data-field="title_en"></td>'
-      + '<td><input type="text" value="'+esc(entry.title_fa)+'" data-idx="'+idx+'" data-field="title_fa" dir="rtl"></td>'
-      + '<td><select data-idx="'+idx+'" data-field="release_type">'
+      '<td class="drag-col"><span class="drag-handle" draggable="true" data-role="track" title="Drag to reorder">⠿</span></td>'
+      + '<td class="rowid">'+esc(entry.id)+'</td>'
+      + '<td class="col-pages">'
+        + '<label title="Show on Credits page"><input type="checkbox" '+(hasPage(entry,'credits')?'checked':'')+' data-id="'+esc(entry.id)+'" data-field="page-credits">C</label>'
+        + '<label title="Show on Releases page"><input type="checkbox" '+(hasPage(entry,'releases')?'checked':'')+' data-id="'+esc(entry.id)+'" data-field="page-releases">R</label>'
+      + '</td>'
+      + '<td><input type="text" value="'+esc(entry.artist_en)+'" data-id="'+esc(entry.id)+'" data-field="artist_en"></td>'
+      + '<td><input type="text" value="'+esc(entry.artist_fa)+'" data-id="'+esc(entry.id)+'" data-field="artist_fa" dir="rtl"></td>'
+      + '<td><input type="text" value="'+esc(entry.title_en)+'" data-id="'+esc(entry.id)+'" data-field="title_en"></td>'
+      + '<td><input type="text" value="'+esc(entry.title_fa)+'" data-id="'+esc(entry.id)+'" data-field="title_fa" dir="rtl"></td>'
+      + '<td><select data-id="'+esc(entry.id)+'" data-field="release_type">'
         + RELEASE_TYPES.map(function(t){ return opt(t, entry.release_type); }).join('')
         + '</select></td>'
-      + '<td><input type="text" value="'+esc(entry.album_name)+'" data-idx="'+idx+'" data-field="album_name"></td>'
-      + '<td class="col-narrow"><input type="text" value="'+esc(entry.year)+'" data-idx="'+idx+'" data-field="year"></td>'
-      + '<td><input type="text" value="'+esc(entry.label)+'" data-idx="'+idx+'" data-field="label"></td>'
-      + '<td class="col-check"><input type="checkbox" '+(entry.role_arrangement?'checked':'')+' data-idx="'+idx+'" data-field="role_arrangement"></td>'
-      + '<td class="col-check"><input type="checkbox" '+(entry.role_production?'checked':'')+' data-idx="'+idx+'" data-field="role_production"></td>'
-      + '<td class="col-check"><input type="checkbox" '+(entry.role_mix?'checked':'')+' data-idx="'+idx+'" data-field="role_mix"></td>'
-      + '<td class="col-check"><input type="checkbox" '+(entry.role_mastering?'checked':'')+' data-idx="'+idx+'" data-field="role_mastering"></td>'
-      + '<td>'+renderLinks(entry, idx)+'</td>'
-      + '<td class="cover-cell">'+renderCover(entry, idx)+'</td>'
-      + '<td><select data-idx="'+idx+'" data-field="status_musicbrainz">'
+      + '<td><input type="text" value="'+esc(entry.album_name)+'" data-id="'+esc(entry.id)+'" data-field="album_name"></td>'
+      + '<td class="col-narrow"><input type="text" value="'+esc(entry.year)+'" data-id="'+esc(entry.id)+'" data-field="year"></td>'
+      + '<td><input type="text" value="'+esc(entry.label)+'" data-id="'+esc(entry.id)+'" data-field="label"></td>'
+      + '<td class="col-check"><input type="checkbox" '+(entry.role_arrangement?'checked':'')+' data-id="'+esc(entry.id)+'" data-field="role_arrangement"></td>'
+      + '<td class="col-check"><input type="checkbox" '+(entry.role_production?'checked':'')+' data-id="'+esc(entry.id)+'" data-field="role_production"></td>'
+      + '<td class="col-check"><input type="checkbox" '+(entry.role_mix?'checked':'')+' data-id="'+esc(entry.id)+'" data-field="role_mix"></td>'
+      + '<td class="col-check"><input type="checkbox" '+(entry.role_mastering?'checked':'')+' data-id="'+esc(entry.id)+'" data-field="role_mastering"></td>'
+      + '<td>'+renderLinks(entry)+'</td>'
+      + '<td class="col-narrow"><input type="text" placeholder="s" value="'+esc(entry.start_seconds)+'" data-id="'+esc(entry.id)+'" data-field="start_seconds"></td>'
+      + '<td class="cover-cell">'+renderCover(entry)+'</td>'
+      + '<td><select data-id="'+esc(entry.id)+'" data-field="status_musicbrainz">'
         + STATUS_VALUES.map(function(v){ return opt(v, entry.status_musicbrainz); }).join('') + '</select></td>'
-      + '<td><select data-idx="'+idx+'" data-field="status_discogs">'
+      + '<td><select data-id="'+esc(entry.id)+'" data-field="status_discogs">'
         + STATUS_VALUES.map(function(v){ return opt(v, entry.status_discogs); }).join('') + '</select></td>'
-      + '<td><select data-idx="'+idx+'" data-field="status_genius">'
+      + '<td><select data-id="'+esc(entry.id)+'" data-field="status_genius">'
         + STATUS_VALUES.map(function(v){ return opt(v, entry.status_genius); }).join('') + '</select></td>'
-      + '<td><textarea data-idx="'+idx+'" data-field="notes">'+esc(entry.notes)+'</textarea></td>'
-      + '<td><button type="button" class="small danger" data-idx="'+idx+'" data-action="delete-row">Delete</button></td>';
+      + '<td><textarea data-id="'+esc(entry.id)+'" data-field="notes">'+esc(entry.notes)+'</textarea></td>'
+      + '<td><button type="button" class="small danger" data-id="'+esc(entry.id)+'" data-action="delete-row">Delete</button></td>';
     return tr;
   }
 
-  function render(){
+  function entryHeaderCells(){
+    return '<th></th><th>ID</th><th>Pages</th><th>Artist (EN)</th><th>Artist (FA)</th>'
+      + '<th>Title (EN)</th><th>Title (FA)</th><th>Release type</th><th>Album</th>'
+      + '<th class="col-narrow">Year</th><th>Label</th>'
+      + '<th class="col-check">Arr.</th><th class="col-check">Prod.</th><th class="col-check">Mix</th><th class="col-check">Master</th>'
+      + '<th>Links</th><th class="col-narrow">Start (s)</th><th>Cover</th>'
+      + '<th>MusicBrainz</th><th>Discogs</th><th>Genius</th><th>Notes</th><th></th>';
+  }
+
+  function matchesFilter(entry, q){
+    if(!q) return true;
+    var hay = [entry.artist_en, entry.artist_fa, entry.title_en, entry.title_fa].join(' ').toLowerCase();
+    return hay.indexOf(q) !== -1;
+  }
+
+  // ---------------------------------------------------------------------
+  // Credits tab: grouped by artist_en, two-level drag & drop (artist
+  // blocks reorder relative to each other; tracks reorder within their
+  // own artist's block). Both levels are read back from one DOM walk, in
+  // recomputeCreditsOrder(), because block position IS group order and a
+  // track's position within its own block IS track order — the live
+  // credits page derives exactly this from entry.order (see
+  // renderCreditsGrouped in credits-render.js).
+  // ---------------------------------------------------------------------
+
+  function renderCreditsTab(){
     var q = (filterEl.value||'').trim().toLowerCase();
-    tbody.innerHTML = '';
-    state.entries.forEach(function(entry, idx){
-      if(q){
-        var hay = [entry.artist_en, entry.artist_fa, entry.title_en, entry.title_fa].join(' ').toLowerCase();
-        if(hay.indexOf(q) === -1) return;
-      }
-      tbody.appendChild(renderRow(entry, idx));
+    var filtering = !!q;
+    filterNote.style.display = filtering ? '' : 'none';
+
+    var visible = state.entries.filter(function(e){ return hasPage(e, 'credits'); }).sort(byOrder);
+    var order = [], byArtist = {};
+    visible.forEach(function(e){
+      var key = (e.artist_en || '').trim() || '(no artist)';
+      if(!byArtist[key]){ byArtist[key] = []; order.push(key); }
+      byArtist[key].push(e);
+    });
+
+    wrap.innerHTML = '';
+    var container = document.createElement('div');
+    container.id = 'creditsGroups';
+    order.forEach(function(name){
+      var members = byArtist[name];
+      var shown = members.filter(function(e){ return matchesFilter(e, q); });
+      if(filtering && shown.length === 0) return;
+
+      var block = document.createElement('div');
+      block.className = 'artist-block' + (filtering ? ' drag-disabled' : '');
+      block.setAttribute('data-artist', name);
+
+      var header = document.createElement('div');
+      header.className = 'artist-block-header';
+      header.innerHTML = '<span class="drag-handle" draggable="true" data-role="group" title="Drag to reorder this artist">⠿</span>'
+        + '<span class="ab-name">'+esc(name)+'</span>'
+        + '<span class="ab-count">('+members.length+(members.length===1?' track':' tracks')+')</span>';
+      block.appendChild(header);
+
+      var table = document.createElement('table');
+      table.innerHTML = '<thead><tr>'+entryHeaderCells()+'</tr></thead>';
+      var tbody = document.createElement('tbody');
+      tbody.className = 'track-rows';
+      (filtering ? shown : members).forEach(function(e){ tbody.appendChild(renderEntryRow(e)); });
+      table.appendChild(tbody);
+      block.appendChild(table);
+
+      container.appendChild(block);
+    });
+    wrap.appendChild(container);
+
+    if(!filtering){
+      attachTrackDnD(container);
+      attachGroupDnD(container);
+    }
+  }
+
+  function recomputeCreditsOrder(){
+    var n = 0;
+    document.querySelectorAll('#creditsGroups .artist-block').forEach(function(block){
+      block.querySelectorAll('.track-rows > tr').forEach(function(tr){
+        var entry = entryById(tr.getAttribute('data-id'));
+        if(entry) entry.order = n++;
+      });
+    });
+    state.entriesDirty = true;
+    setDirty();
+  }
+
+  // ---------------------------------------------------------------------
+  // Releases tab: flat sortable table, filtered to pages including
+  // 'releases' (no artist grouping — the live releases page is a flat
+  // grid, not an accordion).
+  // ---------------------------------------------------------------------
+
+  function renderReleasesTab(){
+    var q = (filterEl.value||'').trim().toLowerCase();
+    var filtering = !!q;
+    filterNote.style.display = filtering ? '' : 'none';
+
+    var visible = state.entries.filter(function(e){ return hasPage(e, 'releases'); }).sort(byOrder);
+    if(filtering) visible = visible.filter(function(e){ return matchesFilter(e, q); });
+
+    wrap.innerHTML = '';
+    var table = document.createElement('table');
+    table.innerHTML = '<thead><tr>'+entryHeaderCells()+'</tr></thead>';
+    var tbody = document.createElement('tbody');
+    tbody.id = 'releasesRows';
+    tbody.className = filtering ? 'drag-disabled' : '';
+    visible.forEach(function(e){ tbody.appendChild(renderEntryRow(e)); });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+
+    if(!filtering) attachFlatDnD(tbody, recomputeReleasesOrder);
+  }
+
+  function recomputeReleasesOrder(){
+    var n = 0;
+    document.querySelectorAll('#releasesRows > tr').forEach(function(tr){
+      var entry = entryById(tr.getAttribute('data-id'));
+      if(entry) entry.order = n++;
+    });
+    state.entriesDirty = true;
+    setDirty();
+  }
+
+  // ---------------------------------------------------------------------
+  // Homepage tab: flat sortable table of {artist_en, order} rows from
+  // data/homepage.json — a separate file, since a homepage tile is a
+  // property of the ARTIST, not of any one track/credit entry. Each row
+  // is cross-checked against state.entries so a name with no matching
+  // credits (which would silently render nothing on the live page) is
+  // flagged rather than failing invisibly.
+  // ---------------------------------------------------------------------
+
+  function creditedArtistNames(){
+    var seen = {}, names = [];
+    state.entries.forEach(function(e){
+      var name = (e.artist_en||'').trim();
+      if(name && !seen[name]){ seen[name] = true; names.push(name); }
+    });
+    names.sort(function(a,b){ return a.localeCompare(b); });
+    return names;
+  }
+
+  function artistPreview(name){
+    for(var i=0;i<state.entries.length;i++){
+      var e = state.entries[i];
+      if((e.artist_en||'').trim() !== name) continue;
+      var img = e.artist_image || e.cover_url;
+      if(img) return img;
+    }
+    return '';
+  }
+
+  function renderHomepageTab(){
+    var q = (filterEl.value||'').trim().toLowerCase();
+    var filtering = !!q;
+    filterNote.style.display = filtering ? '' : 'none';
+
+    var visible = state.homepage.slice().sort(byOrder);
+    if(filtering) visible = visible.filter(function(h){ return (h.artist_en||'').toLowerCase().indexOf(q) !== -1; });
+
+    wrap.innerHTML = '';
+    var table = document.createElement('table');
+    table.className = 'homepage-table';
+    table.innerHTML = '<thead><tr><th></th><th>Photo</th><th>Artist (EN)</th><th></th></tr></thead>';
+    var tbody = document.createElement('tbody');
+    tbody.id = 'homepageRows';
+    tbody.className = filtering ? 'drag-disabled' : '';
+    visible.forEach(function(h){
+      var tr = document.createElement('tr');
+      tr.setAttribute('data-oid', h._oid);
+      var img = artistPreview(h.artist_en);
+      var matched = !!img || state.entries.some(function(e){ return (e.artist_en||'').trim() === (h.artist_en||'').trim(); });
+      if(!matched) tr.className = 'no-match';
+      tr.innerHTML =
+        '<td class="drag-col"><span class="drag-handle" draggable="true" data-role="homepage" title="Drag to reorder">⠿</span></td>'
+        + '<td>'+(img ? '<img class="thumb-preview" src="'+esc(img)+'" onerror="this.style.opacity=0.2">' : '<span class="hint">no photo</span>')+'</td>'
+        + '<td><input type="text" value="'+esc(h.artist_en)+'" data-oid="'+esc(h._oid)+'" data-field="artist_en"'
+          + (matched ? '' : ' title="No matching credits entry — this tile won\'t appear on the live homepage">')+'</td>'
+        + '<td><button type="button" class="small danger" data-oid="'+esc(h._oid)+'" data-action="delete-homepage-row">Remove</button></td>';
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+
+    var addRow = document.createElement('div');
+    addRow.className = 'add-artist-row';
+    var already = {};
+    state.homepage.forEach(function(h){ already[(h.artist_en||'').trim()] = true; });
+    var candidates = creditedArtistNames().filter(function(n){ return !already[n]; });
+    addRow.innerHTML = '<select id="homepageAddSelect">'
+      + '<option value="">Choose an artist to add…</option>'
+      + candidates.map(function(n){ return opt(n, ''); }).join('')
+      + '</select>'
+      + '<button type="button" id="homepageAddBtn" class="small">+ Add to homepage</button>';
+    wrap.appendChild(addRow);
+    document.getElementById('homepageAddBtn').addEventListener('click', function(){
+      var sel = document.getElementById('homepageAddSelect');
+      var name = sel.value;
+      if(!name) return;
+      state.homepage.push({ _oid: homepageOid(), artist_en: name, order: nextOrder(state.homepage) });
+      state.homepageDirty = true;
+      setDirty();
+      render();
+    });
+
+    if(!filtering) attachFlatDnD(tbody, recomputeHomepageOrder);
+  }
+
+  function recomputeHomepageOrder(){
+    var n = 0;
+    document.querySelectorAll('#homepageRows > tr').forEach(function(tr){
+      var oid = tr.getAttribute('data-oid');
+      var h = state.homepage.filter(function(x){ return String(x._oid) === oid; })[0];
+      if(h) h.order = n++;
+    });
+    state.homepageDirty = true;
+    setDirty();
+  }
+
+  var homepageOidCounter = 0;
+  function homepageOid(){ return 'h' + (++homepageOidCounter); }
+
+  // ---------------------------------------------------------------------
+  // drag & drop — a dragged element's real DOM node is repositioned live
+  // on dragover (the classic vanilla "sortable list" trick), so by drop
+  // time the DOM already reflects the new order and in-progress input
+  // values in other rows are never disturbed.
+  // ---------------------------------------------------------------------
+
+  var dragSrc = null;
+
+  function rowMidpointBefore(e, el){
+    var rect = el.getBoundingClientRect();
+    return (e.clientY - rect.top) < rect.height / 2;
+  }
+
+  function attachFlatDnD(containerEl, onCommit){
+    containerEl.addEventListener('dragstart', function(e){
+      var handle = e.target.closest('.drag-handle');
+      if(!handle || !containerEl.contains(handle)) return;
+      dragSrc = handle.closest('tr');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', '');
+      dragSrc.classList.add('dragging');
+    });
+    containerEl.addEventListener('dragover', function(e){
+      if(!dragSrc) return;
+      var tr = e.target.closest('tr');
+      if(!tr || tr === dragSrc || tr.parentElement !== dragSrc.parentElement) return;
+      e.preventDefault();
+      var before = rowMidpointBefore(e, tr);
+      tr.parentElement.insertBefore(dragSrc, before ? tr : tr.nextSibling);
+    });
+    containerEl.addEventListener('drop', function(e){ if(dragSrc) e.preventDefault(); });
+    containerEl.addEventListener('dragend', function(){
+      if(!dragSrc) return;
+      dragSrc.classList.remove('dragging');
+      dragSrc = null;
+      onCommit();
     });
   }
 
-  filterEl.addEventListener('input', render);
+  function attachTrackDnD(containerEl){
+    containerEl.addEventListener('dragstart', function(e){
+      var handle = e.target.closest('.drag-handle[data-role="track"]');
+      if(!handle) return;
+      dragSrc = handle.closest('tr');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', '');
+      dragSrc.classList.add('dragging');
+      e.stopPropagation();
+    });
+    containerEl.addEventListener('dragover', function(e){
+      if(!dragSrc || dragSrc.tagName !== 'TR') return;
+      var tr = e.target.closest('tr');
+      if(!tr || tr === dragSrc || tr.parentElement !== dragSrc.parentElement) return;
+      e.preventDefault();
+      e.stopPropagation();
+      var before = rowMidpointBefore(e, tr);
+      tr.parentElement.insertBefore(dragSrc, before ? tr : tr.nextSibling);
+    });
+    containerEl.addEventListener('drop', function(e){ if(dragSrc && dragSrc.tagName === 'TR') e.preventDefault(); });
+    containerEl.addEventListener('dragend', function(){
+      if(!dragSrc || dragSrc.tagName !== 'TR') return;
+      dragSrc.classList.remove('dragging');
+      dragSrc = null;
+      recomputeCreditsOrder();
+    });
+  }
+
+  function attachGroupDnD(containerEl){
+    containerEl.addEventListener('dragstart', function(e){
+      var handle = e.target.closest('.drag-handle[data-role="group"]');
+      if(!handle) return;
+      dragSrc = handle.closest('.artist-block');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', '');
+      dragSrc.classList.add('dragging');
+    });
+    containerEl.addEventListener('dragover', function(e){
+      if(!dragSrc || !dragSrc.classList || !dragSrc.classList.contains('artist-block')) return;
+      var block = e.target.closest('.artist-block');
+      if(!block || block === dragSrc || block.parentElement !== dragSrc.parentElement) return;
+      e.preventDefault();
+      var before = rowMidpointBefore(e, block);
+      block.parentElement.insertBefore(dragSrc, before ? block : block.nextSibling);
+    });
+    containerEl.addEventListener('drop', function(e){
+      if(dragSrc && dragSrc.classList && dragSrc.classList.contains('artist-block')) e.preventDefault();
+    });
+    containerEl.addEventListener('dragend', function(){
+      if(!dragSrc || !dragSrc.classList || !dragSrc.classList.contains('artist-block')) return;
+      dragSrc.classList.remove('dragging');
+      dragSrc = null;
+      recomputeCreditsOrder();
+    });
+  }
+
+  function byOrder(a, b){ return (a.order||0) - (b.order||0); }
+
+  // ---------------------------------------------------------------------
+  // tabs + top-level render dispatch
+  // ---------------------------------------------------------------------
+
+  function render(){
+    if(state.tab === 'credits') renderCreditsTab();
+    else if(state.tab === 'releases') renderReleasesTab();
+    else renderHomepageTab();
+    Array.prototype.forEach.call(tabsEl.querySelectorAll('.tab-btn'), function(btn){
+      btn.classList.toggle('active', btn.getAttribute('data-tab') === state.tab);
+    });
+    addRowBtn.style.display = state.tab === 'homepage' ? 'none' : '';
+  }
   window.__adminRender = render; // testability hook only; not a security boundary
 
-  // Delegated input/change handling — avoids re-rendering (and losing focus)
-  // on every keystroke; only structural changes (add/remove row or link)
-  // trigger a re-render.
-  tbody.addEventListener('input', function(e){
+  tabsEl.addEventListener('click', function(e){
+    var btn = e.target.closest('.tab-btn');
+    if(!btn) return;
+    state.tab = btn.getAttribute('data-tab');
+    filterEl.value = '';
+    render();
+  });
+
+  filterEl.addEventListener('input', render);
+
+  // ---------------------------------------------------------------------
+  // delegated input/change/click handling on the whole wrap — id-addressed
+  // (not index-addressed), since the credits tab renders entries split
+  // across several artist-block tables rather than one flat tbody.
+  // ---------------------------------------------------------------------
+
+  wrap.addEventListener('input', function(e){
     var t = e.target;
-    var idx = t.getAttribute('data-idx');
+    var id = t.getAttribute('data-id');
     var field = t.getAttribute('data-field');
-    if(idx == null || !field) return;
-    idx = Number(idx);
-    var entry = state.entries[idx];
-    if(!entry) return;
-    setDirty(true);
-    if(field === 'link-label' || field === 'link-url'){
-      var li = Number(t.getAttribute('data-li'));
-      if(!entry.links[li]) return;
-      entry.links[li][field === 'link-label' ? 'label' : 'url'] = t.value;
+    if(id != null && field){
+      var entry = entryById(id);
+      if(!entry) return;
+      state.entriesDirty = true; setDirty();
+      if(field === 'link-label' || field === 'link-url'){
+        var li = Number(t.getAttribute('data-li'));
+        if(!entry.links[li]) return;
+        entry.links[li][field === 'link-label' ? 'label' : 'url'] = t.value;
+        return;
+      }
+      entry[field] = t.value;
+      if(field === 'cover_url'){
+        var thumb = t.closest('td').querySelector('.cover-thumb');
+        if(thumb && thumb.tagName === 'IMG') thumb.src = t.value;
+      }
       return;
     }
-    if(t.type === 'checkbox'){ entry[field] = t.checked; return; }
-    entry[field] = t.value;
-    if(field === 'cover_url'){
-      var thumb = t.closest('td').querySelector('.cover-thumb');
-      if(thumb && thumb.tagName === 'IMG') thumb.src = t.value;
+    var oid = t.getAttribute('data-oid');
+    var hfield = t.getAttribute('data-field');
+    if(oid != null && hfield === 'artist_en'){
+      var h = state.homepage.filter(function(x){ return String(x._oid) === oid; })[0];
+      if(!h) return;
+      h.artist_en = t.value;
+      state.homepageDirty = true; setDirty();
     }
   });
 
-  tbody.addEventListener('change', function(e){
+  // Regroup the credits tab as soon as an artist name edit is committed
+  // (blur), rather than on every keystroke — typing must never trigger a
+  // structural re-render (it would steal focus mid-edit), but leaving a
+  // renamed track sitting in its old artist's block indefinitely would be
+  // confusing, so the group boundary is refreshed the moment the field is
+  // no longer being actively typed into.
+  wrap.addEventListener('focusout', function(e){
     var t = e.target;
-    if(t.tagName === 'SELECT'){
-      var idx = Number(t.getAttribute('data-idx'));
-      var field = t.getAttribute('data-field');
-      if(state.entries[idx]){ state.entries[idx][field] = t.value; setDirty(true); }
+    if(state.tab === 'credits' && t.getAttribute && t.getAttribute('data-field') === 'artist_en'){
+      render();
+    }
+  }, true);
+
+  wrap.addEventListener('change', function(e){
+    var t = e.target;
+    var id = t.getAttribute('data-id');
+    var field = t.getAttribute('data-field');
+    if(id != null && field){
+      var entry = entryById(id);
+      if(!entry) return;
+      if(field === 'page-credits' || field === 'page-releases'){
+        setPage(entry, field === 'page-credits' ? 'credits' : 'releases', t.checked);
+        state.entriesDirty = true; setDirty();
+        render();
+        return;
+      }
+      if(t.tagName === 'SELECT'){ entry[field] = t.value; state.entriesDirty = true; setDirty(); return; }
+      if(t.type === 'checkbox'){ entry[field] = t.checked; state.entriesDirty = true; setDirty(); return; }
     }
     if(t.type === 'file'){
-      var idx2 = Number(t.getAttribute('data-idx'));
+      var fileId = t.getAttribute('data-id');
+      var entry2 = entryById(fileId);
       var file = t.files[0];
-      if(!file) return;
+      if(!file || !entry2) return;
       var allowed = {'image/jpeg':1,'image/png':1,'image/webp':1};
       if(!allowed[file.type]){ showMsg('Unsupported image type. Use JPEG, PNG or WebP.', 'err'); return; }
       if(file.size > 8*1024*1024){ showMsg('Image too large (max 8MB).', 'err'); return; }
@@ -266,12 +682,12 @@
         fetch('/admin/api/upload-image', {
           method: 'POST',
           headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ filenameHint: state.entries[idx2].title_en || state.entries[idx2].artist_en, mime: file.type, contentBase64: base64 })
+          body: JSON.stringify({ filenameHint: entry2.title_en || entry2.artist_en, mime: file.type, contentBase64: base64 })
         }).then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
           .then(function(res){
             if(!res.ok){ showMsg('Upload failed: ' + (res.j.error||'unknown error'), 'err'); return; }
-            state.entries[idx2].cover_url = res.j.path;
-            setDirty(true);
+            entry2.cover_url = res.j.path;
+            state.entriesDirty = true; setDirty();
             showMsg('Image uploaded. Remember to Save.', 'ok');
             render();
           }).catch(function(err){ showMsg('Upload failed: ' + err.message, 'err'); });
@@ -280,77 +696,126 @@
     }
   });
 
-  tbody.addEventListener('click', function(e){
+  wrap.addEventListener('click', function(e){
     var t = e.target;
     var action = t.getAttribute('data-action');
     if(!action) return;
-    var idx = Number(t.getAttribute('data-idx'));
-    var entry = state.entries[idx];
-    if(!entry) return;
     if(action === 'delete-row'){
+      var id = t.getAttribute('data-id');
+      var entry = entryById(id);
+      if(!entry) return;
       if(!confirm('Delete this row? This only takes effect once you Save.')) return;
-      state.entries.splice(idx, 1);
-      setDirty(true);
+      state.entries.splice(state.entries.indexOf(entry), 1);
+      state.entriesDirty = true; setDirty();
       render();
     } else if(action === 'add-link'){
-      entry.links = entry.links || [];
-      entry.links.push({ label:'', url:'' });
-      setDirty(true);
+      var id2 = t.getAttribute('data-id');
+      var entry2 = entryById(id2);
+      if(!entry2) return;
+      entry2.links = entry2.links || [];
+      entry2.links.push({ label:'', url:'' });
+      state.entriesDirty = true; setDirty();
       render();
     } else if(action === 'remove-link'){
+      var id3 = t.getAttribute('data-id');
+      var entry3 = entryById(id3);
+      if(!entry3) return;
       var li = Number(t.getAttribute('data-li'));
-      entry.links.splice(li, 1);
-      setDirty(true);
+      entry3.links.splice(li, 1);
+      state.entriesDirty = true; setDirty();
       render();
     } else if(action === 'upload-cover'){
       var input = t.parentElement.querySelector('.upload-input');
       if(input) input.click();
+    } else if(action === 'delete-homepage-row'){
+      var oid = t.getAttribute('data-oid');
+      state.homepage = state.homepage.filter(function(h){ return String(h._oid) !== oid; });
+      state.homepageDirty = true; setDirty();
+      render();
     }
   });
 
-  document.getElementById('addRowBtn').addEventListener('click', function(){
-    state.entries.push(blankEntry());
-    setDirty(true);
+  addRowBtn.addEventListener('click', function(){
+    var pages = state.tab === 'releases' ? ['releases'] : ['credits'];
+    state.entries.push(blankEntry(pages));
+    state.entriesDirty = true; setDirty();
     render();
     window.scrollTo(0, document.body.scrollHeight);
   });
 
+  // ---------------------------------------------------------------------
+  // save — independently tracks credits.json and homepage.json dirtiness
+  // and sha, since they're two separate files/commits on the GitHub side.
+  // ---------------------------------------------------------------------
+
   function save(){
+    var jobs = [];
+    if(state.entriesDirty){
+      jobs.push(
+        fetch('/admin/api/save', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ content: state.entries, sha: state.entriesSha })
+        }).then(function(r){ return r.json().then(function(j){ return {kind:'entries', ok:r.ok, j:j}; }); })
+      );
+    }
+    if(state.homepageDirty){
+      var payload = state.homepage.slice().sort(byOrder).map(function(h){ return { artist_en: h.artist_en, order: h.order }; });
+      jobs.push(
+        fetch('/admin/api/save-homepage', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ content: payload, sha: state.homepageSha })
+        }).then(function(r){ return r.json().then(function(j){ return {kind:'homepage', ok:r.ok, j:j}; }); })
+      );
+    }
+    if(!jobs.length){ showMsg('Nothing to save.', 'ok'); return; }
     showMsg('Saving…', 'ok');
-    fetch('/admin/api/save', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ content: state.entries, sha: state.sha })
-    }).then(function(r){ return r.json().then(function(j){ return {status:r.status, ok:r.ok, j:j}; }); })
-      .then(function(res){
-        if(!res.ok){
-          showMsg('Save failed: ' + (res.j.error || ('HTTP ' + res.status)), 'err');
-          return;
-        }
-        state.sha = res.j.sha || state.sha;
-        setDirty(false);
+    Promise.all(jobs).then(function(results){
+      var failed = results.filter(function(r){ return !r.ok; });
+      results.forEach(function(r){
+        if(!r.ok) return;
+        if(r.kind === 'entries'){ state.entriesSha = r.j.sha || state.entriesSha; state.entriesDirty = false; }
+        if(r.kind === 'homepage'){ state.homepageSha = r.j.sha || state.homepageSha; state.homepageDirty = false; }
+      });
+      setDirty();
+      if(failed.length){
+        showMsg('Save failed: ' + failed.map(function(r){ return r.j.error || 'unknown error'; }).join('; '), 'err');
+      } else {
         showMsg('Saved. Cloudflare will rebuild the site automatically (usually under a minute).', 'ok');
-      })
-      .catch(function(err){ showMsg('Save failed: ' + err.message, 'err'); });
+      }
+    }).catch(function(err){ showMsg('Save failed: ' + err.message, 'err'); });
   }
   document.getElementById('saveBtn').addEventListener('click', save);
   document.getElementById('saveBtn2').addEventListener('click', save);
 
   window.addEventListener('beforeunload', function(e){
-    if(state.dirty){ e.preventDefault(); e.returnValue = ''; }
+    if(state.entriesDirty || state.homepageDirty){ e.preventDefault(); e.returnValue = ''; }
   });
 
-  // initial load
+  // ---------------------------------------------------------------------
+  // initial load — credits.json and homepage.json load in parallel; each
+  // keeps its own sha for independent optimistic-concurrency saves.
+  // ---------------------------------------------------------------------
+
   showMsg('Loading…', 'ok');
-  fetch('/admin/api/credits').then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
-    .then(function(res){
-      if(!res.ok){ showMsg('Load failed: ' + (res.j.error||'unknown error'), 'err'); return; }
-      state.entries = res.j.data || [];
-      state.sha = res.j.sha;
-      showMsg('', '');
-      render();
-    })
-    .catch(function(err){ showMsg('Load failed: ' + err.message, 'err'); });
+  Promise.all([
+    fetch('/admin/api/credits').then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); }),
+    fetch('/admin/api/homepage').then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); }),
+  ]).then(function(results){
+    var creditsRes = results[0], homepageRes = results[1];
+    if(!creditsRes.ok){ showMsg('Load failed: ' + (creditsRes.j.error||'unknown error'), 'err'); return; }
+    state.entries = creditsRes.j.data || [];
+    state.entriesSha = creditsRes.j.sha;
+    if(homepageRes.ok){
+      state.homepage = (homepageRes.j.data || []).map(function(h){ return { _oid: homepageOid(), artist_en: h.artist_en, order: h.order }; });
+      state.homepageSha = homepageRes.j.sha;
+    } else {
+      showMsg('Homepage list failed to load: ' + (homepageRes.j.error||'unknown error'), 'err');
+    }
+    if(creditsRes.ok && homepageRes.ok) showMsg('', '');
+    render();
+  }).catch(function(err){ showMsg('Load failed: ' + err.message, 'err'); });
 })();
 </script>
 </body>

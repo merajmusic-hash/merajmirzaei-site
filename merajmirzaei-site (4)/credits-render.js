@@ -103,14 +103,7 @@
       + '</svg>';
   }
 
-  // The homepage's "Selected artists" photo wall — same curated set of
-  // artists the old plain-text roster linked to, keyed by their current
-  // artist_en spelling in credits.json.
-  var SELECTED_ARTISTS = [
-    'Googoosh', 'Kamyar', 'Mehrdad Asemani', 'Black Cats', 'Helen', 'Fataneh',
-    'Shahyad', 'Sahar', 'Salar Aghili', 'Reza Sadeghi', 'Amir Abbas Golab',
-    'Rastaak', 'Ahmad Saeedi', 'Shahram Shokoohi', 'Arsalan', 'Milad J',
-  ];
+  function byOrder(a, b){ return (a.order || 0) - (b.order || 0); }
 
   // A tile's image, in priority order: the artist's dedicated artist_image
   // (an override, for later) — then their Spotify artist photo, fetched
@@ -260,14 +253,20 @@
     return { order: order, byArtist: byArtist };
   }
 
-  function renderArtistWall(data){
+  // homepage: the ordered artist list from /data/homepage.json — each name
+  // still needs at least one matching credits.json entry to actually
+  // render a tile (for its photo/link data, and so a stale homepage.json
+  // row for a since-removed artist just quietly drops out).
+  function renderArtistWall(data, homepage){
     var byArtist = {};
     data.forEach(function(e){
       var key = (e.artist_en || '').trim();
-      if(!key || key.toUpperCase() === 'MIRAGE') return;
+      if(!key) return;
       (byArtist[key] = byArtist[key] || []).push(e);
     });
-    var artists = SELECTED_ARTISTS.filter(function(name){ return byArtist[name]; });
+    var artists = homepage.slice().sort(byOrder)
+      .map(function(h){ return (h.artist_en || '').trim(); })
+      .filter(function(name){ return name && byArtist[name]; });
 
     // Resolve every tile's final image before the first paint, so a tile
     // never flashes from cover art to a Spotify photo once the lookup
@@ -300,7 +299,11 @@
   function renderCard(entry){
     var sp = spotifyPlayable(entry.links);
     var yt = youtubeId(entry.links);
-    var playable = !!(sp && sp.kind === 'album');
+    // Both an album/single link (open.spotify.com/album/…) and a plain
+    // track link (open.spotify.com/track/…, what Spotify's own "Share"
+    // menu gives you for a single song) are playable — the embed and URI
+    // below just need to use whichever kind was actually found.
+    var playable = !!(sp && (sp.kind === 'album' || sp.kind === 'track'));
     var extras = extraLinks(entry.links);
     var tg = extras[0];
 
@@ -334,8 +337,8 @@
       return '<div class="trackcard-wrap"><div class="trackcard">'+bodyHtml+'<span class="tc-play-spacer" aria-hidden="true"></span></div></div>';
     }
 
-    var attrs = ' data-embed="'+esc('https://open.spotify.com/embed/album/'+sp.id+'?utm_source=generator&theme=0')+'"'
-      + ' data-uri="spotify:album:'+esc(sp.id)+'" data-h="152"';
+    var attrs = ' data-embed="'+esc('https://open.spotify.com/embed/'+sp.kind+'/'+sp.id+'?utm_source=generator&theme=0')+'"'
+      + ' data-uri="spotify:'+sp.kind+':'+esc(sp.id)+'" data-h="152"';
     if(yt) attrs += ' data-yt="'+esc(yt)+'"';
     if(entry.start_seconds !== undefined && entry.start_seconds !== null && String(entry.start_seconds).trim() !== ''){
       attrs += ' data-start="'+esc(String(entry.start_seconds))+'"';
@@ -360,13 +363,19 @@
     mount.innerHTML = entries.map(renderCard).join('');
   }
 
+  // Which of the two entry-list pages an entry belongs to is now an
+  // explicit, admin-editable property (entry.pages) rather than being
+  // inferred from the artist name — every entry that should appear
+  // anywhere carries 'credits' and/or 'releases' in this array.
+  function onPage(e, name){
+    return Array.isArray(e.pages) && e.pages.indexOf(name) !== -1;
+  }
+
   fetch('/data/credits.json')
     .then(function(r){ return r.json(); })
     .then(function(data){
-      var isMirage = function(e){ return (e.artist_en||'').trim().toUpperCase() === 'MIRAGE'; };
-
       if(page === 'credits'){
-        var credits = data.filter(function(e){ return !isMirage(e); });
+        var credits = data.filter(function(e){ return onPage(e, 'credits'); }).sort(byOrder);
         var grouped = renderCreditsGrouped(credits);
 
         // A tile on the homepage photo wall (or any other link) can carry
@@ -397,15 +406,18 @@
         var statEl = document.getElementById('titlesCount');
         if(statEl) statEl.textContent = lang === 'fa' ? faDigits(titledCount) : String(titledCount);
       } else if(page === 'roster'){
-        renderArtistWall(data);
+        fetch('/data/homepage.json')
+          .then(function(r){ return r.json(); })
+          .catch(function(){ return []; })
+          .then(function(homepage){ renderArtistWall(data, homepage || []); });
       } else if(page === 'releases'){
-        var mirage = data.filter(isMirage);
-        renderGrid(mirage);
+        var releases = data.filter(function(e){ return onPage(e, 'releases'); }).sort(byOrder);
+        renderGrid(releases);
 
         var artistLink = null, channelLink = null;
-        for(var i=0;i<mirage.length && (!artistLink || !channelLink);i++){
-          artistLink = artistLink || findLink(mirage[i].links, RE_SPOTIFY_ARTIST);
-          channelLink = channelLink || findLink(mirage[i].links, RE_YOUTUBE_CHANNEL);
+        for(var i=0;i<releases.length && (!artistLink || !channelLink);i++){
+          artistLink = artistLink || findLink(releases[i].links, RE_SPOTIFY_ARTIST);
+          channelLink = channelLink || findLink(releases[i].links, RE_YOUTUBE_CHANNEL);
         }
         var linkrowHtml = '';
         if(artistLink) linkrowHtml += '<a class="btn" href="'+esc(artistLink.url)+'" target="_blank" rel="noopener noreferrer">Spotify</a>\n  ';
