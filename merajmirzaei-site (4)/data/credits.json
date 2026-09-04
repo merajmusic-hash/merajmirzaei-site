@@ -633,91 +633,12 @@
     "role_production": true,
     "role_mix": true,
     "role_mastering": true,
-    "links": [],
-    "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "Composer Mehrdad Asemani, except Bahaneh by Aref Ghazvini"
-  },
-  {
-    "id": "mehrdad-asemani-geryeh",
-    "order": 12,
-    "pages": [
-      "credits"
+    "links": [
+      {
+        "label": "",
+        "url": "https://open.spotify.com/track/5aih4hi7pGYsgeBbS17w3S?si=7a676ef76b5f440b"
+      }
     ],
-    "artist_en": "Mehrdad Asemani",
-    "artist_fa": "مهرداد آسمانی",
-    "artist_image": "/images/artists/mehrdad-asemani.jpg",
-    "spotify_artist_url": "https://open.spotify.com/artist/2LsYQSGGqUcRgY9NKXCYsM",
-    "title_en": "Geryeh",
-    "title_fa": "گریه",
-    "release_type": "album track",
-    "album_name": "Range Eshgh",
-    "year": "2018",
-    "label": "",
-    "role_arrangement": true,
-    "role_production": true,
-    "role_mix": true,
-    "role_mastering": true,
-    "links": [],
-    "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "Composer Mehrdad Asemani, except Bahaneh by Aref Ghazvini"
-  },
-  {
-    "id": "mehrdad-asemani-deltangi",
-    "order": 13,
-    "pages": [
-      "credits"
-    ],
-    "artist_en": "Mehrdad Asemani",
-    "artist_fa": "مهرداد آسمانی",
-    "artist_image": "/images/artists/mehrdad-asemani.jpg",
-    "spotify_artist_url": "https://open.spotify.com/artist/2LsYQSGGqUcRgY9NKXCYsM",
-    "title_en": "Deltangi",
-    "title_fa": "دلتنگی",
-    "release_type": "album track",
-    "album_name": "Range Eshgh",
-    "year": "2018",
-    "label": "",
-    "role_arrangement": true,
-    "role_production": true,
-    "role_mix": true,
-    "role_mastering": true,
-    "links": [],
-    "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "Composer Mehrdad Asemani, except Bahaneh by Aref Ghazvini"
-  },
-  {
-    "id": "mehrdad-asemani-dige-nemikhamet",
-    "order": 14,
-    "pages": [
-      "credits"
-    ],
-    "artist_en": "Mehrdad Asemani",
-    "artist_fa": "مهرداد آسمانی",
-    "artist_image": "/images/artists/mehrdad-asemani.jpg",
-    "spotify_artist_url": "https://open.spotify.com/artist/2LsYQSGGqUcRgY9NKXCYsM",
-    "title_en": "Dige Nemikhamet",
-    "title_fa": "دیگه نمی‌خوامت",
-    "release_type": "album track",
-    "album_name": "Range Eshgh",
-    "year": "2018",
-    "label": "",
-    "role_arrangement": true,
-    "role_production": true,
-    "role_mix": true,
-    "role_mastering": true,
-    "links": [],
     "start_seconds": "",
     "cover_url": "",
     "status_musicbrainz": "",
@@ -745,9 +666,14 @@
     "role_production": true,
     "role_mix": true,
     "role_mastering": true,
-    "links": [],
+    "links": [
+      {
+        "label": "",
+        "url": "https://open.spotify.com/track/4EtLXsY1ZzoOtwN76t9cvA?si=4492955c7d8e435e"
+      }
+    ],
     "start_seconds": "",
-    "cover_url": "",
+    "cover_url": "https://open.spotify.com/track/4EtLXsY1ZzoOtwN76t9cvA?si=4492955c7d8e435e",
     "status_musicbrainz": "",
     "status_discogs": "",
     "status_genius": "",
@@ -773,9 +699,14 @@
     "role_production": true,
     "role_mix": true,
     "role_mastering": true,
-    "links": [],
+    "links": [
+      {
+        "label": "",
+        "url": "https://open.spotify.com/track/4ygYGInq1r3FFqN17xeFg6?si=f7fd88e0b4264e08"
+      }
+    ],
     "start_seconds": "",
-    "cover_url": "",
+    "cover_url": "https://open.spotify.com/track/4ygYGInq1r3FFqN17xeFg6?si=f7fd88e0b4264e08",
     "status_musicbrainz": "",
     "status_discogs": "",
     "status_genius": "",
@@ -798,7 +729,7 @@
     "year": "",
     "label": "",
     "role_arrangement": true,
-    "role_production": false,
+    "role_production": true,
     "role_mix": true,
     "role_mastering": true,
     "links": [
@@ -918,9 +849,14 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "links": [],
+    "links": [
+      {
+        "label": "",
+        "url": "https://open.spotify.com/track/7fHVU6Vc20cYtDU9GGug5Q?si=06f693a7f8684f6f"
+      }
+    ],
     "start_seconds": "",
-    "cover_url": "",
+    "cover_url": "https://open.spotify.com/track/7fHVU6Vc20cYtDU9GGug5Q?si=06f693a7f8684f6f",
     "status_musicbrainz": "",
     "status_discogs": "",
     "status_genius": "",
