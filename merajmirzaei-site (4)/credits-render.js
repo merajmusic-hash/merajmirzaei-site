@@ -337,6 +337,9 @@
     var attrs = ' data-embed="'+esc('https://open.spotify.com/embed/album/'+sp.id+'?utm_source=generator&theme=0')+'"'
       + ' data-uri="spotify:album:'+esc(sp.id)+'" data-h="152"';
     if(yt) attrs += ' data-yt="'+esc(yt)+'"';
+    if(entry.start_seconds !== undefined && entry.start_seconds !== null && String(entry.start_seconds).trim() !== ''){
+      attrs += ' data-start="'+esc(String(entry.start_seconds))+'"';
+    }
     if(tg){
       // Telegram gets the same localized-label treatment as Spotify/YouTube
       // (detected by URL, not by stored label) so the existing button text

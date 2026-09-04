@@ -324,12 +324,16 @@ footer a:hover{color:var(--brass)}
 <script src="https://www.youtube.com/iframe_api" async></script>
 <script>
 (function(){
-  // One shared EmbedController per page: reused across tracks via
-  // loadUri()+play() so playback starts synchronously inside the click
-  // handler that created it, instead of waiting on a fresh iframe's async
-  // 'ready' event (which is what made the very first click-to-open,
-  // click-to-play two separate steps).
-  var API = null, controller = null, playerHost = null, activeBtn = null;
+  // A fresh EmbedController is created for every track click and the
+  // previous one is destroyed. Reusing a single controller via loadUri()
+  // silently no-ops on any click after the first: loadUri() is async with
+  // no documented 'ready'-again event, so a play() called right after it
+  // can fire before the new URI has actually loaded. Recreating the
+  // controller each time reuses the exact code path that already works
+  // reliably for the very first click. loadSeq guards against a stale
+  // controller (from a track the user already moved on from) winning the
+  // race and hijacking playback once its createController callback lands.
+  var API = null, controller = null, playerHost = null, activeBtn = null, loadSeq = 0;
   window.onSpotifyIframeApiReady = function(IFrameAPI){ API = IFrameAPI; };
 
   // Same approach for video: one shared YT.Player, reused across rows via
@@ -348,9 +352,9 @@ footer a:hover{color:var(--brass)}
   var YTReady = false, ytPlayer = null, ytPlayerReady = false, ytVidTop = null, ytHost = null, desiredVideoId = null;
   window.onYouTubeIframeAPIReady = function(){ YTReady = true; };
 
-  // A row's shared player/video elements are moved here (not destroyed)
-  // when that row closes, so reopening any row reuses the same live
-  // controller/player instead of recreating it.
+  // The shared video element is moved here (not destroyed) when a row
+  // closes, so reopening any row reuses the same live YT.Player instead of
+  // recreating it.
   var parkingLot = null;
   function park(el){
     if(!parkingLot){
@@ -368,7 +372,9 @@ footer a:hover{color:var(--brass)}
   function clearExtras(b){
     var box = b.nextElementSibling;
     if(!box) return;
-    if(playerHost && playerHost.parentNode === box) park(playerHost);
+    // playerHost isn't parked for reuse: its controller is destroyed
+    // whenever a track closes or switches, so the host itself is disposable.
+    if(playerHost && playerHost.parentNode === box) box.removeChild(playerHost);
     if(ytVidTop && ytVidTop.parentNode === box) park(ytVidTop);
     var dl = box.querySelector('.tg'); if(dl) dl.remove();
     var legacy = box.querySelector('.spslot'); if(legacy) legacy.remove();
@@ -378,6 +384,8 @@ footer a:hover{color:var(--brass)}
   // releases: video sits above the audio player, download link below
   function addExtras(b, box, refNode){
     if(!b.dataset.yt) return;
+
+    var ytStart = parseFloat(b.dataset.start) || 0;
 
     if(YTReady){
       if(!ytVidTop){
@@ -394,14 +402,14 @@ footer a:hover{color:var(--brass)}
       if(!ytPlayer){
         ytPlayer = new YT.Player(ytHost, {
           videoId: b.dataset.yt,
-          playerVars: { rel: 0, playsinline: 1 },
+          playerVars: { rel: 0, playsinline: 1, start: ytStart || undefined },
           events: { onReady: function(e){
             ytPlayerReady = true;
-            try{ e.target.loadVideoById(desiredVideoId); e.target.playVideo(); }catch(err){}
+            try{ e.target.loadVideoById({ videoId: desiredVideoId, startSeconds: ytStart }); e.target.playVideo(); }catch(err){}
           } }
         });
       }else if(ytPlayerReady){
-        try{ ytPlayer.loadVideoById(desiredVideoId); ytPlayer.playVideo(); }catch(err){}
+        try{ ytPlayer.loadVideoById({ videoId: desiredVideoId, startSeconds: ytStart }); ytPlayer.playVideo(); }catch(err){}
       }
       // else: the player exists but hasn't fired 'ready' yet. desiredVideoId
       // is already updated above, so the still-pending onReady handler above
@@ -412,7 +420,9 @@ footer a:hover{color:var(--brass)}
       vid.className = 'vidtop';
       vid.innerHTML =
         '<div class="ytwrap"><iframe src="https://www.youtube.com/embed/'
-        + b.dataset.yt + '?rel=0&playsinline=1&autoplay=1&mute=0" title="video" '
+        + b.dataset.yt + '?rel=0&playsinline=1&autoplay=1&mute=0'
+        + (ytStart ? '&start=' + encodeURIComponent(ytStart) : '')
+        + '" title="video" '
         + 'allow="accelerometer; autoplay; clipboard-write; encrypted-media; '
         + 'gyroscope; picture-in-picture" allowfullscreen></iframe></div>';
       box.insertBefore(vid, refNode);
@@ -435,10 +445,16 @@ footer a:hover{color:var(--brass)}
     var icon = b.querySelector('.play'); if(icon) icon.textContent = '▶';
   }
 
+  function destroyController(){
+    loadSeq++; // invalidate any in-flight createController callback
+    if(controller){ try{ controller.destroy(); }catch(err){} controller = null; }
+  }
+
   function openWithController(b){
     var box = b.nextElementSibling;
-    if(!playerHost) playerHost = document.createElement('div');
     clearExtras(b);
+    destroyController();
+    playerHost = document.createElement('div');
     box.appendChild(playerHost);
     addExtras(b, box, playerHost);
     markActive(b);
@@ -446,20 +462,22 @@ footer a:hover{color:var(--brass)}
 
     // releases rows autoplay their video instead; don't also start audio.
     var shouldPlay = !b.dataset.yt;
+    var startSeconds = parseFloat(b.dataset.start) || 0;
+    var mySeq = loadSeq;
 
-    if(!controller){
-      API.createController(playerHost, {
-        uri: b.dataset.uri, width: '100%', height: b.dataset.h || 152
-      }, function(c){
-        controller = c;
-        controller.addListener('ready', function(){
-          if(shouldPlay){ try{ controller.play(); }catch(err){} }
-        });
+    API.createController(playerHost, {
+      uri: b.dataset.uri, width: '100%', height: b.dataset.h || 152
+    }, function(c){
+      if(mySeq !== loadSeq){ try{ c.destroy(); }catch(err){} return; }
+      controller = c;
+      controller.addListener('ready', function(){
+        if(mySeq !== loadSeq) return;
+        try{
+          if(startSeconds) controller.seek(startSeconds);
+          if(shouldPlay) controller.play();
+        }catch(err){}
       });
-    }else{
-      controller.loadUri(b.dataset.uri);
-      if(shouldPlay){ try{ controller.play(); }catch(err){} }
-    }
+    });
   }
 
   // Graceful fallback if the IFrame API script failed to load: a plain
@@ -485,7 +503,6 @@ footer a:hover{color:var(--brass)}
 
     var openBtn = document.querySelector('button.sp[aria-expanded="true"]');
     if(openBtn && openBtn !== b){
-      if(openBtn === activeBtn && controller){ try{ controller.pause(); }catch(err){} }
       if(openBtn.dataset.yt) stopVideo();
       clearExtras(openBtn);
       resetRow(openBtn);
@@ -493,7 +510,7 @@ footer a:hover{color:var(--brass)}
     }
 
     if(wasOpen){
-      if(b === activeBtn && controller){ try{ controller.pause(); }catch(err){} }
+      destroyController();
       if(b.dataset.yt) stopVideo();
       clearExtras(b);
       resetRow(b);
