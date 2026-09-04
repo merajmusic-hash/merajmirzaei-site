@@ -8,8 +8,8 @@
 // script.
 //
 // Public pages only ever read these fields: artist_en/fa, artist_image,
-// title_en/fa, release_type, links, cover_url, role_*. status_* and notes
-// are admin-only and are never touched here.
+// spotify_artist_url, title_en/fa, release_type, links, cover_url, role_*.
+// status_* and notes are admin-only and are never touched here.
 (function(){
   var cfg = window.__CREDITS_CONFIG__;
   if(!cfg) return;
@@ -112,19 +112,37 @@
     'Rastak', 'Ahmad Saeedi', 'Shahram Shokoohi', 'Arsalan', 'Milad J',
   ];
 
-  // A tile's image is the artist's dedicated artist_image if any entry has
-  // one set (an override, for later), otherwise the cover_url of the first
-  // of their entries — in credits.json order — that has one. Artists with
-  // neither get a plain tinted tile.
-  function artistTileImage(entries){
+  // A tile's image, in priority order: the artist's dedicated artist_image
+  // (an override, for later) — then their Spotify artist photo, fetched
+  // below — then the cover_url of the first of their entries (in
+  // credits.json order) that has one. Artists with none of those get a
+  // plain tinted tile.
+  function artistImageOf(entries){
     for(var i=0;i<entries.length;i++){ if(entries[i].artist_image) return entries[i].artist_image; }
+    return '';
+  }
+  function coverArtOf(entries){
     for(var i=0;i<entries.length;i++){ if(entries[i].cover_url) return entries[i].cover_url; }
     return '';
   }
+  function spotifyArtistUrlOf(entries){
+    for(var i=0;i<entries.length;i++){ if(entries[i].spotify_artist_url) return entries[i].spotify_artist_url; }
+    return '';
+  }
 
-  function renderArtistTile(nameEn, entries){
+  // The artist's own profile photo, via Spotify's public oEmbed endpoint
+  // (no API key needed — the same mechanism that powers Spotify's embed
+  // widgets anywhere). Resolves to null on any failure so the caller can
+  // fall through to the next tile-image tier.
+  function fetchSpotifyArtistImage(url){
+    return fetch('https://open.spotify.com/oembed?url=' + encodeURIComponent(url))
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(j){ return (j && j.thumbnail_url) || null; })
+      .catch(function(){ return null; });
+  }
+
+  function renderArtistTile(nameEn, entries, img){
     var nameFa = entries[0].artist_fa || '';
-    var img = artistTileImage(entries);
     var slug = slugify(nameEn);
     var cls = 'aw-tile' + (img ? ' has-photo' : '');
     var imgHtml = img ? '<img class="aw-img" src="'+esc(img)+'" loading="lazy" alt="">' : '';
@@ -142,12 +160,32 @@
       if(!key || key.toUpperCase() === 'MIRAGE') return;
       (byArtist[key] = byArtist[key] || []).push(e);
     });
-    var html = SELECTED_ARTISTS
-      .filter(function(name){ return byArtist[name]; })
-      .map(function(name){ return renderArtistTile(name, byArtist[name]); })
-      .join('');
-    html += '<a class="aw-tile aw-more" href="credits.html">'+esc(MORE_TEXT[lang])+'</a>';
-    mount.innerHTML = html;
+    var artists = SELECTED_ARTISTS.filter(function(name){ return byArtist[name]; });
+
+    // Resolve every tile's final image before the first paint, so a tile
+    // never flashes from cover art to a Spotify photo once the lookup
+    // lands — one oEmbed request per artist that has a spotify_artist_url
+    // and no artist_image override, all in parallel.
+    var images = artists.map(function(name){
+      var entries = byArtist[name];
+      var artistImg = artistImageOf(entries);
+      if(artistImg) return Promise.resolve(artistImg);
+      var spotifyUrl = spotifyArtistUrlOf(entries);
+      if(spotifyUrl){
+        return fetchSpotifyArtistImage(spotifyUrl).then(function(spotifyImg){
+          return spotifyImg || coverArtOf(entries);
+        });
+      }
+      return Promise.resolve(coverArtOf(entries));
+    });
+
+    Promise.all(images).then(function(resolved){
+      var html = artists.map(function(name, i){
+        return renderArtistTile(name, byArtist[name], resolved[i]);
+      }).join('');
+      html += '<a class="aw-tile aw-more" href="credits.html">'+esc(MORE_TEXT[lang])+'</a>';
+      mount.innerHTML = html;
+    });
   }
 
   // One card, identical structure whether or not the entry is playable —
