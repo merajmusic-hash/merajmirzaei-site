@@ -278,8 +278,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/7C3Cly7S3jKV2qT05nxlGD"
+      }
+    ],
     "cover_url": "/images/covers/googoosh-naaz-edkeh.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -301,8 +306,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/42AC3r7GAAUVLwfKLCGLCf"
+      }
+    ],
     "cover_url": "/images/covers/kamyar-danse.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -324,8 +334,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/5YQb2Zz1YuJArSDMJ21Qyb"
+      }
+    ],
     "cover_url": "/images/covers/kamyar-dokhtar-shirazi.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -347,8 +362,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/2dSGu2v4s5heiLFHKLNAF8"
+      }
+    ],
     "cover_url": "/images/covers/kamyar-sad-darsad.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -370,7 +390,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -393,55 +413,14 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/0mOzF2VdGU7phOhGk7Lwnn"
+      }
+    ],
     "cover_url": "/images/covers/kamyar-dele-mano-bordi.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
-  },
-  {
-    "id": "mehrdad-asemani-bahaneh",
-    "artist_en": "Mehrdad Asemani",
-    "artist_fa": "مهرداد آسمانی",
-    "artist_image": "/images/artists/mehrdad-asemani.jpg",
-    "spotify_artist_url": "https://open.spotify.com/artist/2LsYQSGGqUcRgY9NKXCYsM",
-    "title_en": "Bahaneh",
-    "title_fa": "بهانه",
-    "release_type": "single",
-    "album_name": "",
-    "year": "",
-    "label": "",
-    "role_arrangement": false,
-    "role_production": false,
-    "role_mix": true,
-    "role_mastering": false,
-    "links": [],
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
-  },
-  {
-    "id": "mehrdad-asemani-eshghe-zoleykhaei",
-    "artist_en": "Mehrdad Asemani",
-    "artist_fa": "مهرداد آسمانی",
-    "artist_image": "/images/artists/mehrdad-asemani.jpg",
-    "spotify_artist_url": "https://open.spotify.com/artist/2LsYQSGGqUcRgY9NKXCYsM",
-    "title_en": "Eshghe Zoleykhaei",
-    "title_fa": "عشق زلیخایی",
-    "release_type": "single",
-    "album_name": "",
-    "year": "",
-    "label": "",
-    "role_arrangement": false,
-    "role_production": false,
-    "role_mix": true,
-    "role_mastering": false,
-    "links": [],
-    "cover_url": "",
     "status_musicbrainz": "",
     "status_discogs": "",
     "status_genius": "",
@@ -462,7 +441,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -485,7 +464,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -494,7 +473,7 @@
     "notes": ""
   },
   {
-    "id": "mehrdad-asemani-eshghe-zoleykhaei-2",
+    "id": "mehrdad-asemani-eshghe-zoleykhaei",
     "artist_en": "Mehrdad Asemani",
     "artist_fa": "مهرداد آسمانی",
     "artist_image": "/images/artists/mehrdad-asemani.jpg",
@@ -563,7 +542,7 @@
     "notes": "Composer Mehrdad Asemani, except Bahaneh by Aref Ghazvini"
   },
   {
-    "id": "mehrdad-asemani-bahaneh-2",
+    "id": "mehrdad-asemani-bahaneh",
     "artist_en": "Mehrdad Asemani",
     "artist_fa": "مهرداد آسمانی",
     "artist_image": "/images/artists/mehrdad-asemani.jpg",
@@ -715,8 +694,13 @@
     "role_arrangement": true,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/15MiwmBYZ5gGbxghICqTfM"
+      }
+    ],
     "cover_url": "/images/covers/mehrdad-asemani-yar-shirin.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -738,7 +722,7 @@
     "role_arrangement": true,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -761,7 +745,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -784,7 +768,7 @@
     "role_arrangement": true,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -807,7 +791,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -830,7 +814,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -853,7 +837,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -876,7 +860,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -899,7 +883,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -922,7 +906,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -945,7 +929,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -968,8 +952,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/7sXlgl61dXuIWVFRtnJ9yB"
+      }
+    ],
     "cover_url": "/images/covers/black-cats-naaz.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -991,7 +980,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -1014,7 +1003,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -1037,7 +1026,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -1060,7 +1049,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -1083,7 +1072,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -1106,8 +1095,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/7m83IzEtVxR358DLqAGZtM"
+      }
+    ],
     "cover_url": "/images/covers/salar-aghili-royaye-man.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -1129,8 +1123,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/3aujt3HMTvIjFjsYN5Uymj"
+      }
+    ],
     "cover_url": "/images/covers/salar-aghili-nafas.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -1152,8 +1151,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/2j8Le6FLbu2ggphvhIBDmr"
+      }
+    ],
     "cover_url": "/images/covers/salar-aghili-panah.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -1175,8 +1179,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/2CCKtspB26eABvskdSlBwc"
+      }
+    ],
     "cover_url": "/images/covers/amirabbas-golab-forough.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -1198,8 +1207,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/7xMaYlzfBrnx9II1wlUdsp"
+      }
+    ],
     "cover_url": "/images/covers/amirabbas-golab-che-ghad-mehrabooni.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -1221,7 +1235,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -1244,8 +1258,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/4rvNc3tkUrDAYYGGMsJuQ5"
+      }
+    ],
     "cover_url": "/images/covers/amirabbas-golab-paeeze-delam.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -1267,8 +1286,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/5I7zaxYXlYAgDd6ckdqNv2"
+      }
+    ],
     "cover_url": "/images/covers/rastaak-hallaj-bi-khabari.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -1290,8 +1314,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/1mSJack26Wtw2BWZhnvPEK"
+      }
+    ],
     "cover_url": "/images/covers/rastaak-hallaj-chak.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -1313,8 +1342,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/7JnHVWS6NwFPTQylVtCqvg"
+      }
+    ],
     "cover_url": "/images/covers/rastaak-hallaj-gharaz-az-mozahemat.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -1336,8 +1370,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/365DLa0pSw6YEWfWfewMJt"
+      }
+    ],
     "cover_url": "/images/covers/rastaak-hallaj-dokhtarooneh.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -1359,8 +1398,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/1DQI08d6qZRs6HhelECdM0"
+      }
+    ],
     "cover_url": "/images/covers/rastaak-hallaj-faseleh.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -1382,7 +1426,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -1405,8 +1449,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/5VX0KGvAVpgeqCCjRAIOTM"
+      }
+    ],
     "cover_url": "/images/covers/ahmad-saeedi-refighe-fab.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -1428,7 +1477,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -1451,8 +1500,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/3fdjNU6AOztAWCVaP7rwse"
+      }
+    ],
     "cover_url": "/images/covers/ahmad-saeedi-darya.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -1474,8 +1528,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/34EncpmkvDbOWs7VgwbhmN"
+      }
+    ],
     "cover_url": "/images/covers/ahmad-saeedi-begoo.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -1681,7 +1740,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -1704,8 +1763,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/2dpQVSjaxmnfcdN4dvhrYV"
+      }
+    ],
     "cover_url": "/images/covers/arsalan-ghafelgir.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -1727,8 +1791,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/1Hz6lJbM8boBXA4dcb4I8J"
+      }
+    ],
     "cover_url": "/images/covers/milad-j-lajbazi.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -1750,8 +1819,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/5eM5WlCJxcTc6LFK3zUBWP"
+      }
+    ],
     "cover_url": "/images/covers/milad-j-roya.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -1773,8 +1847,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/6L8SmmaKdWOkOMSX9HuxNk"
+      }
+    ],
     "cover_url": "/images/covers/milad-j-befarma-eshgham.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -1796,8 +1875,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/2UXkveYmnAlDWSkr3E29OQ"
+      }
+    ],
     "cover_url": "/images/covers/milad-j-shab-gardi.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -1819,7 +1903,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -1842,8 +1926,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/2M12eYuSc1wDnP05PjLMma"
+      }
+    ],
     "cover_url": "/images/covers/milad-j-damam-garm.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -1865,8 +1954,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
-    "links": [],
+    "role_mastering": true,
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/75pnPLlQHX6e2u73zrQZ64"
+      }
+    ],
     "cover_url": "/images/covers/milad-j-soorate-mahet.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
@@ -1888,7 +1982,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -1911,7 +2005,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -1934,36 +2028,13 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
     "status_discogs": "",
     "status_genius": "",
     "notes": ""
-  },
-  {
-    "id": "ahmadreza-nabizadeh-fasle-panjom",
-    "artist_en": "Ahmadreza Nabizadeh",
-    "artist_fa": "احمدرضا نبی‌زاده",
-    "artist_image": "",
-    "spotify_artist_url": "https://open.spotify.com/artist/7yt9JsXaM86U9jzxsPT87O",
-    "title_en": "",
-    "title_fa": "",
-    "release_type": "album",
-    "album_name": "Fasle Panjom",
-    "year": "",
-    "label": "",
-    "role_arrangement": false,
-    "role_production": false,
-    "role_mix": true,
-    "role_mastering": false,
-    "links": [],
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "track list, year and label still unknown"
   },
   {
     "id": "ahmadreza-nabizadeh-dokhtare-baroon",
@@ -1977,10 +2048,10 @@
     "album_name": "",
     "year": "",
     "label": "",
-    "role_arrangement": false,
+    "role_arrangement": true,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -2003,7 +2074,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -2026,7 +2097,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -2049,7 +2120,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -2072,7 +2143,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -2095,7 +2166,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -2118,7 +2189,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",
@@ -2141,7 +2212,7 @@
     "role_arrangement": false,
     "role_production": false,
     "role_mix": true,
-    "role_mastering": false,
+    "role_mastering": true,
     "links": [],
     "cover_url": "",
     "status_musicbrainz": "",

@@ -209,6 +209,16 @@
     mount.innerHTML = order.map(function(name){ return renderArtistRow(name, byArtist[name]); }).join('');
 
     // Accordion: opening one row closes whichever other row was open.
+    // Hiding a section that has a track mid-playback would otherwise leave
+    // it playing invisibly in the background — the page's own playback
+    // script owns pause/cleanup, so trigger it via a real click on the
+    // still-expanded track button before the section (and that button)
+    // disappear, rather than duplicating its teardown logic here.
+    function stopPlaybackWithin(tracksEl){
+      var playing = tracksEl && tracksEl.querySelector('button.sp[aria-expanded="true"]');
+      if(playing) playing.click();
+    }
+
     mount.addEventListener('click', function(e){
       var btn = e.target.closest('.artist-row');
       if(!btn) return;
@@ -218,11 +228,13 @@
 
       var openBtn = mount.querySelector('.artist-row[aria-expanded="true"]');
       if(openBtn && openBtn !== btn){
-        openBtn.setAttribute('aria-expanded', 'false');
         var openTracks = openBtn.closest('.artist-group').querySelector('.artist-tracks');
+        stopPlaybackWithin(openTracks);
+        openBtn.setAttribute('aria-expanded', 'false');
         if(openTracks) openTracks.hidden = true;
       }
 
+      if(isOpen) stopPlaybackWithin(tracksEl);
       btn.setAttribute('aria-expanded', String(!isOpen));
       tracksEl.hidden = isOpen;
     });
