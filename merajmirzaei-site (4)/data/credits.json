@@ -1156,9 +1156,14 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "links": [],
+    "links": [
+      {
+        "label": "",
+        "url": "https://dl.my-ahangha.ir/up/2018/Fataneh%20-%20Eshghe%20Mondegar%20128.mp3"
+      }
+    ],
     "start_seconds": "",
-    "cover_url": "",
+    "cover_url": "https://www.navahang.com/images/2018/09/Fataneh-Eshghe-Mondegar.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
     "status_genius": "",
