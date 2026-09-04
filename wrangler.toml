@@ -7,6 +7,6 @@ directory = "./merajmirzaei-site (4)"
 binding = "ASSETS"
 run_worker_first = true
 
-# Trivial redeploy trigger (2026-09-03): pick up the ADMIN_PASSWORD and
-# GITHUB_TOKEN secrets that were added to the Cloudflare project after the
-# last deployment.
+# Trivial redeploy trigger (2026-09-04): pick up the ADMIN_PASSWORD and
+# GITHUB_TOKEN secrets, now correctly set as Runtime secrets under
+# Settings, rather than the Builds-time variables used previously.
