@@ -153,6 +153,101 @@
 
   var MORE_TEXT = { en:'Full credit sheet →', fa:'کارنامه کامل ←' };
 
+  function trackCountLabel(n){
+    if(lang === 'fa') return faDigits(n) + ' ' + 'اثر';
+    return n + (n === 1 ? ' track' : ' tracks');
+  }
+
+  // One collapsible row per artist on the credits page — same photo
+  // priority (artist_image, then Spotify, then first cover_url, then a
+  // plain tile) as the homepage wall, name pair, and a track count.
+  // Renders with whatever sync image is already on hand (artist_image or
+  // cover_url) so the page never blocks on a network round trip; any
+  // artist that still needs a Spotify lookup gets its row patched in place
+  // once that resolves, never a full re-render (which would blow away an
+  // already-open accordion section).
+  function renderArtistRow(nameEn, entries){
+    var nameFa = entries[0].artist_fa || '';
+    var slug = slugify(nameEn);
+    var primary = lang === 'fa' ? nameFa : nameEn;
+    var alt = lang === 'fa' ? nameEn : nameFa;
+
+    var syncImg = artistImageOf(entries) || coverArtOf(entries);
+    var photoCls = 'ar-photo' + (syncImg ? ' has-photo' : '');
+    var photoHtml = syncImg
+      ? '<img class="ar-img" src="'+esc(syncImg)+'" loading="lazy" alt="">'
+      : coverFallbackSvg();
+
+    var nameHtml = '<span class="ar-name">'
+      + '<span class="ar-primary">'+esc(primary)+'</span>'
+      + (alt ? '<span class="ar-alt">'+esc(alt)+'</span>' : '')
+      + '</span>';
+
+    var header = '<button class="artist-row" type="button" aria-expanded="false" data-artist="'+slug+'">'
+      + '<span class="'+photoCls+'">'+photoHtml+'</span>'
+      + nameHtml
+      + '<span class="ar-count">'+esc(trackCountLabel(entries.length))+'</span>'
+      + '<span class="ar-chevron" aria-hidden="true">⌄</span>'
+      + '</button>';
+
+    var tracks = '<div class="artist-tracks" hidden>'
+      + '<div class="trackcard-grid">' + entries.map(renderCard).join('') + '</div>'
+      + '</div>';
+
+    return '<div class="artist-group" data-artist="'+slug+'">' + header + tracks + '</div>';
+  }
+
+  function renderCreditsGrouped(entries){
+    var order = [], byArtist = {};
+    entries.forEach(function(e){
+      var key = (e.artist_en || '').trim();
+      if(!key) return;
+      if(!byArtist[key]){ byArtist[key] = []; order.push(key); }
+      byArtist[key].push(e);
+    });
+
+    mount.innerHTML = order.map(function(name){ return renderArtistRow(name, byArtist[name]); }).join('');
+
+    // Accordion: opening one row closes whichever other row was open.
+    mount.addEventListener('click', function(e){
+      var btn = e.target.closest('.artist-row');
+      if(!btn) return;
+      var group = btn.closest('.artist-group');
+      var tracksEl = group.querySelector('.artist-tracks');
+      var isOpen = btn.getAttribute('aria-expanded') === 'true';
+
+      var openBtn = mount.querySelector('.artist-row[aria-expanded="true"]');
+      if(openBtn && openBtn !== btn){
+        openBtn.setAttribute('aria-expanded', 'false');
+        var openTracks = openBtn.closest('.artist-group').querySelector('.artist-tracks');
+        if(openTracks) openTracks.hidden = true;
+      }
+
+      btn.setAttribute('aria-expanded', String(!isOpen));
+      tracksEl.hidden = isOpen;
+    });
+
+    // Upgrade any row that has a spotify_artist_url but no artist_image —
+    // in place, once the lookup resolves, never by re-rendering the list.
+    order.forEach(function(name){
+      var artistEntries = byArtist[name];
+      if(artistImageOf(artistEntries)) return;
+      var spotifyUrl = spotifyArtistUrlOf(artistEntries);
+      if(!spotifyUrl) return;
+      fetchSpotifyArtistImage(spotifyUrl).then(function(img){
+        if(!img) return;
+        var slug = slugify(name);
+        var group = mount.querySelector('.artist-group[data-artist="'+slug+'"]');
+        var photoSlot = group && group.querySelector('.ar-photo');
+        if(!photoSlot) return;
+        photoSlot.classList.add('has-photo');
+        photoSlot.innerHTML = '<img class="ar-img" src="'+esc(img)+'" loading="lazy" alt="">';
+      });
+    });
+
+    return { order: order, byArtist: byArtist };
+  }
+
   function renderArtistWall(data){
     var byArtist = {};
     data.forEach(function(e){
@@ -257,29 +352,32 @@
 
       if(page === 'credits'){
         var credits = data.filter(function(e){ return !isMirage(e); });
+        var grouped = renderCreditsGrouped(credits);
 
         // A tile on the homepage photo wall (or any other link) can carry
-        // ?artist=<slug> to narrow this page to just that artist, matched
-        // against artist_en the same way tile links are built.
-        var shown = credits;
+        // ?artist=<slug> to land here with that artist's row already open,
+        // matched against artist_en the same way tile links are built.
         var artistParam = null;
         try{ artistParam = new URLSearchParams(location.search).get('artist'); }catch(e){}
         var filterBar = document.querySelector(cfg.filterMount || '#filterBar');
         if(artistParam){
           var slug = artistParam.toLowerCase();
-          var matches = credits.filter(function(e){ return slugify(e.artist_en) === slug; });
-          if(matches.length){
-            shown = matches;
+          var matchName = grouped.order.filter(function(n){ return slugify(n) === slug; })[0];
+          if(matchName){
             if(filterBar){
               var label = filterBar.querySelector('.filterbar-label');
-              var name = lang === 'fa' ? matches[0].artist_fa : matches[0].artist_en;
+              var name = lang === 'fa' ? grouped.byArtist[matchName][0].artist_fa : matchName;
               if(label) label.textContent = (lang === 'fa' ? 'در حال نمایش: ' : 'Showing: ') + name;
               filterBar.classList.add('show');
+            }
+            var matchGroup = mount.querySelector('.artist-group[data-artist="'+slug+'"]');
+            if(matchGroup){
+              matchGroup.querySelector('.artist-row').click();
+              matchGroup.scrollIntoView({block:'start'});
             }
           }
         }
 
-        renderGrid(shown);
         var titledCount = credits.filter(function(e){ return e.title_en || e.title_fa; }).length;
         var statEl = document.getElementById('titlesCount');
         if(statEl) statEl.textContent = lang === 'fa' ? faDigits(titledCount) : String(titledCount);
