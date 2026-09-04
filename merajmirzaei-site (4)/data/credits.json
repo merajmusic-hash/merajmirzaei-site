@@ -487,34 +487,6 @@
     "notes": ""
   },
   {
-    "id": "mehrdad-asemani-del-kandam",
-    "order": 6,
-    "pages": [
-      "credits"
-    ],
-    "artist_en": "Mehrdad Asemani",
-    "artist_fa": "مهرداد آسمانی",
-    "artist_image": "/images/artists/mehrdad-asemani.jpg",
-    "spotify_artist_url": "https://open.spotify.com/artist/2LsYQSGGqUcRgY9NKXCYsM",
-    "title_en": "Del Kandam",
-    "title_fa": "دل کندم",
-    "release_type": "single",
-    "album_name": "",
-    "year": "",
-    "label": "",
-    "role_arrangement": false,
-    "role_production": false,
-    "role_mix": true,
-    "role_mastering": true,
-    "links": [],
-    "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
-  },
-  {
     "id": "mehrdad-asemani-eshghe-zoleykhaei",
     "order": 8,
     "pages": [
