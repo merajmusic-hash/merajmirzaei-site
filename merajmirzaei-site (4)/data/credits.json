@@ -765,9 +765,14 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "links": [],
+    "links": [
+      {
+        "label": "",
+        "url": "https://open.spotify.com/track/7uvCIigRCDUrAq8R3tdKNU?si=118710b8b0b54b4a"
+      }
+    ],
     "start_seconds": "",
-    "cover_url": "",
+    "cover_url": "/images/covers/mehrdad-asemani-yar-shirin.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
     "status_genius": "",
@@ -793,9 +798,14 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "links": [],
+    "links": [
+      {
+        "label": "",
+        "url": "https://open.spotify.com/track/70rHK8q7pMXDYGgWZEp830?si=0f12b95217214454"
+      }
+    ],
     "start_seconds": "",
-    "cover_url": "",
+    "cover_url": "/images/covers/mehrdad-asemani-yar-shirin.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
     "status_genius": "",
@@ -821,9 +831,14 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "links": [],
+    "links": [
+      {
+        "label": "",
+        "url": "https://open.spotify.com/track/7kICXv3FHn4IUloxFyA4cs?si=5f08eccd798c4c23"
+      }
+    ],
     "start_seconds": "",
-    "cover_url": "",
+    "cover_url": "/images/covers/mehrdad-asemani-yar-shirin.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
     "status_genius": "",
@@ -882,7 +897,12 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "links": [],
+    "links": [
+      {
+        "label": "",
+        "url": "https://open.spotify.com/track/7fHVU6Vc20cYtDU9GGug5Q?si=d7b239f051f34ea3"
+      }
+    ],
     "start_seconds": "",
     "cover_url": "https://open.spotify.com/album/0ZPbcLAa7ssuDv5RblVx7Q?si=QVWNGRQRS5S-4Y7IV6D4MA",
     "status_musicbrainz": "",
@@ -910,7 +930,12 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "links": [],
+    "links": [
+      {
+        "label": "",
+        "url": "https://open.spotify.com/track/1miLa3qBBs2Ke9JAh1j91Q?si=1b6dc8c4925d44ba"
+      }
+    ],
     "start_seconds": "",
     "cover_url": "https://open.spotify.com/album/0ZPbcLAa7ssuDv5RblVx7Q?si=QVWNGRQRS5S-4Y7IV6D4MA",
     "status_musicbrainz": "",
@@ -938,7 +963,12 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "links": [],
+    "links": [
+      {
+        "label": "",
+        "url": "https://open.spotify.com/track/1KP3NgX2r1Yp1FGh6A6mPr?si=486cb0acfeef4f96"
+      }
+    ],
     "start_seconds": "",
     "cover_url": "https://open.spotify.com/album/0ZPbcLAa7ssuDv5RblVx7Q?si=QVWNGRQRS5S-4Y7IV6D4MA",
     "status_musicbrainz": "",
@@ -966,7 +996,12 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "links": [],
+    "links": [
+      {
+        "label": "",
+        "url": "https://open.spotify.com/track/0HAWsJafXTR75shlTJatit?si=3ea51357153e4038"
+      }
+    ],
     "start_seconds": "",
     "cover_url": "https://open.spotify.com/album/0ZPbcLAa7ssuDv5RblVx7Q?si=QVWNGRQRS5S-4Y7IV6D4MA",
     "status_musicbrainz": "",
@@ -1088,7 +1123,12 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "links": [],
+    "links": [
+      {
+        "label": "",
+        "url": "https://music.apple.com/tr/song/khosh-be-halam/1617339324"
+      }
+    ],
     "start_seconds": "",
     "cover_url": "",
     "status_musicbrainz": "",
