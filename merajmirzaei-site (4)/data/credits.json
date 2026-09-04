@@ -295,7 +295,7 @@
   },
   {
     "id": "googoosh-naaz-edkeh",
-    "order": 6,
+    "order": 0,
     "pages": [
       "credits"
     ],
@@ -328,7 +328,7 @@
   },
   {
     "id": "kamyar-dance",
-    "order": 7,
+    "order": 1,
     "pages": [
       "credits"
     ],
@@ -361,7 +361,7 @@
   },
   {
     "id": "kamyar-dokhtar-shirazi",
-    "order": 8,
+    "order": 2,
     "pages": [
       "credits"
     ],
@@ -394,7 +394,7 @@
   },
   {
     "id": "kamyar-sad-darsad",
-    "order": 9,
+    "order": 3,
     "pages": [
       "credits"
     ],
@@ -427,7 +427,7 @@
   },
   {
     "id": "kamyar-khoshhalam-ft-melanie",
-    "order": 10,
+    "order": 5,
     "pages": [
       "credits"
     ],
@@ -455,7 +455,7 @@
   },
   {
     "id": "kamyar-dele-mano-bordi",
-    "order": 11,
+    "order": 4,
     "pages": [
       "credits"
     ],
@@ -488,7 +488,7 @@
   },
   {
     "id": "mehrdad-asemani-del-kandam",
-    "order": 12,
+    "order": 6,
     "pages": [
       "credits"
     ],
@@ -515,36 +515,8 @@
     "notes": ""
   },
   {
-    "id": "mehrdad-asemani-khanomi",
-    "order": 13,
-    "pages": [
-      "credits"
-    ],
-    "artist_en": "Mehrdad Asemani",
-    "artist_fa": "مهرداد آسمانی",
-    "artist_image": "/images/artists/mehrdad-asemani.jpg",
-    "spotify_artist_url": "https://open.spotify.com/artist/2LsYQSGGqUcRgY9NKXCYsM",
-    "title_en": "Khanomi",
-    "title_fa": "خانومی",
-    "release_type": "single",
-    "album_name": "",
-    "year": "",
-    "label": "",
-    "role_arrangement": false,
-    "role_production": false,
-    "role_mix": true,
-    "role_mastering": true,
-    "links": [],
-    "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
-  },
-  {
     "id": "mehrdad-asemani-eshghe-zoleykhaei",
-    "order": 14,
+    "order": 8,
     "pages": [
       "credits"
     ],
@@ -562,9 +534,14 @@
     "role_production": true,
     "role_mix": true,
     "role_mastering": true,
-    "links": [],
+    "links": [
+      {
+        "label": "",
+        "url": "https://open.spotify.com/track/5rFpZNIQg5J55osG3FixyC?si=00df544cce0e49bb"
+      }
+    ],
     "start_seconds": "",
-    "cover_url": "",
+    "cover_url": "https://open.spotify.com/track/5rFpZNIQg5J55osG3FixyC?si=00df544cce0e49bb",
     "status_musicbrainz": "",
     "status_discogs": "",
     "status_genius": "",
@@ -572,7 +549,7 @@
   },
   {
     "id": "mehrdad-asemani-mastaneh",
-    "order": 15,
+    "order": 9,
     "pages": [
       "credits"
     ],
@@ -590,9 +567,14 @@
     "role_production": true,
     "role_mix": true,
     "role_mastering": true,
-    "links": [],
+    "links": [
+      {
+        "label": "",
+        "url": "https://open.spotify.com/track/7L5zMYy342U1skcwylPoei?si=67593ec6ccac4ead"
+      }
+    ],
     "start_seconds": "",
-    "cover_url": "",
+    "cover_url": "https://open.spotify.com/track/7L5zMYy342U1skcwylPoei?si=67593ec6ccac4ead",
     "status_musicbrainz": "",
     "status_discogs": "",
     "status_genius": "",
@@ -600,7 +582,7 @@
   },
   {
     "id": "mehrdad-asemani-javanane-vatan",
-    "order": 16,
+    "order": 10,
     "pages": [
       "credits"
     ],
@@ -618,9 +600,14 @@
     "role_production": true,
     "role_mix": true,
     "role_mastering": true,
-    "links": [],
+    "links": [
+      {
+        "label": "",
+        "url": "https://open.spotify.com/track/52SbJqqhwdcNoalPgIJKHR?si=4d6ac61b34094242"
+      }
+    ],
     "start_seconds": "",
-    "cover_url": "",
+    "cover_url": "https://open.spotify.com/track/52SbJqqhwdcNoalPgIJKHR?si=4d6ac61b34094242",
     "status_musicbrainz": "",
     "status_discogs": "",
     "status_genius": "",
@@ -628,7 +615,7 @@
   },
   {
     "id": "mehrdad-asemani-bahaneh",
-    "order": 17,
+    "order": 11,
     "pages": [
       "credits"
     ],
@@ -656,7 +643,7 @@
   },
   {
     "id": "mehrdad-asemani-geryeh",
-    "order": 18,
+    "order": 12,
     "pages": [
       "credits"
     ],
@@ -684,7 +671,7 @@
   },
   {
     "id": "mehrdad-asemani-deltangi",
-    "order": 19,
+    "order": 13,
     "pages": [
       "credits"
     ],
@@ -712,7 +699,7 @@
   },
   {
     "id": "mehrdad-asemani-dige-nemikhamet",
-    "order": 20,
+    "order": 14,
     "pages": [
       "credits"
     ],
@@ -740,7 +727,7 @@
   },
   {
     "id": "mehrdad-asemani-sareban",
-    "order": 21,
+    "order": 15,
     "pages": [
       "credits"
     ],
@@ -768,7 +755,7 @@
   },
   {
     "id": "mehrdad-asemani-tekrare-bihodeh",
-    "order": 22,
+    "order": 16,
     "pages": [
       "credits"
     ],
@@ -796,7 +783,7 @@
   },
   {
     "id": "mehrdad-asemani-yar-shirin",
-    "order": 23,
+    "order": 17,
     "pages": [
       "credits"
     ],
@@ -829,7 +816,7 @@
   },
   {
     "id": "mehrdad-asemani-aghoosh-to-rework",
-    "order": 24,
+    "order": 18,
     "pages": [
       "credits"
     ],
@@ -857,7 +844,7 @@
   },
   {
     "id": "mehrdad-asemani-hala-chera",
-    "order": 25,
+    "order": 19,
     "pages": [
       "credits"
     ],
@@ -885,7 +872,7 @@
   },
   {
     "id": "mehrdad-asemani-invare-donya-with-asha",
-    "order": 26,
+    "order": 20,
     "pages": [
       "credits"
     ],
@@ -913,7 +900,7 @@
   },
   {
     "id": "mehrdad-asemani-konje-mahtab",
-    "order": 27,
+    "order": 21,
     "pages": [
       "credits"
     ],
@@ -941,7 +928,7 @@
   },
   {
     "id": "mehrdad-asemani-negam-kon",
-    "order": 28,
+    "order": 22,
     "pages": [
       "credits"
     ],
@@ -969,7 +956,7 @@
   },
   {
     "id": "mehrdad-asemani-dastamo-begir",
-    "order": 29,
+    "order": 23,
     "pages": [
       "credits"
     ],
@@ -997,7 +984,7 @@
   },
   {
     "id": "mehrdad-asemani-nafas-banoo",
-    "order": 30,
+    "order": 24,
     "pages": [
       "credits"
     ],
@@ -1025,7 +1012,7 @@
   },
   {
     "id": "mehrdad-asemani-bonbast",
-    "order": 31,
+    "order": 25,
     "pages": [
       "credits"
     ],
@@ -1053,7 +1040,7 @@
   },
   {
     "id": "mehrdad-asemani-khanoomi-remix",
-    "order": 32,
+    "order": 7,
     "pages": [
       "credits"
     ],
@@ -1071,45 +1058,22 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "links": [],
+    "links": [
+      {
+        "label": "",
+        "url": "https://open.spotify.com/track/0dG4SMwZiDGfPrBqMhT72Q?si=35ceaa1b05504903"
+      }
+    ],
     "start_seconds": "",
-    "cover_url": "",
+    "cover_url": "https://open.spotify.com/track/0dG4SMwZiDGfPrBqMhT72Q?si=35ceaa1b05504903",
     "status_musicbrainz": "",
     "status_discogs": "",
     "status_genius": "",
     "notes": "distinct from the Khanomi single and the Khanomi album"
   },
   {
-    "id": "mehrdad-asemani-khanomi-2",
-    "order": 33,
-    "pages": [
-      "credits"
-    ],
-    "artist_en": "Mehrdad Asemani",
-    "artist_fa": "مهرداد آسمانی",
-    "artist_image": "/images/artists/mehrdad-asemani.jpg",
-    "spotify_artist_url": "https://open.spotify.com/artist/2LsYQSGGqUcRgY9NKXCYsM",
-    "title_en": "",
-    "title_fa": "",
-    "release_type": "album",
-    "album_name": "Khanomi",
-    "year": "",
-    "label": "",
-    "role_arrangement": false,
-    "role_production": false,
-    "role_mix": true,
-    "role_mastering": true,
-    "links": [],
-    "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "track list, year and label still unknown"
-  },
-  {
     "id": "black-cats-naaz",
-    "order": 34,
+    "order": 26,
     "pages": [
       "credits"
     ],
@@ -1142,7 +1106,7 @@
   },
   {
     "id": "black-cats-bonbast",
-    "order": 35,
+    "order": 27,
     "pages": [
       "credits"
     ],
@@ -1170,7 +1134,7 @@
   },
   {
     "id": "helen-khosh-be-halam",
-    "order": 36,
+    "order": 28,
     "pages": [
       "credits"
     ],
@@ -1198,7 +1162,7 @@
   },
   {
     "id": "fataneh-eshghe-mondegar",
-    "order": 37,
+    "order": 29,
     "pages": [
       "credits"
     ],
@@ -1226,7 +1190,7 @@
   },
   {
     "id": "shahyad-bazi",
-    "order": 38,
+    "order": 30,
     "pages": [
       "credits"
     ],
@@ -1254,7 +1218,7 @@
   },
   {
     "id": "sahar-lalaei",
-    "order": 39,
+    "order": 31,
     "pages": [
       "credits"
     ],
@@ -1282,7 +1246,7 @@
   },
   {
     "id": "salar-aghili-royaye-man",
-    "order": 40,
+    "order": 32,
     "pages": [
       "credits"
     ],
@@ -1315,7 +1279,7 @@
   },
   {
     "id": "salar-aghili-nafas",
-    "order": 41,
+    "order": 33,
     "pages": [
       "credits"
     ],
@@ -1348,7 +1312,7 @@
   },
   {
     "id": "salar-aghili-panah",
-    "order": 42,
+    "order": 34,
     "pages": [
       "credits"
     ],
@@ -1381,7 +1345,7 @@
   },
   {
     "id": "amir-abbas-golab-forogh",
-    "order": 43,
+    "order": 35,
     "pages": [
       "credits"
     ],
@@ -1414,7 +1378,7 @@
   },
   {
     "id": "amir-abbas-golab-cheghadr-mehraboni",
-    "order": 44,
+    "order": 36,
     "pages": [
       "credits"
     ],
@@ -1447,7 +1411,7 @@
   },
   {
     "id": "amir-abbas-golab-serial-bipayan",
-    "order": 45,
+    "order": 37,
     "pages": [
       "credits"
     ],
@@ -1475,7 +1439,7 @@
   },
   {
     "id": "amir-abbas-golab-paeez-delam",
-    "order": 46,
+    "order": 38,
     "pages": [
       "credits"
     ],
@@ -1508,7 +1472,7 @@
   },
   {
     "id": "rastaak-bikhabri",
-    "order": 47,
+    "order": 39,
     "pages": [
       "credits"
     ],
@@ -1541,7 +1505,7 @@
   },
   {
     "id": "rastaak-chak",
-    "order": 48,
+    "order": 40,
     "pages": [
       "credits"
     ],
@@ -1574,7 +1538,7 @@
   },
   {
     "id": "rastaak-gharaz-az-mozahemat",
-    "order": 49,
+    "order": 41,
     "pages": [
       "credits"
     ],
@@ -1607,7 +1571,7 @@
   },
   {
     "id": "rastaak-dokhtarone",
-    "order": 50,
+    "order": 42,
     "pages": [
       "credits"
     ],
@@ -1640,7 +1604,7 @@
   },
   {
     "id": "rastaak-faseleh",
-    "order": 51,
+    "order": 43,
     "pages": [
       "credits"
     ],
@@ -1673,7 +1637,7 @@
   },
   {
     "id": "ahmad-saeedi-yadet-rafteh",
-    "order": 52,
+    "order": 45,
     "pages": [
       "credits"
     ],
@@ -1701,7 +1665,7 @@
   },
   {
     "id": "ahmad-saeedi-rafigh-fab",
-    "order": 53,
+    "order": 46,
     "pages": [
       "credits"
     ],
@@ -1734,7 +1698,7 @@
   },
   {
     "id": "ahmad-saeedi-abadan",
-    "order": 54,
+    "order": 47,
     "pages": [
       "credits"
     ],
@@ -1762,7 +1726,7 @@
   },
   {
     "id": "ahmad-saeedi-darya",
-    "order": 55,
+    "order": 48,
     "pages": [
       "credits"
     ],
@@ -1795,7 +1759,7 @@
   },
   {
     "id": "ahmad-saeedi-begoo",
-    "order": 56,
+    "order": 49,
     "pages": [
       "credits"
     ],
@@ -1828,7 +1792,7 @@
   },
   {
     "id": "arsalan-ziba",
-    "order": 57,
+    "order": 50,
     "pages": [
       "credits"
     ],
@@ -1856,7 +1820,7 @@
   },
   {
     "id": "arsalan-arezoo",
-    "order": 58,
+    "order": 51,
     "pages": [
       "credits"
     ],
@@ -1884,7 +1848,7 @@
   },
   {
     "id": "arsalan-del-nemikanam-azat",
-    "order": 59,
+    "order": 52,
     "pages": [
       "credits"
     ],
@@ -1912,7 +1876,7 @@
   },
   {
     "id": "arsalan-jadeh",
-    "order": 60,
+    "order": 53,
     "pages": [
       "credits"
     ],
@@ -1940,7 +1904,7 @@
   },
   {
     "id": "arsalan-yade-to-miyoftam",
-    "order": 61,
+    "order": 54,
     "pages": [
       "credits"
     ],
@@ -1968,7 +1932,7 @@
   },
   {
     "id": "arsalan-ghalbi-ke-nemizaneh",
-    "order": 62,
+    "order": 55,
     "pages": [
       "credits"
     ],
@@ -1996,7 +1960,7 @@
   },
   {
     "id": "arsalan-dars",
-    "order": 63,
+    "order": 56,
     "pages": [
       "credits"
     ],
@@ -2024,7 +1988,7 @@
   },
   {
     "id": "arsalan-zendegi",
-    "order": 64,
+    "order": 57,
     "pages": [
       "credits"
     ],
@@ -2052,7 +2016,7 @@
   },
   {
     "id": "arsalan-gharibe",
-    "order": 65,
+    "order": 58,
     "pages": [
       "credits"
     ],
@@ -2080,7 +2044,7 @@
   },
   {
     "id": "arsalan-ghafelgir",
-    "order": 66,
+    "order": 59,
     "pages": [
       "credits"
     ],
@@ -2113,7 +2077,7 @@
   },
   {
     "id": "milad-j-lajbazi",
-    "order": 67,
+    "order": 60,
     "pages": [
       "credits"
     ],
@@ -2146,7 +2110,7 @@
   },
   {
     "id": "milad-j-roya",
-    "order": 68,
+    "order": 61,
     "pages": [
       "credits"
     ],
@@ -2179,7 +2143,7 @@
   },
   {
     "id": "milad-j-befarma-eshgham",
-    "order": 69,
+    "order": 62,
     "pages": [
       "credits"
     ],
@@ -2212,7 +2176,7 @@
   },
   {
     "id": "milad-j-shabgardi",
-    "order": 70,
+    "order": 63,
     "pages": [
       "credits"
     ],
@@ -2245,7 +2209,7 @@
   },
   {
     "id": "milad-j-becharkhon",
-    "order": 71,
+    "order": 64,
     "pages": [
       "credits"
     ],
@@ -2273,7 +2237,7 @@
   },
   {
     "id": "milad-j-sedamo-dari-damet-garm",
-    "order": 72,
+    "order": 65,
     "pages": [
       "credits"
     ],
@@ -2306,7 +2270,7 @@
   },
   {
     "id": "milad-j-sorate-mahet",
-    "order": 73,
+    "order": 66,
     "pages": [
       "credits"
     ],
@@ -2339,7 +2303,7 @@
   },
   {
     "id": "milad-j-ghose-dar",
-    "order": 74,
+    "order": 67,
     "pages": [
       "credits"
     ],
@@ -2367,7 +2331,7 @@
   },
   {
     "id": "milad-j-jange",
-    "order": 75,
+    "order": 68,
     "pages": [
       "credits"
     ],
@@ -2395,7 +2359,7 @@
   },
   {
     "id": "milad-j-cheghad-zood-miresi",
-    "order": 76,
+    "order": 69,
     "pages": [
       "credits"
     ],
@@ -2423,7 +2387,7 @@
   },
   {
     "id": "ahmadreza-nabizadeh-dokhtare-baroon",
-    "order": 77,
+    "order": 70,
     "pages": [
       "credits"
     ],
@@ -2451,7 +2415,7 @@
   },
   {
     "id": "amir-abbas-hassanzadeh-leyla-khanom-live",
-    "order": 78,
+    "order": 71,
     "pages": [
       "credits"
     ],
@@ -2479,7 +2443,7 @@
   },
   {
     "id": "amir-abbas-hassanzadeh-moje-mosbat",
-    "order": 79,
+    "order": 72,
     "pages": [
       "credits"
     ],
@@ -2507,7 +2471,7 @@
   },
   {
     "id": "panida-mano-to",
-    "order": 80,
+    "order": 73,
     "pages": [
       "credits"
     ],
@@ -2535,7 +2499,7 @@
   },
   {
     "id": "reza-pahlevani-shirin-shirine",
-    "order": 81,
+    "order": 74,
     "pages": [
       "credits"
     ],
@@ -2563,7 +2527,7 @@
   },
   {
     "id": "majid-rokni-delkhoshi",
-    "order": 82,
+    "order": 75,
     "pages": [
       "credits"
     ],
@@ -2591,7 +2555,7 @@
   },
   {
     "id": "iman-sani-baba-karam",
-    "order": 83,
+    "order": 76,
     "pages": [
       "credits"
     ],
@@ -2619,7 +2583,7 @@
   },
   {
     "id": "morteza-lotfi-davom-nemiyaram",
-    "order": 84,
+    "order": 77,
     "pages": [
       "credits"
     ],
@@ -2647,7 +2611,7 @@
   },
   {
     "id": "sasan-pashaeifar-amadeam-ke-sar-naham",
-    "order": 85,
+    "order": 78,
     "pages": [
       "credits"
     ],
@@ -2675,7 +2639,7 @@
   },
   {
     "id": "sasan-pashaeifar-khoda-haminjast",
-    "order": 86,
+    "order": 79,
     "pages": [
       "credits"
     ],
@@ -2703,7 +2667,7 @@
   },
   {
     "id": "sasan-pashaeifar-az-yade-to-miram-aroom-aroom",
-    "order": 87,
+    "order": 80,
     "pages": [
       "credits"
     ],
@@ -2731,7 +2695,7 @@
   },
   {
     "id": "sasan-pashaeifar-sar-beneh-bar-balin",
-    "order": 88,
+    "order": 81,
     "pages": [
       "credits"
     ],
@@ -2759,7 +2723,7 @@
   },
   {
     "id": "sasan-pashaeifar-hilat-raha-kon",
-    "order": 89,
+    "order": 82,
     "pages": [
       "credits"
     ],
@@ -2787,7 +2751,7 @@
   },
   {
     "id": "sasan-pashaeifar-to-nisti-ghose-bidare",
-    "order": 90,
+    "order": 83,
     "pages": [
       "credits"
     ],
@@ -2815,7 +2779,7 @@
   },
   {
     "id": "sasan-pashaeifar-manam-tanha",
-    "order": 91,
+    "order": 84,
     "pages": [
       "credits"
     ],
@@ -2843,7 +2807,7 @@
   },
   {
     "id": "sasan-pashaeifar-ba-khoda-hamishe",
-    "order": 92,
+    "order": 85,
     "pages": [
       "credits"
     ],
@@ -2871,7 +2835,7 @@
   },
   {
     "id": "sasan-pashaeifar-khoda-haminjast-remix",
-    "order": 93,
+    "order": 86,
     "pages": [
       "credits"
     ],
@@ -2899,7 +2863,7 @@
   },
   {
     "id": "sasan-pashaeifar-man-na-manam",
-    "order": 94,
+    "order": 87,
     "pages": [
       "credits"
     ],
@@ -2927,7 +2891,7 @@
   },
   {
     "id": "reza-sadeghi-entry",
-    "order": 95,
+    "order": 88,
     "pages": [
       "credits"
     ],
@@ -2955,7 +2919,7 @@
   },
   {
     "id": "shahram-shokoohi-entry",
-    "order": 96,
+    "order": 89,
     "pages": [
       "credits"
     ],
@@ -2983,7 +2947,7 @@
   },
   {
     "id": "sintaj-entry",
-    "order": 97,
+    "order": 90,
     "pages": [
       "credits"
     ],
@@ -3011,7 +2975,7 @@
   },
   {
     "id": "rastin-entry",
-    "order": 98,
+    "order": 91,
     "pages": [
       "credits"
     ],
@@ -3039,7 +3003,7 @@
   },
   {
     "id": "milad-mosaddegh-entry",
-    "order": 99,
+    "order": 92,
     "pages": [
       "credits"
     ],
@@ -3067,7 +3031,7 @@
   },
   {
     "id": "saman-mansoor-entry",
-    "order": 100,
+    "order": 93,
     "pages": [
       "credits"
     ],
@@ -3095,7 +3059,7 @@
   },
   {
     "id": "afshin-amini-entry",
-    "order": 101,
+    "order": 94,
     "pages": [
       "credits"
     ],
@@ -3123,7 +3087,7 @@
   },
   {
     "id": "benyamin-baran-entry",
-    "order": 102,
+    "order": 95,
     "pages": [
       "credits"
     ],
@@ -3151,7 +3115,7 @@
   },
   {
     "id": "sadraddin-entry",
-    "order": 103,
+    "order": 96,
     "pages": [
       "credits"
     ],
@@ -3179,7 +3143,7 @@
   },
   {
     "id": "ghazal-enayat-entry",
-    "order": 104,
+    "order": 97,
     "pages": [
       "credits"
     ],
@@ -3207,7 +3171,7 @@
   },
   {
     "id": "ali-panahi-entry",
-    "order": 105,
+    "order": 98,
     "pages": [
       "credits"
     ],
@@ -3235,7 +3199,7 @@
   },
   {
     "id": "rastaak-serghate-adabi",
-    "order": 106,
+    "order": 44,
     "pages": [
       "credits"
     ],
@@ -3263,7 +3227,7 @@
   },
   {
     "id": "new-1788537823966-vnkd2",
-    "order": 107,
+    "order": 99,
     "pages": [
       "credits"
     ],
