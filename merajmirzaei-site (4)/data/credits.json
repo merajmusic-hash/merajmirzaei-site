@@ -2578,9 +2578,14 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "links": [],
+    "links": [
+      {
+        "label": "",
+        "url": "https://soundcloud.com/ayedasihllah/iman-sani-baba-karam-2?utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing"
+      }
+    ],
     "start_seconds": "",
-    "cover_url": "",
+    "cover_url": "https://musicsweb.ir/wp-content/uploads/2023/03/iman-sani-babakaram-musicsweb.ir_.jpg",
     "status_musicbrainz": "",
     "status_discogs": "",
     "status_genius": "",
@@ -2942,9 +2947,14 @@
     "role_production": false,
     "role_mix": false,
     "role_mastering": false,
-    "links": [],
+    "links": [
+      {
+        "label": "",
+        "url": "https://open.spotify.com/album/41UIq5yx3M8sA9GR93n5lZ?si=5oEUKJgcSeSwIAk02PJWVQ"
+      }
+    ],
     "start_seconds": "",
-    "cover_url": "",
+    "cover_url": "https://musicbaran1.ir/music/shahram-shokoohi-khianat/",
     "status_musicbrainz": "",
     "status_discogs": "",
     "status_genius": "",
