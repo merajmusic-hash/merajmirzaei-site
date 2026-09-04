@@ -109,7 +109,7 @@
   var SELECTED_ARTISTS = [
     'Googoosh', 'Kamyar', 'Mehrdad Asemani', 'Black Cats', 'Helen', 'Fataneh',
     'Shahyad', 'Sahar', 'Salar Aghili', 'Reza Sadeghi', 'Amir Abbas Golab',
-    'Rastak', 'Ahmad Saeedi', 'Shahram Shokoohi', 'Arsalan', 'Milad J',
+    'Rastaak', 'Ahmad Saeedi', 'Shahram Shokoohi', 'Arsalan', 'Milad J',
   ];
 
   // A tile's image, in priority order: the artist's dedicated artist_image
