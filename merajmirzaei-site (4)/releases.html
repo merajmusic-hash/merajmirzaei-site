@@ -484,33 +484,32 @@ footer a:hover{color:var(--brass)}
     }, function(c){
       if(mySeq !== loadSeq){ try{ c.destroy(); }catch(err){} return; }
       controller = c;
+      // Scoped to this controller/track-load, not to the 'ready' handler
+      // below — real-world Spotify embeds can fire 'ready' more than once
+      // for the same controller, and a flag declared inside that handler
+      // resets on every firing, so the guard never actually spanned
+      // repeat firings. That's what the reported stutter really was: the
+      // seek genuinely repeating, just triggered by 'ready' firing again,
+      // not by a 'playback_update' handler (there never was one here).
+      var seeked = false;
       controller.addListener('ready', function(){
         if(mySeq !== loadSeq) return;
         if(shouldPlay){ try{ controller.play(); }catch(err){} }
-        if(!startSeconds || !shouldPlay) return;
-        // Seek exactly once, a fixed delay after play() — not on a
-        // 'playback_update' event: that fired more than once in practice,
-        // throwing the track back and stalling it. Seeking too early
-        // (racing play(), right after 'ready') reset the track instead of
-        // relocating it, which is what made the previous attempt play
-        // only ~1s of noise before going silent: the seek landed mid-load,
-        // the controller reset, and nothing called play() again to
-        // recover. This version waits out a fixed settle time, seeks once
-        // (guarded by the seeked flag so it truly cannot fire twice), and
-        // re-issues play() straight after — seek() can leave the
-        // controller paused/buffering rather than resuming on its own —
-        // plus once more shortly after in case the seek's own internal
-        // buffering briefly overrides that first play().
-        var seeked = false;
+        if(!startSeconds || !shouldPlay || seeked) return;
         setTimeout(function(){
           if(seeked || mySeq !== loadSeq) return;
-          seeked = true;
+          seeked = true; // set the moment the seek is issued — never seeks again for this track
           try{ controller.seek(startSeconds); }catch(err){}
-          try{ controller.play(); }catch(err){}
+          // A single recovery play(), after letting the seek's own
+          // internal buffering settle. Calling play() immediately, or
+          // more than once, is what caused the stutter (the first second
+          // repeating several times before landing on the wrong
+          // position): each extra play() while the seek was still
+          // settling restarted the track instead of resuming it.
           setTimeout(function(){
             if(mySeq !== loadSeq) return;
             try{ controller.play(); }catch(err){}
-          }, 600);
+          }, 400);
         }, 900);
       });
     });
