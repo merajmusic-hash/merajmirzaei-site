@@ -486,31 +486,32 @@ footer a:hover{color:var(--brass)}
       controller = c;
       controller.addListener('ready', function(){
         if(mySeq !== loadSeq) return;
-        // play() must never be skipped just because seek() failed — they
-        // are independent concerns, each in its own try/catch, so a bad
-        // seek can't silently take playback down with it. That's exactly
-        // what made any start_seconds value produce total silence before:
-        // seek() and play() shared one try block, and seek() throwing
-        // (calling it on 'ready', before the track has an actual position
-        // to seek within) skipped the play() call right after it.
         if(shouldPlay){ try{ controller.play(); }catch(err){} }
         if(!startSeconds || !shouldPlay) return;
-        // Wait for the first non-buffering playback_update before seeking
-        // — 'ready' only means the controller exists, not that the track
-        // has loaded a playable position yet — with a timeout fallback in
-        // case that event never arrives.
+        // Seek exactly once, a fixed delay after play() — not on a
+        // 'playback_update' event: that fired more than once in practice,
+        // throwing the track back and stalling it. Seeking too early
+        // (racing play(), right after 'ready') reset the track instead of
+        // relocating it, which is what made the previous attempt play
+        // only ~1s of noise before going silent: the seek landed mid-load,
+        // the controller reset, and nothing called play() again to
+        // recover. This version waits out a fixed settle time, seeks once
+        // (guarded by the seeked flag so it truly cannot fire twice), and
+        // re-issues play() straight after — seek() can leave the
+        // controller paused/buffering rather than resuming on its own —
+        // plus once more shortly after in case the seek's own internal
+        // buffering briefly overrides that first play().
         var seeked = false;
-        function doSeek(){
+        setTimeout(function(){
           if(seeked || mySeq !== loadSeq) return;
           seeked = true;
-          try{ controller.removeListener('playback_update', onUpdate); }catch(err){}
           try{ controller.seek(startSeconds); }catch(err){}
-        }
-        function onUpdate(e){
-          if(e && e.data && !e.data.isBuffering) doSeek();
-        }
-        controller.addListener('playback_update', onUpdate);
-        setTimeout(doSeek, 1500);
+          try{ controller.play(); }catch(err){}
+          setTimeout(function(){
+            if(mySeq !== loadSeq) return;
+            try{ controller.play(); }catch(err){}
+          }, 600);
+        }, 900);
       });
     });
   }
