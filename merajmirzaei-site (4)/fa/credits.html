@@ -1500,10 +1500,31 @@ footer a:hover{color:var(--brass)}
       controller = c;
       controller.addListener('ready', function(){
         if(mySeq !== loadSeq) return;
-        try{
-          if(startSeconds) controller.seek(startSeconds);
-          if(shouldPlay) controller.play();
-        }catch(err){}
+        // play() must never be skipped just because seek() failed — they
+        // are independent concerns, each in its own try/catch, so a bad
+        // seek can't silently take playback down with it. That's exactly
+        // what made any start_seconds value produce total silence before:
+        // seek() and play() shared one try block, and seek() throwing
+        // (calling it on 'ready', before the track has an actual position
+        // to seek within) skipped the play() call right after it.
+        if(shouldPlay){ try{ controller.play(); }catch(err){} }
+        if(!startSeconds || !shouldPlay) return;
+        // Wait for the first non-buffering playback_update before seeking
+        // — 'ready' only means the controller exists, not that the track
+        // has loaded a playable position yet — with a timeout fallback in
+        // case that event never arrives.
+        var seeked = false;
+        function doSeek(){
+          if(seeked || mySeq !== loadSeq) return;
+          seeked = true;
+          try{ controller.removeListener('playback_update', onUpdate); }catch(err){}
+          try{ controller.seek(startSeconds); }catch(err){}
+        }
+        function onUpdate(e){
+          if(e && e.data && !e.data.isBuffering) doSeek();
+        }
+        controller.addListener('playback_update', onUpdate);
+        setTimeout(doSeek, 1500);
       });
     });
   }
@@ -1583,5 +1604,6 @@ footer a:hover{color:var(--brass)}
   }, true);
 })();
 </script>
+<script src="/social-bar.js" defer></script>
 </body>
 </html>
