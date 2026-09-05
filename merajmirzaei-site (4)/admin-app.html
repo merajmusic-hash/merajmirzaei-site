@@ -10,6 +10,7 @@
     --ink:#0B0D10; --panel:#14181D; --panel-2:#1B2027; --line:#262D36;
     --brass:#C2A878; --text:#E7E4DE; --muted:#8B95A1;
     --good:#7FBF7F; --bad:#e08585;
+    --header-h:56px; /* kept in sync with the real <header> height by JS */
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--ink);color:var(--text);font-family:system-ui,sans-serif;font-size:13px}
@@ -35,11 +36,24 @@
   .tab-btn.active{background:var(--panel-2);border-color:var(--line);color:var(--text);font-weight:700}
 
   .wrap{padding:16px;overflow-x:auto}
-  table{border-collapse:collapse;width:100%;min-width:1900px}
-  .homepage-table{min-width:640px}
+  /* --header-h is measured and kept in sync with the real (possibly
+     multi-line, on a narrow viewport) <header> height by JS below, so the
+     sticky column headers always sit exactly below it instead of a
+     hardcoded guess drifting out of sync and overlapping content. */
+  table{border-collapse:collapse;table-layout:fixed}
+  .homepage-table{min-width:640px;table-layout:auto}
   th, td{border:1px solid var(--line);padding:4px 6px;vertical-align:top;text-align:left}
-  th{background:var(--panel);position:sticky;top:53px;font-size:11px;text-transform:uppercase;
+  th{background:var(--panel);position:sticky;top:var(--header-h, 56px);font-size:11px;text-transform:uppercase;
     letter-spacing:.05em;color:var(--muted);white-space:nowrap;z-index:5}
+  /* Frozen identifying columns (Pages, Artist EN, Title EN): pinned to the
+     left edge of the horizontally-scrolling .wrap so the row stays
+     identifiable while scrolling right to reach the later columns. Solid
+     backgrounds prevent scrolled-under content from showing through. */
+  .col-pages, .col-frozen{position:sticky;z-index:3;background:var(--ink)}
+  .col-pages{left:0}
+  .col-frozen.artist-en{left:56px}
+  .col-frozen.title-en{left:176px}
+  thead .col-pages, thead .col-frozen{z-index:6;background:var(--panel)}
   td input[type=text], td input[type=number], td textarea, td select{
     width:100%;background:var(--panel-2);border:1px solid transparent;color:var(--text);
     border-radius:3px;padding:4px 5px;font-size:12px;font-family:inherit}
@@ -72,8 +86,15 @@
   .drag-handle:hover{color:var(--brass)}
   .drag-disabled .drag-handle{visibility:hidden}
 
-  .artist-block{margin-bottom:14px;border:1px solid var(--line);border-radius:6px;overflow:hidden}
-  .artist-block table{min-width:0}
+  /* No overflow:hidden here: it would look nicer clipping the table's
+     square corners to this box's rounded border, but overflow other than
+     "visible" turns a plain non-scrolling box into a sticky-positioning
+     containing block too — which broke both the horizontal scroll (the
+     table's true width got clipped away instead of reaching .wrap's own
+     overflow-x:auto) and the sticky column header (its "stuck" offset was
+     computed against this box instead of the real page scroll, dropping
+     it down into the first data row). */
+  .artist-block{margin-bottom:14px;border:1px solid var(--line);border-radius:6px}
   .artist-block-header{display:flex;align-items:center;gap:8px;background:var(--panel);
     padding:6px 10px;font-size:12px}
   .artist-block-header .drag-handle{font-size:16px}
@@ -128,6 +149,17 @@
   var dirtyFlag = document.getElementById('dirtyFlag');
   var tabsEl = document.getElementById('tabs');
   var addRowBtn = document.getElementById('addRowBtn');
+  var headerEl = document.querySelector('header');
+
+  // The sticky column headers (th{top:var(--header-h)}) need to sit exactly
+  // below the real page <header>, which can grow taller than one line (it
+  // wraps on a narrow viewport) — so its height is measured, not guessed.
+  function syncHeaderHeight(){
+    document.documentElement.style.setProperty('--header-h', headerEl.offsetHeight + 'px');
+  }
+  syncHeaderHeight();
+  window.addEventListener('resize', syncHeaderHeight);
+  if(window.ResizeObserver) new ResizeObserver(syncHeaderHeight).observe(headerEl);
 
   function showMsg(text, kind){
     msgEl.innerHTML = '';
@@ -227,9 +259,9 @@
         + '<label title="Show on Credits page"><input type="checkbox" '+(hasPage(entry,'credits')?'checked':'')+' data-id="'+esc(entry.id)+'" data-field="page-credits">C</label>'
         + '<label title="Show on Releases page"><input type="checkbox" '+(hasPage(entry,'releases')?'checked':'')+' data-id="'+esc(entry.id)+'" data-field="page-releases">R</label>'
       + '</td>'
-      + '<td><input type="text" value="'+esc(entry.artist_en)+'" data-id="'+esc(entry.id)+'" data-field="artist_en"></td>'
+      + '<td class="col-frozen artist-en"><input type="text" value="'+esc(entry.artist_en)+'" data-id="'+esc(entry.id)+'" data-field="artist_en"></td>'
+      + '<td class="col-frozen title-en"><input type="text" value="'+esc(entry.title_en)+'" data-id="'+esc(entry.id)+'" data-field="title_en"></td>'
       + '<td><input type="text" value="'+esc(entry.artist_fa)+'" data-id="'+esc(entry.id)+'" data-field="artist_fa" dir="rtl"></td>'
-      + '<td><input type="text" value="'+esc(entry.title_en)+'" data-id="'+esc(entry.id)+'" data-field="title_en"></td>'
       + '<td><input type="text" value="'+esc(entry.title_fa)+'" data-id="'+esc(entry.id)+'" data-field="title_fa" dir="rtl"></td>'
       + '<td><select data-id="'+esc(entry.id)+'" data-field="release_type">'
         + RELEASE_TYPES.map(function(t){ return opt(t, entry.release_type); }).join('')
@@ -255,9 +287,26 @@
     return tr;
   }
 
+  // Column order/widths are shared between the header row and every data
+  // row (renderEntryRow), and drive the colgroup below — table-layout:fixed
+  // needs fixed pixel widths to make the sticky-left offsets in the CSS
+  // (.col-pages, .col-frozen.artist-en/.title-en) land on real column
+  // boundaries instead of drifting with content-based auto sizing.
+  var COLUMN_WIDTHS = [
+    22,  140, 56,  120, 120, 120, 120, 110, 120, 64, 100,
+    40,  40,  40,  46,
+    260, 64,  150,
+    120, 120, 120, 170, 80,
+  ];
+
+  function entryColgroup(){
+    return '<colgroup>' + COLUMN_WIDTHS.map(function(w){ return '<col style="width:'+w+'px">'; }).join('') + '</colgroup>';
+  }
+
   function entryHeaderCells(){
-    return '<th></th><th>ID</th><th>Pages</th><th>Artist (EN)</th><th>Artist (FA)</th>'
-      + '<th>Title (EN)</th><th>Title (FA)</th><th>Release type</th><th>Album</th>'
+    return '<th></th><th>ID</th><th class="col-pages">Pages</th>'
+      + '<th class="col-frozen artist-en">Artist (EN)</th><th class="col-frozen title-en">Title (EN)</th>'
+      + '<th>Artist (FA)</th><th>Title (FA)</th><th>Release type</th><th>Album</th>'
       + '<th class="col-narrow">Year</th><th>Label</th>'
       + '<th class="col-check">Arr.</th><th class="col-check">Prod.</th><th class="col-check">Mix</th><th class="col-check">Master</th>'
       + '<th>Links</th><th class="col-narrow">Start (s)</th><th>Cover</th>'
@@ -313,7 +362,7 @@
       block.appendChild(header);
 
       var table = document.createElement('table');
-      table.innerHTML = '<thead><tr>'+entryHeaderCells()+'</tr></thead>';
+      table.innerHTML = entryColgroup() + '<thead><tr>'+entryHeaderCells()+'</tr></thead>';
       var tbody = document.createElement('tbody');
       tbody.className = 'track-rows';
       (filtering ? shown : members).forEach(function(e){ tbody.appendChild(renderEntryRow(e)); });
@@ -358,7 +407,7 @@
 
     wrap.innerHTML = '';
     var table = document.createElement('table');
-    table.innerHTML = '<thead><tr>'+entryHeaderCells()+'</tr></thead>';
+    table.innerHTML = entryColgroup() + '<thead><tr>'+entryHeaderCells()+'</tr></thead>';
     var tbody = document.createElement('tbody');
     tbody.id = 'releasesRows';
     tbody.className = filtering ? 'drag-disabled' : '';
