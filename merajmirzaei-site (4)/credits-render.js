@@ -141,7 +141,8 @@
     var imgHtml = img ? '<img class="aw-img" src="'+esc(img)+'" loading="lazy" alt="">' : '';
     var nameHtml = '<span class="aw-name"><span class="aw-en">'+esc(nameEn)+'</span>'
       + (nameFa ? '<span class="aw-fa">'+esc(nameFa)+'</span>' : '') + '</span>';
-    return '<a class="'+cls+'" href="credits.html?artist='+slug+'">'+imgHtml+nameHtml+'</a>';
+    var creditsHref = (lang === 'fa' ? '/fa/credits' : '/credits') + '?artist=' + slug;
+    return '<a class="'+cls+'" href="'+creditsHref+'">'+imgHtml+nameHtml+'</a>';
   }
 
   var MORE_TEXT = { en:'Full credit sheet →', fa:'کارنامه کامل ←' };
@@ -289,7 +290,7 @@
       var html = artists.map(function(name, i){
         return renderArtistTile(name, byArtist[name], resolved[i]);
       }).join('');
-      html += '<a class="aw-tile aw-more" href="credits.html">'+esc(MORE_TEXT[lang])+'</a>';
+      html += '<a class="aw-tile aw-more" href="'+(lang === 'fa' ? '/fa/credits' : '/credits')+'">'+esc(MORE_TEXT[lang])+'</a>';
       mount.innerHTML = html;
     });
   }

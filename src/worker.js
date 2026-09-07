@@ -230,6 +230,483 @@ function validateHomepage(data) {
 }
 
 // ---------------------------------------------------------------------
+// entity SEO: one canonical Person/MusicGroup identity, a per-page
+// structured-data @graph, self-referencing canonicals, correct hreflang,
+// and canonical (extensionless) internal links — all injected server-side
+// via HTMLRewriter on the way out of env.ASSETS.fetch(). This replaces
+// ~20 hand-duplicated, @id-less JSON-LD blocks (one static Person object
+// per page, drifting independently) with one definition, so there is a
+// single source of truth instead of a second SEO system living beside
+// data/credits.json. That file is only ever read here (via the same
+// public /data/credits.json the browser already fetches) — never written.
+// ---------------------------------------------------------------------
+
+const SITE_ORIGIN = 'https://merajmirzaei.com';
+const PERSON_ID = SITE_ORIGIN + '/#person';
+const MIRAGE_ID = SITE_ORIGIN + '/mirage#mirage';
+const PORTRAIT_URL = SITE_ORIGIN + '/images/portrait.jpg';
+
+// Verified profile URLs, unchanged from the site's existing (pre-this-task)
+// JSON-LD — pulled from the already-vetted data already live on the site,
+// not re-derived or guessed.
+const PERSON_SAME_AS = [
+  'https://musicbrainz.org/artist/5d52a3f9-f059-4c47-9f4e-0bdb61317fe3',
+  'https://www.discogs.com/user/Merajmusic',
+  'https://genius.com/merajmirzaei',
+  'https://open.spotify.com/artist/3wHa2wASrgywhttuHleFl1',
+  'https://youtube.com/@miragesohi',
+  'https://www.instagram.com/merajmirzaei_music',
+];
+const MIRAGE_SAME_AS = [
+  'https://open.spotify.com/artist/3wHa2wASrgywhttuHleFl1',
+  'https://www.youtube.com/@Miragesohi',
+  'https://www.instagram.com/merajmirzaei_music/',
+];
+
+// jobTitle/description per language — the English strings are exactly what
+// was already live in every page's JSON-LD; the Farsi strings reuse the
+// site's own already-published Farsi meta description (fa/index.html)
+// rather than a fresh, unverified translation.
+const PERSON_LOCALIZED = {
+  en: {
+    jobTitle: 'Mix and Mastering Engineer',
+    description: 'Mix and mastering engineer, music producer and sound designer based in London, with over 20 years of work across Persian, electronic and international music.',
+  },
+  fa: {
+    jobTitle: 'مهندس میکس و مسترینگ',
+    description: 'معراج میرزایی (MIRAGE) — مهندس میکس و مسترینگ، تهیه‌کننده و ساند دیزاینر در لندن. بیش از ۲۰ سال کار در موسیقی ایرانی، الکترونیک و بین‌المللی.',
+  },
+};
+
+function buildPersonNode(lang) {
+  const loc = PERSON_LOCALIZED[lang];
+  return {
+    '@type': 'Person',
+    '@id': PERSON_ID,
+    name: 'Meraj Mirzaei',
+    alternateName: ['معراج میرزایی', 'MIRAGE'],
+    jobTitle: loc.jobTitle,
+    description: loc.description,
+    url: SITE_ORIGIN + '/',
+    image: PORTRAIT_URL,
+    homeLocation: { '@type': 'Place', name: 'London, United Kingdom' },
+    address: { '@type': 'PostalAddress', addressLocality: 'London', addressCountry: 'United Kingdom' },
+    knowsAbout: ['Audio mixing', 'Audio mastering', 'Music production', 'Sound design', 'Deep house', 'Persian pop music'],
+    sameAs: PERSON_SAME_AS,
+  };
+}
+
+function buildMirageNode() {
+  return {
+    '@type': 'MusicGroup',
+    '@id': MIRAGE_ID,
+    name: 'MIRAGE',
+    genre: ['Deep house', 'Melodic electronic', 'Trap', 'Pop'],
+    foundingDate: '2025',
+    member: { '@id': PERSON_ID },
+    sameAs: MIRAGE_SAME_AS,
+  };
+}
+
+// Nav labels (visible on every page's <nav>) and the three journal posts'
+// editorial copy, reused verbatim from what each page already carries —
+// centralized here once instead of hand-duplicated per file.
+const NAV_LABELS = {
+  home: { en: 'Studio', fa: 'استودیو' },
+  credits: { en: 'Credits', fa: 'کارنامه' },
+  releases: { en: 'Releases', fa: 'ریلیزها' },
+  mirage: { en: 'MIRAGE', fa: 'MIRAGE' },
+  gallery: { en: 'Gallery', fa: 'گالری' },
+  services: { en: 'Services', fa: 'خدمات' },
+  journal: { en: 'Journal', fa: 'یادداشت‌ها' },
+};
+
+const BLOG_POSTS = [
+  {
+    slug: 'mixing-persian-vocals',
+    datePublished: '2026-08',
+    en: { headline: 'Why Persian vocals need a different kind of mix', description: 'The voice sits differently in Persian music than it does in western pop. Mixing it the way a pop record is mixed usually makes it worse.' },
+    fa: { headline: 'چرا وکال فارسی میکس متفاوتی می‌خواهد', description: 'جایگاه صدا در موسیقی ایرانی با پاپ غربی فرق دارد. اگر مثل یک کار پاپ میکسش کنی، معمولاً بدترش می‌کنی.' },
+  },
+  {
+    slug: 'mastering-for-streaming',
+    datePublished: '2026-07',
+    en: { headline: 'Mastering for streaming, without chasing loudness', description: 'Every platform turns your master down to roughly the same level. Knowing that changes what a master should aim for.' },
+    fa: { headline: 'مسترینگ برای استریم، بدون دویدن دنبال بلندی', description: 'هر پلتفرمی مستر تو را تا حدود یک سطح مشخص پایین می‌آورد. دانستن این موضوع هدف مسترینگ را عوض می‌کند.' },
+  },
+  {
+    slug: 'traditional-instruments',
+    datePublished: '2026-06',
+    en: { headline: 'Putting tar, santur and ney into a modern production', description: 'Persian instruments were not designed for a dense mix. Most of the trouble comes from treating them like their western equivalents.' },
+    fa: { headline: 'جا دادن تار، سنتور و نی در یک پروداکشن مدرن', description: 'سازهای ایرانی برای یک میکس شلوغ ساخته نشده‌اند. بیشتر دردسر از آنجا می‌آید که مثل معادل‌های غربی‌شان با آن‌ها رفتار می‌کنیم.' },
+  },
+];
+
+// ---------------------------------------------------------------------
+// URL model: every indexable page has exactly one canonical, extensionless
+// form (Cloudflare's asset serving already 307s "/foo.html" -> "/foo" and
+// "/fa" -> "/fa/", confirmed empirically against this project's own
+// wrangler config) — pathFor()/parseSitePath() are the single definition
+// of that mapping, shared by canonical tags, hreflang, JSON-LD urls, the
+// language toggle and internal link rewriting below.
+// ---------------------------------------------------------------------
+
+function parseSitePath(pathname) {
+  if (pathname === '/') return { lang: 'en', slug: 'home' };
+  if (pathname === '/fa' || pathname === '/fa/') return { lang: 'fa', slug: 'home' };
+  if (pathname.startsWith('/fa/')) {
+    const rest = pathname.slice(4).replace(/\/$/, '');
+    return { lang: 'fa', slug: rest || 'home' };
+  }
+  const rest = pathname.slice(1).replace(/\/$/, '');
+  return { lang: 'en', slug: rest || 'home' };
+}
+
+function pathFor(lang, slug) {
+  if (slug === 'home') return lang === 'fa' ? '/fa/' : '/';
+  return (lang === 'fa' ? '/fa/' : '/') + slug;
+}
+
+function buildBreadcrumb(lang, slug) {
+  const items = [{ '@type': 'ListItem', position: 1, name: NAV_LABELS.home[lang], item: SITE_ORIGIN + pathFor(lang, 'home') }];
+  const post = BLOG_POSTS.find((p) => p.slug === slug);
+  if (post) {
+    items.push({ '@type': 'ListItem', position: 2, name: NAV_LABELS.journal[lang], item: SITE_ORIGIN + pathFor(lang, 'journal') });
+    items.push({ '@type': 'ListItem', position: 3, name: post[lang].headline, item: SITE_ORIGIN + pathFor(lang, slug) });
+  } else if (slug !== 'home' && NAV_LABELS[slug]) {
+    items.push({ '@type': 'ListItem', position: 2, name: NAV_LABELS[slug][lang], item: SITE_ORIGIN + pathFor(lang, slug) });
+  } else {
+    return null;
+  }
+  return { '@type': 'BreadcrumbList', itemListElement: items };
+}
+
+// Page-specific JSON-LD node per slug. Field values (headline/description/
+// genre/foundingDate/areaServed/etc.) are copied from what each page's own
+// static JSON-LD already carried — this only replaces each page's inline,
+// duplicated Person/MusicGroup object with a {"@id": ...} reference to the
+// single canonical node above, and (only where the old block had literally
+// copy-pasted the English name into the Farsi page — gallery, journal,
+// services) swaps in that page's own already-published Farsi <title> text
+// so the structured data matches what's actually visible.
+function buildPageNode(slug, lang) {
+  switch (slug) {
+    case 'home':
+      return {
+        '@type': 'ProfilePage',
+        '@id': SITE_ORIGIN + pathFor(lang, 'home') + '#webpage',
+        url: SITE_ORIGIN + pathFor(lang, 'home'),
+        name: lang === 'fa' ? 'معراج میرزایی — مهندس میکس و مسترینگ، لندن' : 'Meraj Mirzaei — Mix & Mastering Engineer, London',
+        inLanguage: lang,
+        mainEntity: { '@id': PERSON_ID },
+      };
+    case 'credits':
+      return {
+        '@type': 'CollectionPage',
+        '@id': SITE_ORIGIN + pathFor(lang, 'credits') + '#webpage',
+        url: SITE_ORIGIN + pathFor(lang, 'credits'),
+        name: lang === 'fa' ? 'کارنامه — معراج میرزایی | مهندس میکس و مسترینگ' : 'Credits — Meraj Mirzaei | Mix & Mastering Engineer',
+        inLanguage: lang,
+        about: { '@id': PERSON_ID },
+      };
+    case 'releases':
+      return {
+        '@type': 'CollectionPage',
+        '@id': SITE_ORIGIN + pathFor(lang, 'releases') + '#webpage',
+        url: SITE_ORIGIN + pathFor(lang, 'releases'),
+        name: lang === 'fa' ? 'ریلیزهای جدید — MIRAGE | معراج میرزایی' : 'New Releases — MIRAGE | Meraj Mirzaei',
+        inLanguage: lang,
+        about: { '@id': MIRAGE_ID },
+      };
+    case 'mirage':
+      return buildMirageNode();
+    case 'gallery':
+      return {
+        '@type': 'ImageGallery',
+        name: lang === 'fa' ? 'گالری — معراج میرزایی' : 'Gallery — Meraj Mirzaei',
+        author: { '@id': PERSON_ID },
+      };
+    case 'services':
+      return {
+        '@type': 'ProfessionalService',
+        name: lang === 'fa' ? 'خدمات میکس و مسترینگ — معراج میرزایی، لندن' : 'Meraj Mirzaei — Mixing and Mastering',
+        areaServed: 'Worldwide',
+        provider: { '@id': PERSON_ID },
+        address: { '@type': 'PostalAddress', addressLocality: 'London', addressCountry: 'GB' },
+      };
+    case 'journal':
+      return {
+        '@type': 'Blog',
+        name: lang === 'fa' ? 'یادداشت‌ها — معراج میرزایی' : 'Meraj Mirzaei — Journal',
+        author: { '@id': PERSON_ID },
+        blogPost: BLOG_POSTS.map((p) => ({
+          '@type': 'BlogPosting',
+          headline: p[lang].headline,
+          description: p[lang].description,
+          datePublished: p.datePublished,
+          url: SITE_ORIGIN + pathFor(lang, p.slug),
+        })),
+      };
+    default: {
+      const post = BLOG_POSTS.find((p) => p.slug === slug);
+      if (!post) return null;
+      return {
+        '@type': 'BlogPosting',
+        headline: post[lang].headline,
+        description: post[lang].description,
+        datePublished: post.datePublished,
+        inLanguage: lang,
+        author: { '@id': PERSON_ID },
+        publisher: { '@id': PERSON_ID },
+        mainEntityOfPage: SITE_ORIGIN + pathFor(lang, slug),
+      };
+    }
+  }
+}
+
+// ---------------------------------------------------------------------
+// live recordings graph — read (never write) data/credits.json via the
+// same public /data/credits.json the browser fetches, so credits/releases
+// pages' structured data is generated from whatever is currently live
+// (including anything edited through /admin) instead of a static snapshot
+// that drifts out of sync with it.
+// ---------------------------------------------------------------------
+
+// Matches credits-render.js's own ROLE_ORDER/ROLE_LABELS, but spelled out
+// as full job titles (credits-render.js's on-page badges are deliberately
+// short, e.g. "Mix"/"Master") — kept in sync by hand since both files must
+// describe the exact same role flags.
+const ROLE_ORDER = ['role_arrangement', 'role_production', 'role_mix', 'role_mastering'];
+const ROLE_NAME_LABELS = {
+  en: { role_arrangement: 'Arrangement', role_production: 'Production', role_mix: 'Mixing Engineer', role_mastering: 'Mastering Engineer' },
+  fa: { role_arrangement: 'تنظیم', role_production: 'پروداکشن', role_mix: 'میکس', role_mastering: 'مسترینگ' },
+};
+
+function roleNameFor(entry, lang) {
+  const labels = ROLE_NAME_LABELS[lang];
+  return ROLE_ORDER.filter((f) => entry[f]).map((f) => labels[f]).join(', ');
+}
+
+// Same pattern credits-render.js uses to decide a Spotify link is directly
+// playable (album or track) — only a verified, playable link becomes a
+// recording's sameAs; never a guessed URL.
+const RE_SPOTIFY_PLAYABLE = /open\.spotify\.com\/(album|track)\/([A-Za-z0-9]+)/i;
+
+function verifiedSameAs(entry) {
+  const links = Array.isArray(entry.links) ? entry.links : [];
+  const hit = links.find((l) => l && typeof l.url === 'string' && RE_SPOTIFY_PLAYABLE.test(l.url));
+  return hit ? hit.url : null;
+}
+
+function slugifyName(s) {
+  return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+async function readCreditsReadOnly(env) {
+  try {
+    const res = await env.ASSETS.fetch(new Request('https://internal/data/credits.json'));
+    if (!res.ok) return null;
+    const data = await res.json();
+    return Array.isArray(data) ? data : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Builds MusicRecording/MusicAlbum nodes for one page ('credits' or
+// 'releases'), reusing a stable per-artist @id (and the single canonical
+// MIRAGE node) instead of a fresh anonymous artist object per recording.
+// Entries with no verified title on this language (credits-render.js's own
+// "hasTitle" check — shown on-page as "Pending") are skipped: there is
+// nothing verified yet to publish as a fact.
+function buildRecordingsGraph(creditsData, pageFilter, lang) {
+  const entries = creditsData
+    .filter((e) => Array.isArray(e.pages) && e.pages.includes(pageFilter))
+    .slice()
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+  const artistNodes = new Map();
+  const recordingNodes = [];
+  let usesMirage = false;
+
+  for (const entry of entries) {
+    const title = lang === 'fa' ? (entry.title_fa || entry.title_en) : (entry.title_en || entry.title_fa);
+    if (!title) continue;
+
+    let byArtistRef = null;
+    if (entry.artist_en === 'MIRAGE') {
+      usesMirage = true;
+      byArtistRef = { '@id': MIRAGE_ID };
+    } else if (entry.artist_en) {
+      const artistId = SITE_ORIGIN + '/credits#artist-' + slugifyName(entry.artist_en);
+      byArtistRef = { '@id': artistId };
+      if (!artistNodes.has(artistId)) {
+        const node = { '@type': 'MusicGroup', '@id': artistId, name: entry.artist_en };
+        if (entry.artist_fa) node.alternateName = entry.artist_fa;
+        if (entry.spotify_artist_url) node.sameAs = entry.spotify_artist_url;
+        artistNodes.set(artistId, node);
+      }
+    }
+
+    const altTitle = lang === 'fa' ? entry.title_en : entry.title_fa;
+    const roleName = roleNameFor(entry, lang);
+    const node = { '@type': entry.release_type === 'album' ? 'MusicAlbum' : 'MusicRecording', name: title };
+    if (altTitle) node.alternateName = altTitle;
+    if (byArtistRef) node.byArtist = byArtistRef;
+    // "Role" wraps the reference so roleName qualifies THIS recording's
+    // credit only — it must never be written directly onto the {"@id":
+    // PERSON_ID} object itself, which would incorrectly merge a
+    // per-recording role into the canonical Person's global properties.
+    if (roleName) node.contributor = { '@type': 'Role', roleName, contributor: { '@id': PERSON_ID } };
+    if (entry.album_name) node.inAlbum = { '@type': 'MusicAlbum', name: entry.album_name };
+    if (entry.year) node.datePublished = String(entry.year);
+    const sameAs = verifiedSameAs(entry);
+    if (sameAs) node.sameAs = sameAs;
+    recordingNodes.push(node);
+  }
+
+  return { nodes: [...artistNodes.values(), ...recordingNodes], usesMirage };
+}
+
+async function buildEntityGraph(pathname, env) {
+  const { lang, slug } = parseSitePath(pathname);
+  const nodes = [buildPersonNode(lang)];
+
+  const pageNode = buildPageNode(slug, lang);
+  if (pageNode) nodes.push(pageNode);
+
+  const breadcrumb = buildBreadcrumb(lang, slug);
+  if (breadcrumb) nodes.push(breadcrumb);
+
+  if (slug === 'credits' || slug === 'releases') {
+    const creditsData = await readCreditsReadOnly(env);
+    if (creditsData) {
+      const { nodes: recNodes, usesMirage } = buildRecordingsGraph(creditsData, slug, lang);
+      if (usesMirage && slug !== 'mirage') nodes.push(buildMirageNode());
+      nodes.push(...recNodes);
+    }
+  }
+
+  return { lang, slug, nodes, canonicalPath: pathFor(lang, slug), enPath: pathFor('en', slug), faPath: pathFor('fa', slug) };
+}
+
+// ---------------------------------------------------------------------
+// HTMLRewriter transform: removes each page's old static JSON-LD, injects
+// the generated @graph + canonical + og:image/Twitter Card tags, fixes the
+// three hreflang <link> tags (previously always pointing at the homepage,
+// on every page), fixes the language-toggle link (previously always the
+// opposite-language HOMEPAGE regardless of current page), and rewrites
+// internal ".html" links (nav/wordmark/footer) to their canonical
+// extensionless form so they resolve without a redirect hop.
+// ---------------------------------------------------------------------
+
+function escapeHtmlAttr(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Resolves a same-origin ".html" href from the static markup (nav,
+// wordmark, footer) to its canonical path. Only ever applied to relative
+// links the site's own templates emit: "index.html", "credits.html",
+// "fa/index.html", "../index.html" — never to absolute http(s) URLs.
+function resolveHtmlHref(href, currentLang) {
+  if (/^[a-z][a-z0-9+.-]*:/i.test(href) || href.startsWith('//')) return null;
+  let lang = currentLang;
+  let rest = href;
+  if (rest.startsWith('fa/')) {
+    lang = 'fa';
+    rest = rest.slice(3);
+  } else if (rest.startsWith('../')) {
+    lang = 'en';
+    rest = rest.slice(3);
+  }
+  const qIdx = rest.indexOf('?');
+  const file = qIdx === -1 ? rest : rest.slice(0, qIdx);
+  const query = qIdx === -1 ? '' : rest.slice(qIdx);
+  const base = file.replace(/\.html$/i, '');
+  const slug = base === 'index' || base === '' ? 'home' : base;
+  return pathFor(lang, slug) + query;
+}
+
+class RemoveElement {
+  element(element) {
+    element.remove();
+  }
+}
+
+class SetAttribute {
+  constructor(name, value) {
+    this.name = name;
+    this.value = value;
+  }
+  element(element) {
+    element.setAttribute(this.name, this.value);
+  }
+}
+
+class HeadInjector {
+  constructor(html) {
+    this.html = html;
+  }
+  element(element) {
+    element.append(this.html, { html: true });
+  }
+}
+
+class LangtogRewriter {
+  constructor(targetHref) {
+    this.targetHref = targetHref;
+  }
+  element(element) {
+    element.setAttribute('href', this.targetHref);
+  }
+}
+
+class InternalLinkRewriter {
+  constructor(currentLang) {
+    this.currentLang = currentLang;
+  }
+  element(element) {
+    if (element.getAttribute('id') === 'langtog') return; // owned by LangtogRewriter
+    const href = element.getAttribute('href');
+    if (!href) return;
+    const resolved = resolveHtmlHref(href, this.currentLang);
+    if (resolved) element.setAttribute('href', resolved);
+  }
+}
+
+async function applyEntitySeo(response, env, pathname) {
+  const contentType = response.headers.get('Content-Type') || '';
+  if (!contentType.includes('text/html')) return response;
+
+  const { lang, nodes, canonicalPath, enPath, faPath } = await buildEntityGraph(pathname, env);
+  const canonicalUrl = SITE_ORIGIN + canonicalPath;
+  const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': nodes }, null, 2).replace(/</g, '\\u003c');
+
+  const injection =
+    '\n<link rel="canonical" href="' + escapeHtmlAttr(canonicalUrl) + '">\n' +
+    '<meta property="og:url" content="' + escapeHtmlAttr(canonicalUrl) + '">\n' +
+    '<meta property="og:image" content="' + escapeHtmlAttr(PORTRAIT_URL) + '">\n' +
+    '<meta name="twitter:card" content="summary_large_image">\n' +
+    '<meta name="twitter:image" content="' + escapeHtmlAttr(PORTRAIT_URL) + '">\n' +
+    '<script type="application/ld+json">' + jsonLd + '</script>\n';
+
+  // Root-relative, matching every other internal link on the page (only
+  // canonical/hreflang/JSON-LD urls need to be absolute).
+  const langtogHref = lang === 'en' ? faPath : enPath;
+
+  const rewriter = new HTMLRewriter()
+    .on('script[type="application/ld+json"]', new RemoveElement())
+    .on('link[rel="alternate"][hreflang="en"]', new SetAttribute('href', SITE_ORIGIN + enPath))
+    .on('link[rel="alternate"][hreflang="fa"]', new SetAttribute('href', SITE_ORIGIN + faPath))
+    .on('link[rel="alternate"][hreflang="x-default"]', new SetAttribute('href', SITE_ORIGIN + enPath))
+    .on('head', new HeadInjector(injection))
+    .on('a#langtog', new LangtogRewriter(langtogHref))
+    .on('a[href$=".html"]', new InternalLinkRewriter(lang));
+
+  return rewriter.transform(response);
+}
+
+// ---------------------------------------------------------------------
 // admin HTML shell (served only after authentication)
 // ---------------------------------------------------------------------
 
@@ -508,7 +985,18 @@ export default {
       return json({ error: (err && err.message) || 'Internal error' }, 500);
     }
 
-    // Everything else: the public static site, unchanged.
-    return env.ASSETS.fetch(request);
+    // Everything else: the public static site, with entity/structured-data
+    // metadata injected server-side (see applyEntitySeo above). Any
+    // failure here falls back to the untouched asset response rather than
+    // breaking the page.
+    const assetResponse = await env.ASSETS.fetch(request);
+    if (assetResponse.status === 200) {
+      try {
+        return await applyEntitySeo(assetResponse, env, pathname);
+      } catch (err) {
+        return assetResponse;
+      }
+    }
+    return assetResponse;
   },
 };
