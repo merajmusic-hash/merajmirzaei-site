@@ -1345,11 +1345,11 @@ footer a:hover{color:var(--brass)}
 </section>
 </main>
 
-<script>window.__CREDITS_CONFIG__ = { lang: 'fa', page: 'credits', mount: '#creditsRoot', filterMount: '#filterBar' };</script>
+<script id="creditsConfig">window.__CREDITS_CONFIG__ = { lang: 'fa', page: 'credits', mount: '#creditsRoot', filterMount: '#filterBar' };</script>
 <script src="/credits-render.js"></script>
 <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
 <script src="https://www.youtube.com/iframe_api" async></script>
-<script>
+<script id="playbackController">
 (function(){
   // A fresh EmbedController is created for every track click and the
   // previous one is destroyed. Reusing a single controller via loadUri()

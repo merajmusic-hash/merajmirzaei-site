@@ -5,19 +5,24 @@
 //   node scripts/validate-seo.mjs [http://localhost:8787]
 //
 // Checks, per plan section 13:
-//   - every canonical page returns exactly one <script type="application/
-//     ld+json"> block, and it parses as valid JSON
+//   - every canonical page (static pages + one per titled recording)
+//     returns exactly one <script type="application/ld+json"> block, and
+//     it parses as valid JSON
 //   - every Person node found uses the same, single @id (no duplicate
 //     Person identities)
 //   - every page has a self-referencing <link rel="canonical">
 //   - hreflang en/fa/x-default are present and internally consistent
 //   - no duplicate @id values within a single page's @graph
-//   - sitemap.xml contains exactly the same canonical URL set this script
-//     checks (no omissions, nothing stale)
+//   - no duplicate recording slugs in data/credits.json
+//   - an untitled ("Pending") entry's slug 404s rather than serving a
+//     fabricated page
+//   - sitemap.xml contains exactly the same canonical URL set (static
+//     pages + every titled recording, both languages) — no omissions,
+//     nothing stale
 
 const BASE = process.argv[2] || 'http://localhost:8787';
 
-const PAGES = [
+const STATIC_PAGES = [
   '/', '/fa/',
   '/credits', '/fa/credits',
   '/releases', '/fa/releases',
@@ -41,7 +46,11 @@ function ok(msg) {
   console.log('ok:   ' + msg);
 }
 
-async function checkPage(path) {
+function slugify(s) {
+  return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+async function checkPage(path, { requireOgImagePrefix = 'https://merajmirzaei.com/images/portrait.jpg' } = {}) {
   const url = BASE + path;
   const res = await fetch(url);
   if (res.status !== 200) {
@@ -88,38 +97,94 @@ async function checkPage(path) {
     if (!m) fail(`${path}: missing hreflang="${hl}"`);
   }
 
-  if (!/<meta property="og:image" content="https:\/\/merajmirzaei\.com\/images\/portrait\.jpg">/.test(html)) {
-    fail(`${path}: missing og:image`);
-  }
+  // Usually the site's own portrait/cover, but a recording's cover_url can
+  // legitimately be a verified external image URL (e.g. from a label's
+  // own site) — any absolute https:// image URL is valid here, not only
+  // same-origin ones.
+  const ogImageMatch = html.match(/<meta property="og:image" content="(https:\/\/[^"]+)">/);
+  if (!ogImageMatch) fail(`${path}: missing og:image`);
 
-  ok(`${path}: 1 JSON-LD block, 1 Person@${PERSON_ID.slice(-7)}, canonical + hreflang + og:image present`);
+  return { graph, ogImage: ogImageMatch && ogImageMatch[1] };
 }
 
-async function checkSitemap() {
+async function checkRecordingPage(path, entry, hub, lang) {
+  const result = await checkPage(path);
+  if (!result) return;
+  const { graph } = result;
+  const title = lang === 'fa' ? (entry.title_fa || entry.title_en) : (entry.title_en || entry.title_fa);
+
+  const recNodes = graph.filter((n) => n['@type'] === 'MusicRecording' || n['@type'] === 'MusicAlbum');
+  if (recNodes.length !== 1) {
+    fail(`${path}: expected exactly 1 recording node, found ${recNodes.length}`);
+  } else if (recNodes[0].name !== title) {
+    fail(`${path}: recording name "${recNodes[0].name}" does not match data "${title}"`);
+  }
+
+  const breadcrumbs = graph.filter((n) => n['@type'] === 'BreadcrumbList');
+  if (breadcrumbs.length !== 1 || breadcrumbs[0].itemListElement.length !== 3) {
+    fail(`${path}: expected a 3-level BreadcrumbList (Home -> ${hub} -> recording)`);
+  }
+}
+
+async function checkSitemap(expectedUrls) {
   const res = await fetch(BASE + '/sitemap.xml');
   const xml = await res.text();
   const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
-  const expected = new Set(PAGES.map((p) => 'https://merajmirzaei.com' + p));
   const got = new Set(locs);
 
-  for (const u of expected) {
+  for (const u of expectedUrls) {
     if (!got.has(u)) fail(`sitemap.xml: missing ${u}`);
   }
   for (const u of got) {
-    if (!expected.has(u)) fail(`sitemap.xml: unexpected/stale entry ${u}`);
+    if (!expectedUrls.has(u)) fail(`sitemap.xml: unexpected/stale entry ${u}`);
     if (/\.html/.test(u)) fail(`sitemap.xml: non-canonical .html URL ${u}`);
   }
   if (locs.length === new Set(locs).size) {
-    ok(`sitemap.xml: ${locs.length} URLs, no duplicates, matches the ${PAGES.length} canonical pages`);
+    ok(`sitemap.xml: ${locs.length} URLs, no duplicates, matches the ${expectedUrls.size} expected canonical URLs`);
   } else {
     fail('sitemap.xml: contains duplicate <loc> entries');
   }
 }
 
-for (const path of PAGES) {
+for (const path of STATIC_PAGES) {
   await checkPage(path);
 }
-await checkSitemap();
 
-console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'}: ${failures} failure(s) across ${PAGES.length} pages + sitemap.xml`);
+// Recording pages, generated from the same live data/credits.json this
+// script fetches the same way the worker itself does — read-only.
+const creditsData = await (await fetch(BASE + '/data/credits.json')).json();
+const expectedSitemapUrls = new Set(STATIC_PAGES.map((p) => 'https://merajmirzaei.com' + p));
+let recordingPageCount = 0;
+
+for (const hub of ['credits', 'releases']) {
+  const entries = creditsData.filter((e) => Array.isArray(e.pages) && e.pages.includes(hub) && (e.title_en || e.title_fa));
+  const slugs = entries.map((e) => slugify(e.id));
+  const dupeSlugs = slugs.filter((s, i) => slugs.indexOf(s) !== i);
+  if (dupeSlugs.length) fail(`data/credits.json: duplicate recording slug(s) on ${hub}: ${[...new Set(dupeSlugs)].join(', ')}`);
+
+  for (const entry of entries) {
+    const slug = slugify(entry.id);
+    for (const lang of ['en', 'fa']) {
+      const path = (lang === 'fa' ? '/fa/' : '/') + hub + '/' + slug;
+      await checkRecordingPage(path, entry, hub, lang);
+      expectedSitemapUrls.add('https://merajmirzaei.com' + path);
+      recordingPageCount++;
+    }
+  }
+}
+ok(`checked ${recordingPageCount} recording page requests (${recordingPageCount / 2} titled entries x 2 languages)`);
+
+// An untitled ("Pending") entry must not get a fabricated page.
+const untitled = creditsData.find((e) => !(e.title_en || e.title_fa));
+if (untitled) {
+  const hub = untitled.pages.includes('credits') ? 'credits' : 'releases';
+  const path = '/' + hub + '/' + slugify(untitled.id);
+  const res = await fetch(BASE + path);
+  if (res.status !== 404) fail(`${path}: untitled entry should 404, got ${res.status}`);
+  else ok(`${path}: untitled entry correctly 404s (no fabricated page)`);
+}
+
+await checkSitemap(expectedSitemapUrls);
+
+console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'}: ${failures} failure(s)`);
 process.exit(failures === 0 ? 0 : 1);

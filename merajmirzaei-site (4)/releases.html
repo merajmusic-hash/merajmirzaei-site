@@ -13,7 +13,7 @@
 <link rel="alternate" hreflang="fa" href="https://merajmirzaei.com/fa/">
 <link rel="alternate" hreflang="x-default" href="https://merajmirzaei.com/">
 
-<script>
+<script id="langRedirect">
 (function(){
   /* Only run on a real web server — never when opened as a local file. */
   if(location.protocol !== 'http:' && location.protocol !== 'https:') return;
@@ -332,11 +332,11 @@ footer a:hover{color:var(--brass)}
 </section>
 </main>
 
-<script>window.__CREDITS_CONFIG__ = { lang: 'en', page: 'releases', mount: '#releasesRoot', linkrowMount: '#releasesLinkrow' };</script>
+<script id="creditsConfig">window.__CREDITS_CONFIG__ = { lang: 'en', page: 'releases', mount: '#releasesRoot', linkrowMount: '#releasesLinkrow' };</script>
 <script src="/credits-render.js"></script>
 <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
 <script src="https://www.youtube.com/iframe_api" async></script>
-<script>
+<script id="playbackController">
 (function(){
   // A fresh EmbedController is created for every track click and the
   // previous one is destroyed. Reusing a single controller via loadUri()
