@@ -317,6 +317,21 @@
     var titleAlt = hasTitle ? (lang === 'fa' ? entry.title_en : entry.title_fa) : '';
     var titlePrimaryClass = 'tc-title' + (hasTitle ? '' : ' tc-title-pending');
 
+    // A real, crawlable <a href> to this recording's own indexable page
+    // (server-rendered by the worker at /credits/<id> or /releases/<id> —
+    // `page` here is always one of those two, matching whichever list is
+    // currently being rendered). Only entries with a verified title get
+    // one, since only those get a page at all. Kept as a plain sibling
+    // link rather than nested in the play <button> below (a <button>
+    // cannot legally contain an <a>), so the existing click-to-play
+    // behavior is completely unaffected.
+    var permalinkHtml = hasTitle
+      ? '<a class="tc-permalink" href="'+esc((lang==='fa'?'/fa/':'/')+page+'/'+slugify(entry.id))+'" '
+        + 'style="display:block;margin-top:6px;font-family:var(--mono);font-size:10px;'
+        + 'letter-spacing:.06em;color:var(--muted);text-decoration:none">'
+        + esc(lang==='fa' ? 'صفحه کامل ←' : 'Full page →') + '</a>'
+      : '';
+
     var coverHtml = entry.cover_url
       ? '<img class="tc-img" src="'+esc(entry.cover_url)+'" loading="lazy" alt="">'
       : coverFallbackSvg();
@@ -335,7 +350,7 @@
       + '</div>';
 
     if(!playable){
-      return '<div class="trackcard-wrap"><div class="trackcard">'+bodyHtml+'<span class="tc-play-spacer" aria-hidden="true"></span></div></div>';
+      return '<div class="trackcard-wrap"><div class="trackcard">'+bodyHtml+'<span class="tc-play-spacer" aria-hidden="true"></span></div>'+permalinkHtml+'</div>';
     }
 
     var attrs = ' data-embed="'+esc('https://open.spotify.com/embed/'+sp.kind+'/'+sp.id+'?utm_source=generator&theme=0')+'"'
@@ -357,7 +372,9 @@
     return '<div class="trackcard-wrap"><button class="trackcard sp" type="button"'+attrs+' aria-expanded="false">'
       + bodyHtml
       + '<span class="tc-play play">▶</span>'
-      + '</button><div class="player"></div></div>';
+      + '</button><div class="player"></div>'
+      + permalinkHtml
+      + '</div>';
   }
 
   function renderGrid(entries){

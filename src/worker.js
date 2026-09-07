@@ -487,15 +487,59 @@ function roleNameFor(entry, lang) {
   return ROLE_ORDER.filter((f) => entry[f]).map((f) => labels[f]).join(', ');
 }
 
-// Same pattern credits-render.js uses to decide a Spotify link is directly
-// playable (album or track) — only a verified, playable link becomes a
-// recording's sameAs; never a guessed URL.
+// Same URL-shape patterns credits-render.js uses to find each kind of link
+// on an entry — matched by URL, never by the admin-entered label, so
+// renaming a label never breaks this. Only a verified, playable/watchable
+// link becomes a recording's sameAs or an outbound button; never a
+// guessed URL.
 const RE_SPOTIFY_PLAYABLE = /open\.spotify\.com\/(album|track)\/([A-Za-z0-9]+)/i;
+const RE_SPOTIFY_ARTIST = /open\.spotify\.com\/artist\//i;
+const RE_YOUTUBE_WATCH = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{6,})/i;
+const RE_YOUTUBE_CHANNEL = /youtube\.com\/(@|channel\/)/i;
+
+function findLink(links, re) {
+  if (!Array.isArray(links)) return null;
+  return links.find((l) => l && typeof l.url === 'string' && re.test(l.url)) || null;
+}
 
 function verifiedSameAs(entry) {
-  const links = Array.isArray(entry.links) ? entry.links : [];
-  const hit = links.find((l) => l && typeof l.url === 'string' && RE_SPOTIFY_PLAYABLE.test(l.url));
+  const hit = findLink(entry.links, RE_SPOTIFY_PLAYABLE);
   return hit ? hit.url : null;
+}
+
+// Links that are not the artist-profile link, the page-level YouTube
+// channel link, or the playable Spotify/YouTube source — e.g. a Telegram
+// download — rendered as plain outbound buttons on the recording page,
+// exactly mirroring credits-render.js's extraLinks().
+function extraLinksFor(entry) {
+  const links = Array.isArray(entry.links) ? entry.links : [];
+  return links.filter((l) => {
+    if (!l || !l.url) return false;
+    if (RE_SPOTIFY_ARTIST.test(l.url)) return false;
+    if (RE_SPOTIFY_PLAYABLE.test(l.url)) return false;
+    if (RE_YOUTUBE_WATCH.test(l.url)) return false;
+    if (RE_YOUTUBE_CHANNEL.test(l.url)) return false;
+    return true;
+  });
+}
+
+// data/credits.json's cover_url has occasionally been filled in (via
+// /admin, by hand) with a link to a Spotify/streaming page or a
+// third-party site rather than an actual image file — those are not
+// broken as *links*, but they are not usable as an <img src> or an
+// og:image, so treat only something that looks like a real image URL as
+// a verified cover: a relative /images/... path (always a real upload)
+// or any URL ending in a common image extension.
+function isLikelyImageUrl(url) {
+  return typeof url === 'string' && /\.(jpe?g|png|webp|gif)(?:[?#]|$)/i.test(url);
+}
+
+// Absolute already (some entries' cover_url is a full external image
+// URL) vs. site-relative (the normal /images/covers/... case) — never
+// blindly concatenate the two, which produced a malformed
+// "https://merajmirzaei.comhttps://..." URL for the external case.
+function absoluteCoverUrl(url) {
+  return /^https?:\/\//i.test(url) ? url : SITE_ORIGIN + url;
 }
 
 function slugifyName(s) {
@@ -513,12 +557,51 @@ async function readCreditsReadOnly(env) {
   }
 }
 
-// Builds MusicRecording/MusicAlbum nodes for one page ('credits' or
-// 'releases'), reusing a stable per-artist @id (and the single canonical
-// MIRAGE node) instead of a fresh anonymous artist object per recording.
-// Entries with no verified title on this language (credits-render.js's own
-// "hasTitle" check — shown on-page as "Pending") are skipped: there is
-// nothing verified yet to publish as a fact.
+// Builds one MusicRecording/MusicAlbum node, reusing a stable per-artist
+// @id (and the single canonical MIRAGE node) instead of a fresh anonymous
+// artist object every time. Shared by the hub pages' full recordings
+// @graph and by a single recording's own detail page, so both always
+// describe an entry identically. Returns null when there is no verified
+// title on this language (credits-render.js's own "hasTitle" check — shown
+// on-page as "Pending") — there is nothing verified yet to publish.
+function buildOneRecordingNode(entry, lang) {
+  const title = lang === 'fa' ? (entry.title_fa || entry.title_en) : (entry.title_en || entry.title_fa);
+  if (!title) return null;
+
+  let byArtistRef = null;
+  let artistNode = null;
+  let usesMirage = false;
+  if (entry.artist_en === 'MIRAGE') {
+    usesMirage = true;
+    byArtistRef = { '@id': MIRAGE_ID };
+  } else if (entry.artist_en) {
+    const artistId = SITE_ORIGIN + '/credits#artist-' + slugifyName(entry.artist_en);
+    byArtistRef = { '@id': artistId };
+    artistNode = { '@type': 'MusicGroup', '@id': artistId, name: entry.artist_en };
+    if (entry.artist_fa) artistNode.alternateName = entry.artist_fa;
+    if (entry.spotify_artist_url) artistNode.sameAs = entry.spotify_artist_url;
+  }
+
+  const altTitle = lang === 'fa' ? entry.title_en : entry.title_fa;
+  const roleName = roleNameFor(entry, lang);
+  const node = { '@type': entry.release_type === 'album' ? 'MusicAlbum' : 'MusicRecording', name: title };
+  if (altTitle) node.alternateName = altTitle;
+  if (byArtistRef) node.byArtist = byArtistRef;
+  // "Role" wraps the reference so roleName qualifies THIS recording's
+  // credit only — it must never be written directly onto the {"@id":
+  // PERSON_ID} object itself, which would incorrectly merge a
+  // per-recording role into the canonical Person's global properties.
+  if (roleName) node.contributor = { '@type': 'Role', roleName, contributor: { '@id': PERSON_ID } };
+  if (entry.album_name) node.inAlbum = { '@type': 'MusicAlbum', name: entry.album_name };
+  if (entry.year) node.datePublished = String(entry.year);
+  const sameAs = verifiedSameAs(entry);
+  if (sameAs) node.sameAs = sameAs;
+
+  return { node, artistNode, usesMirage };
+}
+
+// Builds MusicRecording/MusicAlbum nodes for one hub page ('credits' or
+// 'releases'), deduplicating artist nodes across the whole list.
 function buildRecordingsGraph(creditsData, pageFilter, lang) {
   const entries = creditsData
     .filter((e) => Array.isArray(e.pages) && e.pages.includes(pageFilter))
@@ -530,47 +613,194 @@ function buildRecordingsGraph(creditsData, pageFilter, lang) {
   let usesMirage = false;
 
   for (const entry of entries) {
-    const title = lang === 'fa' ? (entry.title_fa || entry.title_en) : (entry.title_en || entry.title_fa);
-    if (!title) continue;
-
-    let byArtistRef = null;
-    if (entry.artist_en === 'MIRAGE') {
-      usesMirage = true;
-      byArtistRef = { '@id': MIRAGE_ID };
-    } else if (entry.artist_en) {
-      const artistId = SITE_ORIGIN + '/credits#artist-' + slugifyName(entry.artist_en);
-      byArtistRef = { '@id': artistId };
-      if (!artistNodes.has(artistId)) {
-        const node = { '@type': 'MusicGroup', '@id': artistId, name: entry.artist_en };
-        if (entry.artist_fa) node.alternateName = entry.artist_fa;
-        if (entry.spotify_artist_url) node.sameAs = entry.spotify_artist_url;
-        artistNodes.set(artistId, node);
-      }
+    const result = buildOneRecordingNode(entry, lang);
+    if (!result) continue;
+    if (result.usesMirage) usesMirage = true;
+    if (result.artistNode && !artistNodes.has(result.artistNode['@id'])) {
+      artistNodes.set(result.artistNode['@id'], result.artistNode);
     }
-
-    const altTitle = lang === 'fa' ? entry.title_en : entry.title_fa;
-    const roleName = roleNameFor(entry, lang);
-    const node = { '@type': entry.release_type === 'album' ? 'MusicAlbum' : 'MusicRecording', name: title };
-    if (altTitle) node.alternateName = altTitle;
-    if (byArtistRef) node.byArtist = byArtistRef;
-    // "Role" wraps the reference so roleName qualifies THIS recording's
-    // credit only — it must never be written directly onto the {"@id":
-    // PERSON_ID} object itself, which would incorrectly merge a
-    // per-recording role into the canonical Person's global properties.
-    if (roleName) node.contributor = { '@type': 'Role', roleName, contributor: { '@id': PERSON_ID } };
-    if (entry.album_name) node.inAlbum = { '@type': 'MusicAlbum', name: entry.album_name };
-    if (entry.year) node.datePublished = String(entry.year);
-    const sameAs = verifiedSameAs(entry);
-    if (sameAs) node.sameAs = sameAs;
-    recordingNodes.push(node);
+    recordingNodes.push(result.node);
   }
 
   return { nodes: [...artistNodes.values(), ...recordingNodes], usesMirage };
 }
 
+// ---------------------------------------------------------------------
+// individual recording pages (plan section 4) — one indexable, canonical
+// page per titled recording, at /credits/<slug> or /releases/<slug> (and
+// the /fa/ equivalents), generated from data/credits.json at request time.
+// The slug is the entry's own `id` field: already unique, already stable
+// (set once when the entry is created and never recomputed from title/
+// artist text), so editing a title later never changes the URL.
+// ---------------------------------------------------------------------
+
+function findEntryBySlug(creditsData, hub, recordingSlug) {
+  return creditsData.find((e) => {
+    if (!Array.isArray(e.pages) || !e.pages.includes(hub)) return false;
+    if (!(e.title_en || e.title_fa)) return false;
+    return slugifyName(e.id) === recordingSlug;
+  }) || null;
+}
+
+// Every titled entry that belongs to a given hub, in the same order the
+// hub page itself lists them — the one list both the hub's permalinks and
+// the sitemap are built from, so neither can drift from the other.
+function titledEntriesFor(creditsData, hub) {
+  return creditsData
+    .filter((e) => Array.isArray(e.pages) && e.pages.includes(hub) && (e.title_en || e.title_fa))
+    .slice()
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+}
+
+function parseRecordingSlug(slug) {
+  const m = /^(credits|releases)\/([a-z0-9-]+)$/.exec(slug);
+  return m ? { hub: m[1], recordingSlug: m[2] } : null;
+}
+
+const RELEASE_TYPE_LABELS = {
+  en: { single: 'Single', 'album track': 'Album track', album: 'Album' },
+  fa: { single: 'تک‌آهنگ', 'album track': 'ترک آلبوم', album: 'آلبوم' },
+};
+
+const RECORDING_LABELS = {
+  en: { listenSpotify: 'Listen on Spotify', watchYoutube: 'Watch on YouTube', partOf: 'From the release', year: 'Year', home: 'Studio home' },
+  fa: { listenSpotify: 'شنیدن در اسپاتیفای', watchYoutube: 'تماشا در یوتیوب', partOf: 'بخشی از', year: 'سال', home: 'صفحه اصلی استودیو' },
+};
+
+function buildRecordingTitleText(entry, lang) {
+  const title = lang === 'fa' ? (entry.title_fa || entry.title_en) : (entry.title_en || entry.title_fa);
+  const artist = lang === 'fa' ? (entry.artist_fa || entry.artist_en) : (entry.artist_en || entry.artist_fa);
+  return lang === 'fa' ? `${title} — ${artist} | معراج میرزایی` : `${title} — ${artist} | Meraj Mirzaei`;
+}
+
+function buildRecordingDescriptionText(entry, lang) {
+  const title = lang === 'fa' ? (entry.title_fa || entry.title_en) : (entry.title_en || entry.title_fa);
+  const artist = lang === 'fa' ? (entry.artist_fa || entry.artist_en) : (entry.artist_en || entry.artist_fa);
+  const roleName = roleNameFor(entry, lang);
+  const yearPart = entry.year ? ` (${entry.year})` : '';
+  if (lang === 'fa') {
+    return roleName
+      ? `«${title}» از ${artist}${yearPart} — نقش معراج میرزایی: ${roleName}.`
+      : `«${title}» از ${artist}${yearPart} — از کارنامه معراج میرزایی، مهندس میکس و مسترینگ.`;
+  }
+  return roleName
+    ? `"${title}" by ${artist}${yearPart} — Meraj Mirzaei's credit: ${roleName}.`
+    : `"${title}" by ${artist}${yearPart} — from Meraj Mirzaei's mix & mastering credits.`;
+}
+
+// Builds the <main> replacement for one recording's detail page. Reuses
+// the exact same CSS classes the hub pages already define for a track
+// card/player (.tc-cover/.tc-img/.tc-roles/.tc-role/.player/.ytwrap) and
+// the shared article/button classes every blog post already uses
+// (.article/.atitle/.stand/.hr/.linkrow/.btn) — no new visual component,
+// only plain inline layout glue where two of those existing pieces sit
+// side by side.
+function renderRecordingDetailContent(entry, lang, hub) {
+  const L = RECORDING_LABELS[lang];
+  const title = lang === 'fa' ? (entry.title_fa || entry.title_en) : (entry.title_en || entry.title_fa);
+  const titleAlt = lang === 'fa' ? entry.title_en : entry.title_fa;
+  const artist = lang === 'fa' ? (entry.artist_fa || entry.artist_en) : (entry.artist_en || entry.artist_fa);
+  const artistAlt = lang === 'fa' ? entry.artist_en : entry.artist_fa;
+  const releaseTypeLabel = entry.release_type ? RELEASE_TYPE_LABELS[lang][entry.release_type] : '';
+
+  const eyebrowParts = [artist, entry.year, releaseTypeLabel].filter(Boolean);
+  const eyebrow = escapeHtmlAttr(eyebrowParts.join(' · '));
+
+  const artistLink = findLink(entry.links, RE_SPOTIFY_ARTIST);
+  const artistHtml = artistLink
+    ? `<a href="${escapeHtmlAttr(artistLink.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(artist)}</a>`
+    : escapeHtmlAttr(artist);
+  const artistLine = `<p>${artistHtml}${artistAlt ? ' — ' + escapeHtmlAttr(artistAlt) : ''}</p>`;
+
+  const albumLine = entry.album_name ? `<p>${escapeHtmlAttr(L.partOf)}: ${escapeHtmlAttr(entry.album_name)}</p>` : '';
+  const yearLine = entry.year ? `<p>${escapeHtmlAttr(L.year)}: ${escapeHtmlAttr(String(entry.year))}</p>` : '';
+
+  const roleBadges = ROLE_ORDER.filter((f) => entry[f])
+    .map((f) => `<span class="tc-role">${escapeHtmlAttr(ROLE_NAME_LABELS[lang][f])}</span>`)
+    .join('');
+  const rolesBlock = roleBadges ? `<div class="tc-roles" style="justify-content:flex-start;margin-top:10px">${roleBadges}</div>` : '';
+
+  const coverBlock = isLikelyImageUrl(entry.cover_url)
+    ? `<div class="tc-cover" style="width:180px;height:180px;flex:none"><img class="tc-img" src="${escapeHtmlAttr(entry.cover_url)}" alt="" loading="lazy"></div>`
+    : '';
+
+  const sp = verifiedSameAs(entry) ? findLink(entry.links, RE_SPOTIFY_PLAYABLE) : null;
+  const spMatch = sp ? sp.url.match(RE_SPOTIFY_PLAYABLE) : null;
+  const spotifyEmbed = spMatch
+    ? `<div class="player" style="margin-bottom:18px"><iframe src="https://open.spotify.com/embed/${spMatch[1].toLowerCase()}/${spMatch[2]}?utm_source=generator&theme=0" width="100%" height="152" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture" loading="lazy" title="${escapeHtmlAttr(title)}"></iframe></div>`
+    : '';
+
+  const ytLink = findLink(entry.links, RE_YOUTUBE_WATCH);
+  const ytMatch = ytLink ? ytLink.url.match(RE_YOUTUBE_WATCH) : null;
+  const youtubeEmbed = ytMatch
+    ? `<div class="ytwrap" style="margin-bottom:18px"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}?rel=0" title="${escapeHtmlAttr(title)}" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`
+    : '';
+
+  const linkButtons = [];
+  if (sp) linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(sp.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(L.listenSpotify)}</a>`);
+  if (ytLink) linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(ytLink.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(L.watchYoutube)}</a>`);
+  for (const l of extraLinksFor(entry)) {
+    linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(l.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(l.label || l.url)}</a>`);
+  }
+  linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(pathFor(lang, hub))}">${escapeHtmlAttr((lang === 'fa' ? 'بازگشت به ' : 'Back to ') + NAV_LABELS[hub][lang])}</a>`);
+  linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(pathFor(lang, 'home'))}">${escapeHtmlAttr(L.home)}</a>`);
+
+  return '<main class="wrap article">'
+    + `<p class="eyebrow" style="margin-bottom:14px">${eyebrow}</p>`
+    + `<h1 class="atitle">${escapeHtmlAttr(title)}</h1>`
+    + (titleAlt ? `<p class="stand">${escapeHtmlAttr(titleAlt)}</p>` : '')
+    + '<div class="hr"></div>'
+    + `<div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;margin:0 0 28px">`
+    + coverBlock
+    + `<div style="flex:1;min-width:240px">${artistLine}${albumLine}${yearLine}${rolesBlock}</div>`
+    + '</div>'
+    + spotifyEmbed
+    + youtubeEmbed
+    + `<div class="linkrow" style="margin-top:10px">${linkButtons.join('')}</div>`
+    + '</main>';
+}
+
 async function buildEntityGraph(pathname, env) {
   const { lang, slug } = parseSitePath(pathname);
   const nodes = [buildPersonNode(lang)];
+  const base = { canonicalPath: pathFor(lang, slug), enPath: pathFor('en', slug), faPath: pathFor('fa', slug) };
+
+  const recSlug = parseRecordingSlug(slug);
+  if (recSlug) {
+    const creditsData = await readCreditsReadOnly(env);
+    const entry = creditsData ? findEntryBySlug(creditsData, recSlug.hub, recSlug.recordingSlug) : null;
+    if (entry) {
+      const result = buildOneRecordingNode(entry, lang);
+      if (result) {
+        const pageUrl = SITE_ORIGIN + base.canonicalPath;
+        const recordingId = pageUrl + '#recording';
+        result.node['@id'] = recordingId;
+        result.node.url = pageUrl;
+        if (result.artistNode) nodes.push(result.artistNode);
+        if (result.usesMirage) nodes.push(buildMirageNode());
+        nodes.push(result.node);
+        const title = lang === 'fa' ? (entry.title_fa || entry.title_en) : (entry.title_en || entry.title_fa);
+        nodes.push({
+          '@type': 'WebPage',
+          '@id': pageUrl + '#webpage',
+          url: pageUrl,
+          name: title,
+          inLanguage: lang,
+          about: { '@id': recordingId },
+          isPartOf: { '@id': SITE_ORIGIN + pathFor(lang, recSlug.hub) + '#webpage' },
+        });
+        nodes.push({
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: NAV_LABELS.home[lang], item: SITE_ORIGIN + pathFor(lang, 'home') },
+            { '@type': 'ListItem', position: 2, name: NAV_LABELS[recSlug.hub][lang], item: SITE_ORIGIN + pathFor(lang, recSlug.hub) },
+            { '@type': 'ListItem', position: 3, name: title, item: pageUrl },
+          ],
+        });
+      }
+    }
+    return { lang, slug, nodes, ...base };
+  }
 
   const pageNode = buildPageNode(slug, lang);
   if (pageNode) nodes.push(pageNode);
@@ -587,7 +817,7 @@ async function buildEntityGraph(pathname, env) {
     }
   }
 
-  return { lang, slug, nodes, canonicalPath: pathFor(lang, slug), enPath: pathFor('en', slug), faPath: pathFor('fa', slug) };
+  return { lang, slug, nodes, ...base };
 }
 
 // ---------------------------------------------------------------------
@@ -674,25 +904,83 @@ class InternalLinkRewriter {
   }
 }
 
-async function applyEntitySeo(response, env, pathname) {
+class ReplaceText {
+  // NB: not `this.text` — HTMLRewriter's ElementContentHandlers looks for
+  // a `text` method on this object, so a same-named plain property here
+  // makes it throw ("not of type 'function'") the moment this handler
+  // matches anything.
+  constructor(value) {
+    this.value = value;
+  }
+  element(element) {
+    element.setInnerContent(this.value); // plain text — auto-escaped, correct for <title>
+  }
+}
+
+class ReplaceScriptBody {
+  constructor(value) {
+    this.value = value;
+  }
+  element(element) {
+    // {html: true} here means "insert literally, don't escape" — required
+    // for a <script> body: setInnerContent's default text mode HTML-
+    // escapes (e.g. "&&" -> "&amp;&amp;"), which a JS engine can't parse.
+    element.setInnerContent(this.value, { html: true });
+  }
+}
+
+class ReplaceElement {
+  constructor(html) {
+    this.html = html;
+  }
+  element(element) {
+    element.replace(this.html, { html: true });
+  }
+}
+
+async function applyEntitySeo(response, env, pathname, ogImageOverride) {
   const contentType = response.headers.get('Content-Type') || '';
   if (!contentType.includes('text/html')) return response;
 
   const { lang, nodes, canonicalPath, enPath, faPath } = await buildEntityGraph(pathname, env);
   const canonicalUrl = SITE_ORIGIN + canonicalPath;
   const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': nodes }, null, 2).replace(/</g, '\\u003c');
+  // A recording's own cover art is a more specific, relevant image than
+  // the generic portrait — passed in by tryServeRecordingPage() below,
+  // through the same single injection point every other page uses (never
+  // a second, duplicate og:image tag).
+  const ogImage = ogImageOverride || PORTRAIT_URL;
 
   const injection =
     '\n<link rel="canonical" href="' + escapeHtmlAttr(canonicalUrl) + '">\n' +
     '<meta property="og:url" content="' + escapeHtmlAttr(canonicalUrl) + '">\n' +
-    '<meta property="og:image" content="' + escapeHtmlAttr(PORTRAIT_URL) + '">\n' +
+    '<meta property="og:image" content="' + escapeHtmlAttr(ogImage) + '">\n' +
     '<meta name="twitter:card" content="summary_large_image">\n' +
-    '<meta name="twitter:image" content="' + escapeHtmlAttr(PORTRAIT_URL) + '">\n' +
+    '<meta name="twitter:image" content="' + escapeHtmlAttr(ogImage) + '">\n' +
     '<script type="application/ld+json">' + jsonLd + '</script>\n';
 
   // Root-relative, matching every other internal link on the page (only
   // canonical/hreflang/JSON-LD urls need to be absolute).
   const langtogHref = lang === 'en' ? faPath : enPath;
+
+  // Every EN page's <head> carries an on-load script that redirects a
+  // fa-preferring visitor before they see any content — but it always
+  // hardcoded the same target, the FA homepage, regardless of which page
+  // they landed on. Same bug class as the language toggle, same fix: send
+  // them to this page's own FA equivalent instead. (FA pages carry no
+  // such script, so this selector simply matches nothing there.)
+  const faTarget = JSON.stringify(faPath);
+  const langRedirectBody = '\n(function(){\n'
+    + '  if(location.protocol !== \'http:\' && location.protocol !== \'https:\') return;\n'
+    + '  try{\n'
+    + '    var stored = localStorage.getItem(\'mm_lang\');\n'
+    + '    if(stored){ if(stored===\'fa\'){ location.replace(' + faTarget + '); } return; }\n'
+    + '    var langs = navigator.languages || [navigator.language || \'\'];\n'
+    + '    for(var i=0;i<langs.length;i++){\n'
+    + '      if(/^fa\\b/i.test(langs[i])){ location.replace(' + faTarget + '); return; }\n'
+    + '    }\n'
+    + '  }catch(e){}\n'
+    + '})();\n';
 
   const rewriter = new HTMLRewriter()
     .on('script[type="application/ld+json"]', new RemoveElement())
@@ -700,10 +988,64 @@ async function applyEntitySeo(response, env, pathname) {
     .on('link[rel="alternate"][hreflang="fa"]', new SetAttribute('href', SITE_ORIGIN + faPath))
     .on('link[rel="alternate"][hreflang="x-default"]', new SetAttribute('href', SITE_ORIGIN + enPath))
     .on('head', new HeadInjector(injection))
+    .on('script#langRedirect', new ReplaceScriptBody(langRedirectBody))
     .on('a#langtog', new LangtogRewriter(langtogHref))
     .on('a[href$=".html"]', new InternalLinkRewriter(lang));
 
   return rewriter.transform(response);
+}
+
+// ---------------------------------------------------------------------
+// individual recording page serving — fetches the entry's hub page
+// (credits.html/releases.html, matching language) as a shell so the
+// detail page reuses the site's real header/nav/footer/CSS verbatim (no
+// new template), replaces only the title/description/og tags and <main>
+// with the recording's own content, strips the hub's list-rendering and
+// click-to-play scripts (nothing left on this page for them to mount
+// into — the player here is a plain, always-visible, static iframe), and
+// then runs the result through the same applyEntitySeo() every other
+// page goes through, so canonical/hreflang/JSON-LD/internal links are
+// handled by the one shared pipeline, not a second one.
+// ---------------------------------------------------------------------
+
+const RECORDING_PATH_RE = /^\/(fa\/)?(credits|releases)\/([a-z0-9-]+)\/?$/;
+
+async function tryServeRecordingPage(env, pathname) {
+  const m = RECORDING_PATH_RE.exec(pathname);
+  if (!m) return null;
+  const lang = m[1] ? 'fa' : 'en';
+  const hub = m[2];
+  const recordingSlug = m[3];
+
+  const creditsData = await readCreditsReadOnly(env);
+  if (!creditsData) return null;
+  const entry = findEntryBySlug(creditsData, hub, recordingSlug);
+  if (!entry) return null; // unknown or untitled slug — no fabricated page, let it 404 normally
+
+  const shellPath = (lang === 'fa' ? '/fa/' : '/') + hub + '.html';
+  const shellRes = await env.ASSETS.fetch(new Request('https://internal' + shellPath));
+  if (!shellRes.ok) return null;
+
+  const titleText = buildRecordingTitleText(entry, lang);
+  const descText = buildRecordingDescriptionText(entry, lang);
+  const mainHtml = renderRecordingDetailContent(entry, lang, hub);
+  const ogImage = isLikelyImageUrl(entry.cover_url) ? absoluteCoverUrl(entry.cover_url) : PORTRAIT_URL;
+
+  const detailRewriter = new HTMLRewriter()
+    .on('title', new ReplaceText(titleText))
+    .on('meta[name="description"]', new SetAttribute('content', descText))
+    .on('meta[property="og:title"]', new SetAttribute('content', titleText))
+    .on('meta[property="og:description"]', new SetAttribute('content', descText))
+    .on('meta[property="og:type"]', new SetAttribute('content', 'music.song'))
+    .on('main', new ReplaceElement(mainHtml))
+    .on('#creditsConfig', new RemoveElement())
+    .on('#playbackController', new RemoveElement())
+    .on('script[src="/credits-render.js"]', new RemoveElement())
+    .on('script[src="https://open.spotify.com/embed/iframe-api/v1"]', new RemoveElement())
+    .on('script[src="https://www.youtube.com/iframe_api"]', new RemoveElement());
+
+  const stage1 = detailRewriter.transform(shellRes);
+  return applyEntitySeo(stage1, env, pathname, ogImage);
 }
 
 // ---------------------------------------------------------------------
@@ -918,6 +1260,45 @@ async function handleUploadImage(request, env) {
 }
 
 // ---------------------------------------------------------------------
+// sitemap.xml — generated at request time from the same static page list
+// and the same live data/credits.json this whole module already uses, so
+// a new credit or a new title added through /admin appears in the
+// sitemap the moment it appears on the site, with nothing to hand-edit
+// and nothing that can drift out of sync. There is no static
+// sitemap.xml file in the assets directory any more — this is the only
+// source of it now, matching the same "one source of truth" this entire
+// module is built around.
+// ---------------------------------------------------------------------
+
+const STATIC_SITEMAP_SLUGS = [
+  'home', 'credits', 'releases', 'mirage', 'gallery', 'services', 'journal',
+  'mastering-for-streaming', 'mixing-persian-vocals', 'traditional-instruments',
+];
+
+async function buildSitemapXml(env) {
+  const urls = [];
+  for (const slug of STATIC_SITEMAP_SLUGS) {
+    urls.push({ loc: SITE_ORIGIN + pathFor('en', slug), priority: slug === 'home' ? '1.0' : '0.8' });
+    urls.push({ loc: SITE_ORIGIN + pathFor('fa', slug), priority: '0.8' });
+  }
+
+  const creditsData = await readCreditsReadOnly(env);
+  if (creditsData) {
+    for (const hub of ['credits', 'releases']) {
+      const entries = titledEntriesFor(creditsData, hub);
+      for (const entry of entries) {
+        const slug = hub + '/' + slugifyName(entry.id);
+        urls.push({ loc: SITE_ORIGIN + pathFor('en', slug), priority: '0.6' });
+        urls.push({ loc: SITE_ORIGIN + pathFor('fa', slug), priority: '0.6' });
+      }
+    }
+  }
+
+  const body = urls.map((u) => `  <url><loc>${escapeHtmlAttr(u.loc)}</loc><priority>${u.priority}</priority></url>`).join('\n');
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`;
+}
+
+// ---------------------------------------------------------------------
 // entry point
 // ---------------------------------------------------------------------
 
@@ -983,6 +1364,29 @@ export default {
       // to debug from, and nothing here should ever throw for the public
       // site path below.
       return json({ error: (err && err.message) || 'Internal error' }, 500);
+    }
+
+    if (pathname === '/sitemap.xml') {
+      try {
+        return new Response(await buildSitemapXml(env), {
+          headers: { 'Content-Type': 'application/xml; charset=utf-8' },
+        });
+      } catch (err) {
+        // Fall through to the (now-absent) static asset, which 404s —
+        // better than a broken sitemap crawlers might partially ingest.
+      }
+    }
+
+    // An individual recording page (plan section 4) has no static asset
+    // behind it at all — it's generated fresh from data/credits.json on
+    // every request, so try that before the normal static-asset lookup
+    // below (which would otherwise just 404 for these paths).
+    try {
+      const recordingResponse = await tryServeRecordingPage(env, pathname);
+      if (recordingResponse) return recordingResponse;
+    } catch (err) {
+      console.error('tryServeRecordingPage failed', err && err.stack || err);
+      // Fall through to the normal static-asset lookup below.
     }
 
     // Everything else: the public static site, with entity/structured-data
