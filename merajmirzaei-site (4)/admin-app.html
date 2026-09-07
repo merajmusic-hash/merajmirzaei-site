@@ -119,6 +119,8 @@
   <input type="search" id="filter" placeholder="Filter by artist or title…" style="width:220px">
   <span class="spacer"></span>
   <span id="dirtyFlag" class="hint" style="display:none">Unsaved changes</span>
+  <button type="button" id="exportCsvBtn" class="small" title="Download every field of every credit, as currently shown, as a CSV file">Export CSV</button>
+  <button type="button" id="exportJsonBtn" class="small" title="Download every field of every credit, as currently shown, as a JSON file">Export JSON</button>
   <button id="saveBtn" class="primary">Save</button>
   <form method="POST" action="/admin/logout"><button type="submit">Log out</button></form>
 </header>
@@ -790,6 +792,82 @@
     state.entriesDirty = true; setDirty();
     render();
     window.scrollTo(0, document.body.scrollHeight);
+  });
+
+  // ---------------------------------------------------------------------
+  // export — read-only: builds a file entirely from state.entries (the
+  // data already loaded into the browser) and never touches the save
+  // API, so it cannot modify data/credits.json. Exports every field of
+  // every entry regardless of which tab or filter is currently active —
+  // this is a full backup/download, not a view export.
+  // ---------------------------------------------------------------------
+
+  var EXPORT_FIELDS = [
+    'id', 'order', 'pages', 'artist_en', 'artist_fa', 'artist_image', 'spotify_artist_url',
+    'title_en', 'title_fa', 'release_type', 'album_name', 'year', 'label',
+    'role_arrangement', 'role_production', 'role_mix', 'role_mastering',
+    'links', 'start_seconds', 'cover_url',
+    'status_musicbrainz', 'status_discogs', 'status_genius', 'notes',
+  ];
+
+  function todayStamp(){
+    var d = new Date();
+    function pad(n){ return n < 10 ? '0'+n : ''+n; }
+    return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+  }
+
+  function downloadFile(filename, content, mime){
+    var blob = new Blob([content], { type: mime });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  }
+
+  // A link is {label, url}; a cell can only hold one string, so each link
+  // renders as "label: url" (or bare url when there's no label), joined
+  // by " | " — readable directly in Excel/Sheets. The JSON export carries
+  // the exact original array for anything that needs it losslessly.
+  function formatLinksForCsv(links){
+    return (Array.isArray(links) ? links : []).map(function(l){
+      if(!l) return '';
+      return l.label ? (l.label + ': ' + l.url) : (l.url || '');
+    }).join(' | ');
+  }
+
+  function csvCell(value){
+    var s = value == null ? '' : String(value);
+    if(/[",\r\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+
+  function buildCsv(entries){
+    var rows = [EXPORT_FIELDS.join(',')];
+    entries.forEach(function(entry){
+      var row = EXPORT_FIELDS.map(function(field){
+        if(field === 'links') return csvCell(formatLinksForCsv(entry.links));
+        if(field === 'pages') return csvCell((entry.pages||[]).join(';'));
+        return csvCell(entry[field]);
+      });
+      rows.push(row.join(','));
+    });
+    // A leading UTF-8 BOM so Excel (which otherwise guesses the system
+    // codepage) renders the Farsi text correctly instead of mangling it;
+    // Google Sheets reads UTF-8 fine either way. Written via
+    // fromCharCode rather than a literal character in this file, since an
+    // invisible character in source is easy to lose or corrupt by accident.
+    return String.fromCharCode(0xFEFF) + rows.join('\r\n') + '\r\n';
+  }
+
+  document.getElementById('exportCsvBtn').addEventListener('click', function(){
+    downloadFile('credits-' + todayStamp() + '.csv', buildCsv(state.entries), 'text/csv;charset=utf-8');
+  });
+  document.getElementById('exportJsonBtn').addEventListener('click', function(){
+    downloadFile('credits-' + todayStamp() + '.json', JSON.stringify(state.entries, null, 2), 'application/json;charset=utf-8');
   });
 
   // ---------------------------------------------------------------------
