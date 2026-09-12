@@ -921,11 +921,21 @@ function buildStoryPageContent(entry, lang, hub, storyText) {
     `<a class="btn" href="${escapeHtmlAttr(pathFor(lang, hub))}">${escapeHtmlAttr((lang === 'fa' ? 'بازگشت به ' : 'Back to ') + NAV_LABELS[hub][lang])}</a>`,
   ];
 
+  // The source notes are multi-paragraph (one paragraph per line); render
+  // each on its own <p> rather than collapsing them into one block, so the
+  // original paragraph breaks survive into the HTML.
+  const storyParagraphs = String(storyText)
+    .split(/\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => `<p>${escapeWithBdiIsolation(p, storyForeignName)}</p>`)
+    .join('');
+
   return '<main class="wrap article">'
     + `<p class="eyebrow" style="margin-bottom:14px"><a href="${escapeHtmlAttr(trackHref)}">${escapeHtmlAttr(title)}</a> — ${escapeHtmlAttr(artist)}</p>`
     + `<h1 class="atitle">${escapeHtmlAttr(RECORDING_LABELS[lang].aboutTrack)}</h1>`
     + '<div class="hr"></div>'
-    + `<p>${escapeWithBdiIsolation(storyText, storyForeignName)}</p>`
+    + storyParagraphs
     + `<div class="linkrow" style="margin-top:28px">${linkButtons.join('')}</div>`
     + '</main>';
 }
