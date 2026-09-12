@@ -246,6 +246,19 @@ const PERSON_ID = SITE_ORIGIN + '/#person';
 const MIRAGE_ID = SITE_ORIGIN + '/mirage#mirage';
 const PORTRAIT_URL = SITE_ORIGIN + '/images/portrait.jpg';
 
+// Same favicon set on every page, injected from this one place rather
+// than hand-edited into 20 HTML files (and automatically covers every
+// generated recording detail page too, since they all go through this
+// same head-injection pipeline). apple-touch-icon.png is a full square
+// on purpose — iOS applies its own corner mask, and a pre-rounded source
+// image would risk a mismatched double edge under it.
+const FAVICON_LINKS =
+  '<link rel="icon" href="/favicon.ico" sizes="any">\n' +
+  '<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">\n' +
+  '<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">\n' +
+  '<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">\n' +
+  '<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">\n';
+
 // Verified profile URLs, unchanged from the site's existing (pre-this-task)
 // JSON-LD — pulled from the already-vetted data already live on the site,
 // not re-derived or guessed.
@@ -1024,7 +1037,8 @@ async function applyEntitySeo(response, env, pathname, ogImageOverride) {
   const ogImage = ogImageOverride || PORTRAIT_URL;
 
   const injection =
-    '\n<link rel="canonical" href="' + escapeHtmlAttr(canonicalUrl) + '">\n' +
+    '\n' + FAVICON_LINKS +
+    '<link rel="canonical" href="' + escapeHtmlAttr(canonicalUrl) + '">\n' +
     '<meta property="og:url" content="' + escapeHtmlAttr(canonicalUrl) + '">\n' +
     '<meta property="og:image" content="' + escapeHtmlAttr(ogImage) + '">\n' +
     '<meta name="twitter:card" content="summary_large_image">\n' +
@@ -1147,6 +1161,8 @@ function loginPage(error) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <title>Admin login</title>
 <style>
   body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
