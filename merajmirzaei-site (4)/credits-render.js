@@ -324,12 +324,16 @@
     // one, since only those get a page at all. Kept as a plain sibling
     // link rather than nested in the play <button> below (a <button>
     // cannot legally contain an <a>), so the existing click-to-play
-    // behavior is completely unaffected.
+    // behavior is completely unaffected. Styled like the site's .btn
+    // (same border/brass/uppercase treatment) at a smaller size to fit
+    // the card footer, rather than a stray line of muted text, since
+    // this is the primary way to reach the track's own full page.
     var permalinkHtml = hasTitle
       ? '<a class="tc-permalink" href="'+esc((lang==='fa'?'/fa/':'/')+page+'/'+slugify(entry.id))+'" '
-        + 'style="display:block;margin-top:6px;font-family:var(--mono);font-size:10px;'
-        + 'letter-spacing:.06em;color:var(--muted);text-decoration:none">'
-        + esc(lang==='fa' ? 'صفحه کامل ←' : 'Full page →') + '</a>'
+        + 'style="display:block;margin-top:8px;text-align:center;font-family:var(--mono);font-size:10px;'
+        + 'letter-spacing:.1em;text-transform:uppercase;text-decoration:none;color:var(--brass);'
+        + 'border:1px solid var(--brass);border-radius:2px;padding:7px 10px">'
+        + esc(lang==='fa' ? 'صفحه کامل' : 'Full page') + '</a>'
       : '';
 
     var coverHtml = entry.cover_url
