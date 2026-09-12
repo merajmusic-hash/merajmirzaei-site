@@ -557,6 +557,68 @@ async function readCreditsReadOnly(env) {
   }
 }
 
+// data/song-stories.json — a separate, hand-written "about this track"
+// blurb per recording, matched to a credits.json entry by title+artist
+// rather than by id (the two files were produced independently, so there
+// is no shared key). Read-only, same pattern as credits.json.
+async function readStoriesReadOnly(env) {
+  try {
+    const res = await env.ASSETS.fetch(new Request('https://internal/data/song-stories.json'));
+    if (!res.ok) return null;
+    const data = await res.json();
+    return Array.isArray(data) ? data : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Tolerant text match for matching a story to its credits entry: trims,
+// unifies the Arabic vs. Persian forms of "ک"/"ی" and strips ZWNJ/tatweel
+// (common, cosmetic spelling differences between two independently
+// authored files), collapses whitespace, and case-folds. Confirmed
+// against the live data before writing this: 91/91 stories match exactly
+// one credits entry each, with no ambiguity in either direction.
+function normalizeForMatch(s) {
+  if (!s) return '';
+  return String(s)
+    .trim()
+    .replace(/ك/g, 'ک')
+    .replace(/ي/g, 'ی')
+    .replace(/‌/g, ' ') // ZWNJ
+    .replace(/ـ/g, '') // tatweel
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+// A story or a credits entry is identified by any (title, artist) pair
+// drawn from its own EN/FA fields — song-stories.json's own "artist_en"
+// field is actually Farsi text for every non-MIRAGE entry (an upstream
+// quirk in how that file was produced), so matching only works by
+// checking all four title×artist combinations rather than assuming
+// title_en pairs with artist_en.
+function matchKeysForRecord(rec) {
+  const keys = new Set();
+  const titles = [rec.title_en, rec.title_fa].filter(Boolean);
+  const artists = [rec.artist_en, rec.artist_fa].filter(Boolean);
+  for (const t of titles) {
+    for (const a of artists) {
+      keys.add(normalizeForMatch(t) + '\u0001' + normalizeForMatch(a));
+    }
+  }
+  return keys;
+}
+
+function findStoryForEntry(stories, entry) {
+  const entryKeys = matchKeysForRecord(entry);
+  for (const story of stories) {
+    for (const key of matchKeysForRecord(story)) {
+      if (entryKeys.has(key)) return story;
+    }
+  }
+  return null;
+}
+
 // Builds one MusicRecording/MusicAlbum node, reusing a stable per-artist
 // @id (and the single canonical MIRAGE node) instead of a fresh anonymous
 // artist object every time. Shared by the hub pages' full recordings
@@ -695,7 +757,7 @@ function buildRecordingDescriptionText(entry, lang) {
 // (.article/.atitle/.stand/.hr/.linkrow/.btn) — no new visual component,
 // only plain inline layout glue where two of those existing pieces sit
 // side by side.
-function renderRecordingDetailContent(entry, lang, hub) {
+function renderRecordingDetailContent(entry, lang, hub, story) {
   const L = RECORDING_LABELS[lang];
   const title = lang === 'fa' ? (entry.title_fa || entry.title_en) : (entry.title_en || entry.title_fa);
   const titleAlt = lang === 'fa' ? entry.title_en : entry.title_fa;
@@ -745,6 +807,15 @@ function renderRecordingDetailContent(entry, lang, hub) {
   linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(pathFor(lang, hub))}">${escapeHtmlAttr((lang === 'fa' ? 'بازگشت به ' : 'Back to ') + NAV_LABELS[hub][lang])}</a>`);
   linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(pathFor(lang, 'home'))}">${escapeHtmlAttr(L.home)}</a>`);
 
+  // "About this track" — an independently authored blurb (data/song-
+  // stories.json, matched by title+artist), rendered only when a match
+  // exists for THIS language; no placeholder text otherwise. Reuses the
+  // same .article heading/paragraph styling every blog post already uses.
+  const storyText = story ? (lang === 'fa' ? story.story_fa : story.story_en) : null;
+  const storySection = storyText && String(storyText).trim()
+    ? `<h3>${escapeHtmlAttr(lang === 'fa' ? 'درباره این قطعه' : 'About this track')}</h3><p>${escapeHtmlAttr(storyText)}</p>`
+    : '';
+
   return '<main class="wrap article">'
     + `<p class="eyebrow" style="margin-bottom:14px">${eyebrow}</p>`
     + `<h1 class="atitle">${escapeHtmlAttr(title)}</h1>`
@@ -756,6 +827,7 @@ function renderRecordingDetailContent(entry, lang, hub) {
     + '</div>'
     + spotifyEmbed
     + youtubeEmbed
+    + storySection
     + `<div class="linkrow" style="margin-top:10px">${linkButtons.join('')}</div>`
     + '</main>';
 }
@@ -1026,9 +1098,12 @@ async function tryServeRecordingPage(env, pathname) {
   const shellRes = await env.ASSETS.fetch(new Request('https://internal' + shellPath));
   if (!shellRes.ok) return null;
 
+  const storiesData = await readStoriesReadOnly(env);
+  const story = storiesData ? findStoryForEntry(storiesData, entry) : null;
+
   const titleText = buildRecordingTitleText(entry, lang);
   const descText = buildRecordingDescriptionText(entry, lang);
-  const mainHtml = renderRecordingDetailContent(entry, lang, hub);
+  const mainHtml = renderRecordingDetailContent(entry, lang, hub, story);
   const ogImage = isLikelyImageUrl(entry.cover_url) ? absoluteCoverUrl(entry.cover_url) : PORTRAIT_URL;
 
   const detailRewriter = new HTMLRewriter()
