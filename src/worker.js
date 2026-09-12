@@ -737,6 +737,11 @@ function parseArtistSlug(slug) {
   return m ? { artistSlug: m[1] } : null;
 }
 
+function parseStorySlug(slug) {
+  const m = /^(credits|releases)\/([a-z0-9-]+)\/about$/.exec(slug);
+  return m ? { hub: m[1], recordingSlug: m[2] } : null;
+}
+
 // Every titled credits-page entry for one artist, in hub order — the
 // source both the per-artist page and the artist's @id in the
 // entity-SEO graph are built from.
@@ -756,8 +761,8 @@ const RELEASE_TYPE_LABELS = {
 };
 
 const RECORDING_LABELS = {
-  en: { listenSpotify: 'Listen on Spotify', watchYoutube: 'Watch on YouTube', partOf: 'From the release', year: 'Year', home: 'Studio home', artistSpotify: 'Artist on Spotify' },
-  fa: { listenSpotify: 'شنیدن در اسپاتیفای', watchYoutube: 'تماشا در یوتیوب', partOf: 'بخشی از', year: 'سال', home: 'صفحه اصلی استودیو', artistSpotify: 'صفحه هنرمند در اسپاتیفای' },
+  en: { listenSpotify: 'Listen on Spotify', watchYoutube: 'Watch on YouTube', partOf: 'From the release', year: 'Year', home: 'Studio home', artistSpotify: 'Artist on Spotify', aboutTrack: 'About this track', backToTrack: 'Back to track' },
+  fa: { listenSpotify: 'شنیدن در اسپاتیفای', watchYoutube: 'تماشا در یوتیوب', partOf: 'بخشی از', year: 'سال', home: 'صفحه اصلی استودیو', artistSpotify: 'صفحه هنرمند در اسپاتیفای', aboutTrack: 'درباره این قطعه', backToTrack: 'بازگشت به قطعه' },
 };
 
 function buildRecordingTitleText(entry, lang) {
@@ -853,6 +858,14 @@ function renderRecordingDetailContent(entry, lang, hub, story) {
     ? `<div class="ytwrap" style="margin-bottom:18px"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}?rel=0" title="${escapeHtmlAttr(title)}" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`
     : '';
 
+  // "About this track" now lives on its own page (/credits/<slug>/about)
+  // rather than inline here — this button is the only trace of it on the
+  // track's main page. Only shown when a story actually exists for this
+  // language; no button to a page that would have nothing on it.
+  const storyText = story ? (lang === 'fa' ? story.story_fa : story.story_en) : null;
+  const hasStory = !!(storyText && String(storyText).trim());
+  const aboutHref = hasStory ? pathFor(lang, hub + '/' + slugifyName(entry.id) + '/about') : null;
+
   const linkButtons = [];
   if (sp) linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(sp.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(L.listenSpotify)}</a>`);
   if (ytLink) linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(ytLink.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(L.watchYoutube)}</a>`);
@@ -860,20 +873,9 @@ function renderRecordingDetailContent(entry, lang, hub, story) {
   for (const l of extraLinksFor(entry)) {
     linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(l.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(l.label || l.url)}</a>`);
   }
+  if (aboutHref) linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(aboutHref)}">${escapeHtmlAttr(L.aboutTrack)}</a>`);
   linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(pathFor(lang, hub))}">${escapeHtmlAttr((lang === 'fa' ? 'بازگشت به ' : 'Back to ') + NAV_LABELS[hub][lang])}</a>`);
   linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(pathFor(lang, 'home'))}">${escapeHtmlAttr(L.home)}</a>`);
-
-  // "About this track" — an independently authored blurb (data/song-
-  // stories.json, matched by title+artist), rendered only when a match
-  // exists for THIS language; no placeholder text otherwise. Reuses the
-  // same .article heading/paragraph styling every blog post already uses.
-  const storyText = story ? (lang === 'fa' ? story.story_fa : story.story_en) : null;
-  // The name most likely to appear embedded, in the opposite script, in
-  // this language's story text — see escapeWithBdiIsolation() above.
-  const storyForeignName = lang === 'fa' ? entry.artist_en : entry.artist_fa;
-  const storySection = storyText && String(storyText).trim()
-    ? `<h3>${escapeHtmlAttr(lang === 'fa' ? 'درباره این قطعه' : 'About this track')}</h3><p>${escapeWithBdiIsolation(storyText, storyForeignName)}</p>`
-    : '';
 
   return '<main class="wrap article">'
     + `<p class="eyebrow" style="margin-bottom:14px">${eyebrow}</p>`
@@ -886,8 +888,45 @@ function renderRecordingDetailContent(entry, lang, hub, story) {
     + '</div>'
     + spotifyEmbed
     + youtubeEmbed
-    + storySection
     + `<div class="linkrow" style="margin-top:10px">${linkButtons.join('')}</div>`
+    + '</main>';
+}
+
+// ---------------------------------------------------------------------
+// the story page itself — /credits/<slug>/about (and /fa/, /releases/
+// equivalents). One page, one job: the "About this track" text, with a
+// way back to the track's own page.
+// ---------------------------------------------------------------------
+
+function buildStoryTitleText(entry, lang) {
+  const title = lang === 'fa' ? (entry.title_fa || entry.title_en) : (entry.title_en || entry.title_fa);
+  return lang === 'fa'
+    ? `درباره «${title}» | معراج میرزایی`
+    : `About "${title}" | Meraj Mirzaei`;
+}
+
+function buildStoryDescriptionText(storyText) {
+  const s = String(storyText || '').trim();
+  return s.length > 200 ? s.slice(0, 197) + '…' : s;
+}
+
+function buildStoryPageContent(entry, lang, hub, storyText) {
+  const title = lang === 'fa' ? (entry.title_fa || entry.title_en) : (entry.title_en || entry.title_fa);
+  const artist = lang === 'fa' ? (entry.artist_fa || entry.artist_en) : (entry.artist_en || entry.artist_fa);
+  const storyForeignName = lang === 'fa' ? entry.artist_en : entry.artist_fa;
+  const trackHref = pathFor(lang, hub + '/' + slugifyName(entry.id));
+
+  const linkButtons = [
+    `<a class="btn" href="${escapeHtmlAttr(trackHref)}">${escapeHtmlAttr(RECORDING_LABELS[lang].backToTrack)}</a>`,
+    `<a class="btn" href="${escapeHtmlAttr(pathFor(lang, hub))}">${escapeHtmlAttr((lang === 'fa' ? 'بازگشت به ' : 'Back to ') + NAV_LABELS[hub][lang])}</a>`,
+  ];
+
+  return '<main class="wrap article">'
+    + `<p class="eyebrow" style="margin-bottom:14px"><a href="${escapeHtmlAttr(trackHref)}">${escapeHtmlAttr(title)}</a> — ${escapeHtmlAttr(artist)}</p>`
+    + `<h1 class="atitle">${escapeHtmlAttr(RECORDING_LABELS[lang].aboutTrack)}</h1>`
+    + '<div class="hr"></div>'
+    + `<p>${escapeWithBdiIsolation(storyText, storyForeignName)}</p>`
+    + `<div class="linkrow" style="margin-top:28px">${linkButtons.join('')}</div>`
     + '</main>';
 }
 
@@ -972,6 +1011,36 @@ async function buildEntityGraph(pathname, env) {
   const { lang, slug } = parseSitePath(pathname);
   const nodes = [buildPersonNode(lang)];
   const base = { canonicalPath: pathFor(lang, slug), enPath: pathFor('en', slug), faPath: pathFor('fa', slug) };
+
+  const storySlug = parseStorySlug(slug);
+  if (storySlug) {
+    const creditsData = await readCreditsReadOnly(env);
+    const entry = creditsData ? findEntryBySlug(creditsData, storySlug.hub, storySlug.recordingSlug) : null;
+    if (entry) {
+      const title = lang === 'fa' ? (entry.title_fa || entry.title_en) : (entry.title_en || entry.title_fa);
+      const trackUrl = SITE_ORIGIN + pathFor(lang, storySlug.hub + '/' + storySlug.recordingSlug);
+      const pageUrl = SITE_ORIGIN + base.canonicalPath;
+      nodes.push({
+        '@type': 'WebPage',
+        '@id': pageUrl + '#webpage',
+        url: pageUrl,
+        name: RECORDING_LABELS[lang].aboutTrack + ' — ' + title,
+        inLanguage: lang,
+        about: { '@id': trackUrl + '#recording' },
+        isPartOf: { '@id': trackUrl + '#webpage' },
+      });
+      nodes.push({
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: NAV_LABELS.home[lang], item: SITE_ORIGIN + pathFor(lang, 'home') },
+          { '@type': 'ListItem', position: 2, name: NAV_LABELS[storySlug.hub][lang], item: SITE_ORIGIN + pathFor(lang, storySlug.hub) },
+          { '@type': 'ListItem', position: 3, name: title, item: trackUrl },
+          { '@type': 'ListItem', position: 4, name: RECORDING_LABELS[lang].aboutTrack, item: pageUrl },
+        ],
+      });
+    }
+    return { lang, slug, nodes, ...base };
+  }
 
   const artistSlug = parseArtistSlug(slug);
   if (artistSlug) {
@@ -1295,6 +1364,50 @@ async function tryServeRecordingPage(env, pathname) {
   return applyEntitySeo(stage1, env, pathname, ogImage);
 }
 
+const STORY_PATH_RE = /^\/(fa\/)?(credits|releases)\/([a-z0-9-]+)\/about\/?$/;
+
+async function tryServeStoryPage(env, pathname) {
+  const m = STORY_PATH_RE.exec(pathname);
+  if (!m) return null;
+  const lang = m[1] ? 'fa' : 'en';
+  const hub = m[2];
+  const recordingSlug = m[3];
+
+  const creditsData = await readCreditsReadOnly(env);
+  if (!creditsData) return null;
+  const entry = findEntryBySlug(creditsData, hub, recordingSlug);
+  if (!entry) return null;
+
+  const storiesData = await readStoriesReadOnly(env);
+  const story = storiesData ? findStoryForEntry(storiesData, entry) : null;
+  const storyText = story ? (lang === 'fa' ? story.story_fa : story.story_en) : null;
+  if (!storyText || !String(storyText).trim()) return null; // no story for this language — no fabricated page
+
+  const shellPath = (lang === 'fa' ? '/fa/' : '/') + hub + '.html';
+  const shellRes = await env.ASSETS.fetch(new Request('https://internal' + shellPath));
+  if (!shellRes.ok) return null;
+
+  const titleText = buildStoryTitleText(entry, lang);
+  const descText = buildStoryDescriptionText(storyText);
+  const mainHtml = buildStoryPageContent(entry, lang, hub, storyText);
+
+  const detailRewriter = new HTMLRewriter()
+    .on('title', new ReplaceText(titleText))
+    .on('meta[name="description"]', new SetAttribute('content', descText))
+    .on('meta[property="og:title"]', new SetAttribute('content', titleText))
+    .on('meta[property="og:description"]', new SetAttribute('content', descText))
+    .on('meta[property="og:type"]', new SetAttribute('content', 'article'))
+    .on('main', new ReplaceElement(mainHtml))
+    .on('#creditsConfig', new RemoveElement())
+    .on('#playbackController', new RemoveElement())
+    .on('script[src="/credits-render.js"]', new RemoveElement())
+    .on('script[src="https://open.spotify.com/embed/iframe-api/v1"]', new RemoveElement())
+    .on('script[src="https://www.youtube.com/iframe_api"]', new RemoveElement());
+
+  const stage1 = detailRewriter.transform(shellRes);
+  return applyEntitySeo(stage1, env, pathname);
+}
+
 const ARTIST_PATH_RE = /^\/(fa\/)?credits\/artist\/([a-z0-9-]+)\/?$/;
 
 async function tryServeArtistPage(env, pathname) {
@@ -1571,14 +1684,36 @@ async function buildSitemapXml(env) {
   }
 
   const creditsData = await readCreditsReadOnly(env);
+  const storiesData = creditsData ? await readStoriesReadOnly(env) : null;
   if (creditsData) {
+    const artistSlugs = new Set();
     for (const hub of ['credits', 'releases']) {
       const entries = titledEntriesFor(creditsData, hub);
       for (const entry of entries) {
         const slug = hub + '/' + slugifyName(entry.id);
         urls.push({ loc: SITE_ORIGIN + pathFor('en', slug), priority: '0.6' });
         urls.push({ loc: SITE_ORIGIN + pathFor('fa', slug), priority: '0.6' });
+
+        const story = storiesData ? findStoryForEntry(storiesData, entry) : null;
+        if (story) {
+          const aboutSlug = slug + '/about';
+          if (story.story_en && String(story.story_en).trim()) {
+            urls.push({ loc: SITE_ORIGIN + pathFor('en', aboutSlug), priority: '0.5' });
+          }
+          if (story.story_fa && String(story.story_fa).trim()) {
+            urls.push({ loc: SITE_ORIGIN + pathFor('fa', aboutSlug), priority: '0.5' });
+          }
+        }
+
+        if (hub === 'credits' && entry.artist_en && entry.artist_en !== 'MIRAGE') {
+          artistSlugs.add(slugifyName(entry.artist_en));
+        }
       }
+    }
+    for (const artistSlug of artistSlugs) {
+      const slug = 'credits/artist/' + artistSlug;
+      urls.push({ loc: SITE_ORIGIN + pathFor('en', slug), priority: '0.5' });
+      urls.push({ loc: SITE_ORIGIN + pathFor('fa', slug), priority: '0.5' });
     }
   }
 
@@ -1684,6 +1819,15 @@ export default {
       if (artistResponse) return artistResponse;
     } catch (err) {
       console.error('tryServeArtistPage failed', err && err.stack || err);
+    }
+
+    // A track's dedicated "About this track" story page
+    // (/credits/<slug>/about) — same generated-on-request pattern.
+    try {
+      const storyResponse = await tryServeStoryPage(env, pathname);
+      if (storyResponse) return storyResponse;
+    } catch (err) {
+      console.error('tryServeStoryPage failed', err && err.stack || err);
     }
 
     // Everything else: the public static site, with entity/structured-data

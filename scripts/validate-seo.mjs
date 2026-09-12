@@ -50,6 +50,42 @@ function slugify(s) {
   return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
+// Mirrors worker.js's normalizeForMatch/matchKeysForRecord/findStoryForEntry
+// — duplicated here (rather than imported) since this script validates the
+// worker's live HTTP output, not its internals directly.
+function normalizeForMatch(s) {
+  if (!s) return '';
+  return String(s)
+    .trim()
+    .replace(/ك/g, 'ک')
+    .replace(/ي/g, 'ی')
+    .replace(/‌/g, ' ')
+    .replace(/ـ/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+function matchKeysForRecord(rec) {
+  const keys = new Set();
+  const titles = [rec.title_en, rec.title_fa].filter(Boolean);
+  const artists = [rec.artist_en, rec.artist_fa].filter(Boolean);
+  for (const t of titles) {
+    for (const a of artists) {
+      keys.add(normalizeForMatch(t) + '' + normalizeForMatch(a));
+    }
+  }
+  return keys;
+}
+function findStoryForEntry(stories, entry) {
+  const entryKeys = matchKeysForRecord(entry);
+  for (const story of stories) {
+    for (const key of matchKeysForRecord(story)) {
+      if (entryKeys.has(key)) return story;
+    }
+  }
+  return null;
+}
+
 async function checkPage(path, { requireOgImagePrefix = 'https://merajmirzaei.com/images/portrait.jpg' } = {}) {
   const url = BASE + path;
   const res = await fetch(url);
@@ -155,6 +191,10 @@ for (const path of STATIC_PAGES) {
 const creditsData = await (await fetch(BASE + '/data/credits.json')).json();
 const expectedSitemapUrls = new Set(STATIC_PAGES.map((p) => 'https://merajmirzaei.com' + p));
 let recordingPageCount = 0;
+const artistSlugs = new Set();
+
+const storiesData = await (await fetch(BASE + '/data/song-stories.json')).json().catch(() => null);
+let storyPageCount = 0;
 
 for (const hub of ['credits', 'releases']) {
   const entries = creditsData.filter((e) => Array.isArray(e.pages) && e.pages.includes(hub) && (e.title_en || e.title_fa));
@@ -170,9 +210,38 @@ for (const hub of ['credits', 'releases']) {
       expectedSitemapUrls.add('https://merajmirzaei.com' + path);
       recordingPageCount++;
     }
+
+    if (hub === 'credits' && entry.artist_en && entry.artist_en !== 'MIRAGE') {
+      artistSlugs.add(slugify(entry.artist_en));
+    }
+
+    const story = Array.isArray(storiesData) ? findStoryForEntry(storiesData, entry) : null;
+    if (story) {
+      for (const [lang, text] of [['en', story.story_en], ['fa', story.story_fa]]) {
+        if (!text || !String(text).trim()) continue;
+        const path = (lang === 'fa' ? '/fa/' : '/') + hub + '/' + slug + '/about';
+        const result = await checkPage(path);
+        if (result) {
+          const wp = result.graph.filter((n) => n['@type'] === 'WebPage' && n.about);
+          if (wp.length !== 1) fail(`${path}: expected exactly 1 story WebPage node with "about", found ${wp.length}`);
+        }
+        expectedSitemapUrls.add('https://merajmirzaei.com' + path);
+        storyPageCount++;
+      }
+    }
   }
 }
 ok(`checked ${recordingPageCount} recording page requests (${recordingPageCount / 2} titled entries x 2 languages)`);
+ok(`checked ${storyPageCount} "about this track" story page requests`);
+
+for (const artistSlug of artistSlugs) {
+  for (const lang of ['en', 'fa']) {
+    const path = (lang === 'fa' ? '/fa/' : '/') + 'credits/artist/' + artistSlug;
+    await checkPage(path);
+    expectedSitemapUrls.add('https://merajmirzaei.com' + path);
+  }
+}
+ok(`checked ${artistSlugs.size} artist page requests x 2 languages`);
 
 // An untitled ("Pending") entry must not get a fabricated page.
 const untitled = creditsData.find((e) => !(e.title_en || e.title_fa));
