@@ -283,7 +283,7 @@ const MIRAGE_SAME_AS = [
 const PERSON_LOCALIZED = {
   en: {
     jobTitle: 'Mix and Mastering Engineer',
-    description: 'Mix and mastering engineer, music producer and sound designer based in London, with over 20 years of work across Persian, electronic and international music.',
+    description: 'Mix and Mastering engineer, music producer and sound designer based in London, with over 20 years of work across Persian, electronic and international music.',
   },
   fa: {
     jobTitle: 'مهندس میکس و مسترینگ',
@@ -536,6 +536,36 @@ function extraLinksFor(entry) {
   });
 }
 
+// A friendly platform name for an extra link's hostname, used when the
+// admin never filled in a label — e.g. "ahangify.com" -> "Ahangify" — so
+// the button never falls back to showing the raw URL as its own text.
+const KNOWN_EXTRA_LINK_PLATFORMS = {
+  'ahangify.com': 'Ahangify',
+  'soundcloud.com': 'SoundCloud',
+  'rj.app': 'Radio Javan',
+  'radiojavan.com': 'Radio Javan',
+  't.me': 'Telegram',
+};
+
+function platformNameForUrl(url) {
+  let host;
+  try {
+    host = new URL(url).hostname.replace(/^www\./i, '').toLowerCase();
+  } catch (e) {
+    return null;
+  }
+  if (KNOWN_EXTRA_LINK_PLATFORMS[host]) return KNOWN_EXTRA_LINK_PLATFORMS[host];
+  const base = host.split('.')[0];
+  return base ? base.charAt(0).toUpperCase() + base.slice(1) : null;
+}
+
+function extraLinkLabel(l, lang) {
+  if (l.label && String(l.label).trim()) return l.label;
+  const platform = platformNameForUrl(l.url);
+  if (!platform) return lang === 'fa' ? 'شنیدن' : 'Listen';
+  return (lang === 'fa' ? 'شنیدن در ' : 'Listen on ') + platform;
+}
+
 // data/credits.json's cover_url has occasionally been filled in (via
 // /admin, by hand) with a link to a Spotify/streaming page or a
 // third-party site rather than an actual image file — those are not
@@ -783,7 +813,7 @@ function buildRecordingDescriptionText(entry, lang) {
   }
   return roleName
     ? `"${title}" by ${artist}${yearPart} — Meraj Mirzaei's credit: ${roleName}.`
-    : `"${title}" by ${artist}${yearPart} — from Meraj Mirzaei's mix & mastering credits.`;
+    : `"${title}" by ${artist}${yearPart} — from Meraj Mirzaei's Mix & Mastering credits.`;
 }
 
 // Escapes `text`, but wraps any occurrence of `foreignName` in <bdi>
@@ -871,7 +901,7 @@ function renderRecordingDetailContent(entry, lang, hub, story) {
   if (ytLink) linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(ytLink.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(L.watchYoutube)}</a>`);
   if (artistLink) linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(artistLink.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(L.artistSpotify)}</a>`);
   for (const l of extraLinksFor(entry)) {
-    linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(l.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(l.label || l.url)}</a>`);
+    linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(l.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(extraLinkLabel(l, lang))}</a>`);
   }
   if (aboutHref) linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(aboutHref)}">${escapeHtmlAttr(L.aboutTrack)}</a>`);
   linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(pathFor(lang, hub))}">${escapeHtmlAttr((lang === 'fa' ? 'بازگشت به ' : 'Back to ') + NAV_LABELS[hub][lang])}</a>`);
