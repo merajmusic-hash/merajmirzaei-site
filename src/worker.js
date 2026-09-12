@@ -732,14 +732,32 @@ function parseRecordingSlug(slug) {
   return m ? { hub: m[1], recordingSlug: m[2] } : null;
 }
 
+function parseArtistSlug(slug) {
+  const m = /^credits\/artist\/([a-z0-9-]+)$/.exec(slug);
+  return m ? { artistSlug: m[1] } : null;
+}
+
+// Every titled credits-page entry for one artist, in hub order — the
+// source both the per-artist page and the artist's @id in the
+// entity-SEO graph are built from.
+function findArtistEntries(creditsData, artistSlug) {
+  return creditsData
+    .filter((e) => {
+      if (!Array.isArray(e.pages) || !e.pages.includes('credits')) return false;
+      if (!(e.title_en || e.title_fa)) return false;
+      return !!e.artist_en && slugifyName(e.artist_en) === artistSlug;
+    })
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+}
+
 const RELEASE_TYPE_LABELS = {
   en: { single: 'Single', 'album track': 'Album track', album: 'Album' },
   fa: { single: 'تک‌آهنگ', 'album track': 'ترک آلبوم', album: 'آلبوم' },
 };
 
 const RECORDING_LABELS = {
-  en: { listenSpotify: 'Listen on Spotify', watchYoutube: 'Watch on YouTube', partOf: 'From the release', year: 'Year', home: 'Studio home' },
-  fa: { listenSpotify: 'شنیدن در اسپاتیفای', watchYoutube: 'تماشا در یوتیوب', partOf: 'بخشی از', year: 'سال', home: 'صفحه اصلی استودیو' },
+  en: { listenSpotify: 'Listen on Spotify', watchYoutube: 'Watch on YouTube', partOf: 'From the release', year: 'Year', home: 'Studio home', artistSpotify: 'Artist on Spotify' },
+  fa: { listenSpotify: 'شنیدن در اسپاتیفای', watchYoutube: 'تماشا در یوتیوب', partOf: 'بخشی از', year: 'سال', home: 'صفحه اصلی استودیو', artistSpotify: 'صفحه هنرمند در اسپاتیفای' },
 };
 
 function buildRecordingTitleText(entry, lang) {
@@ -763,6 +781,21 @@ function buildRecordingDescriptionText(entry, lang) {
     : `"${title}" by ${artist}${yearPart} — from Meraj Mirzaei's mix & mastering credits.`;
 }
 
+// Escapes `text`, but wraps any occurrence of `foreignName` in <bdi>
+// first — isolating it from the surrounding paragraph's base direction.
+// Without this, an RTL name (a Farsi artist name) embedded in an LTR
+// English sentence gets visually reordered by the browser's bidi
+// algorithm relative to adjacent punctuation/numbers — e.g. the source
+// text "by گوگوش (2022)" was rendering on screen as "by (2022) گوگوش".
+// That's a real, confirmed rendering bug, not a text bug: the
+// underlying string is exactly what's in the data; only its unisolated
+// on-screen layout was wrong.
+function escapeWithBdiIsolation(text, foreignName) {
+  const s = String(text == null ? '' : text);
+  if (!foreignName || !s.includes(foreignName)) return escapeHtmlAttr(s);
+  return s.split(foreignName).map((part) => escapeHtmlAttr(part)).join('<bdi>' + escapeHtmlAttr(foreignName) + '</bdi>');
+}
+
 // Builds the <main> replacement for one recording's detail page. Reuses
 // the exact same CSS classes the hub pages already define for a track
 // card/player (.tc-cover/.tc-img/.tc-roles/.tc-role/.player/.ytwrap) and
@@ -781,9 +814,18 @@ function renderRecordingDetailContent(entry, lang, hub, story) {
   const eyebrowParts = [artist, entry.year, releaseTypeLabel].filter(Boolean);
   const eyebrow = escapeHtmlAttr(eyebrowParts.join(' · '));
 
+  // The artist name links to their own per-artist page — every other
+  // track of theirs credited to Meraj Mirzaei — rather than out to
+  // Spotify; that external link (when verified) is offered separately,
+  // below, as its own button instead. MIRAGE has no per-artist page of
+  // its own (that's what /mirage already is), so on releases its name
+  // stays plain text.
+  const artistPageHref = hub === 'credits' && entry.artist_en && entry.artist_en !== 'MIRAGE'
+    ? pathFor(lang, 'credits/artist/' + slugifyName(entry.artist_en))
+    : null;
   const artistLink = findLink(entry.links, RE_SPOTIFY_ARTIST);
-  const artistHtml = artistLink
-    ? `<a href="${escapeHtmlAttr(artistLink.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(artist)}</a>`
+  const artistHtml = artistPageHref
+    ? `<a href="${escapeHtmlAttr(artistPageHref)}">${escapeHtmlAttr(artist)}</a>`
     : escapeHtmlAttr(artist);
   const artistLine = `<p>${artistHtml}${artistAlt ? ' — ' + escapeHtmlAttr(artistAlt) : ''}</p>`;
 
@@ -814,6 +856,7 @@ function renderRecordingDetailContent(entry, lang, hub, story) {
   const linkButtons = [];
   if (sp) linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(sp.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(L.listenSpotify)}</a>`);
   if (ytLink) linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(ytLink.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(L.watchYoutube)}</a>`);
+  if (artistLink) linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(artistLink.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(L.artistSpotify)}</a>`);
   for (const l of extraLinksFor(entry)) {
     linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(l.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(l.label || l.url)}</a>`);
   }
@@ -825,8 +868,11 @@ function renderRecordingDetailContent(entry, lang, hub, story) {
   // exists for THIS language; no placeholder text otherwise. Reuses the
   // same .article heading/paragraph styling every blog post already uses.
   const storyText = story ? (lang === 'fa' ? story.story_fa : story.story_en) : null;
+  // The name most likely to appear embedded, in the opposite script, in
+  // this language's story text — see escapeWithBdiIsolation() above.
+  const storyForeignName = lang === 'fa' ? entry.artist_en : entry.artist_fa;
   const storySection = storyText && String(storyText).trim()
-    ? `<h3>${escapeHtmlAttr(lang === 'fa' ? 'درباره این قطعه' : 'About this track')}</h3><p>${escapeHtmlAttr(storyText)}</p>`
+    ? `<h3>${escapeHtmlAttr(lang === 'fa' ? 'درباره این قطعه' : 'About this track')}</h3><p>${escapeWithBdiIsolation(storyText, storyForeignName)}</p>`
     : '';
 
   return '<main class="wrap article">'
@@ -845,10 +891,122 @@ function renderRecordingDetailContent(entry, lang, hub, story) {
     + '</main>';
 }
 
+// ---------------------------------------------------------------------
+// per-artist pages — /credits/artist/<slug> (and /fa/ equivalent),
+// listing every titled recording credited to Meraj Mirzaei for one
+// artist. Same shell-reuse approach as an individual recording page:
+// fetches credits.html as a shell, swaps in title/description/<main>.
+// ---------------------------------------------------------------------
+
+function buildArtistTitleText(entries, lang) {
+  const first = entries[0];
+  const primary = lang === 'fa' ? (first.artist_fa || first.artist_en) : (first.artist_en || first.artist_fa);
+  return lang === 'fa' ? `${primary} — کارنامه | معراج میرزایی` : `${primary} — Credits | Meraj Mirzaei`;
+}
+
+function buildArtistDescriptionText(entries, lang) {
+  const first = entries[0];
+  const primary = lang === 'fa' ? (first.artist_fa || first.artist_en) : (first.artist_en || first.artist_fa);
+  const n = entries.length;
+  return lang === 'fa'
+    ? `${n} اثر با ${primary} که معراج میرزایی روی آن‌ها اعتبار دارد — میکس، مسترینگ، تنظیم یا پروداکشن.`
+    : `${n} recording${n === 1 ? '' : 's'} with ${primary} credited to Meraj Mirzaei — mix, mastering, arrangement or production.`;
+}
+
+function buildArtistPageContent(entries, lang, artistSlug) {
+  const first = entries[0];
+  const primary = lang === 'fa' ? (first.artist_fa || first.artist_en) : (first.artist_en || first.artist_fa);
+  const alt = lang === 'fa' ? first.artist_en : first.artist_fa;
+  const photo = entries.map((e) => e.artist_image).find(Boolean) || entries.map((e) => e.cover_url).find(Boolean);
+  const spotifyArtistUrl = entries.map((e) => e.spotify_artist_url).find(Boolean);
+  const trackCountText = lang === 'fa' ? `${entries.length} اثر` : `${entries.length} track${entries.length === 1 ? '' : 's'}`;
+
+  const photoBlock = isLikelyImageUrl(photo)
+    ? `<div class="tc-cover" style="width:120px;height:120px;flex:none"><img class="tc-img" src="${escapeHtmlAttr(photo)}" alt="" loading="lazy"></div>`
+    : '';
+
+  const headerHtml = `<div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-bottom:10px">`
+    + photoBlock
+    + '<div>'
+    + `<h1 class="atitle" style="margin-bottom:4px">${escapeHtmlAttr(primary)}</h1>`
+    + (alt ? `<p class="stand" style="margin-bottom:4px">${escapeHtmlAttr(alt)}</p>` : '')
+    + `<p class="eyebrow" style="margin-bottom:0">${escapeHtmlAttr(trackCountText)}</p>`
+    + '</div></div>';
+
+  const trackCards = entries.map((entry) => {
+    const title = lang === 'fa' ? (entry.title_fa || entry.title_en) : (entry.title_en || entry.title_fa);
+    const titleAlt = lang === 'fa' ? entry.title_en : entry.title_fa;
+    const href = pathFor(lang, 'credits/' + slugifyName(entry.id));
+    const cover = isLikelyImageUrl(entry.cover_url)
+      ? `<div class="tc-cover"><img class="tc-img" src="${escapeHtmlAttr(entry.cover_url)}" alt="" loading="lazy"></div>`
+      : '';
+    const roleBadges = ROLE_ORDER.filter((f) => entry[f])
+      .map((f) => `<span class="tc-role">${escapeHtmlAttr(ROLE_NAME_LABELS[lang][f])}</span>`)
+      .join('');
+    const rolesBlock = roleBadges ? `<span class="tc-roles">${roleBadges}</span>` : '';
+    return '<div class="trackcard-wrap"><a class="trackcard" href="' + escapeHtmlAttr(href) + '">'
+      + cover
+      + '<div class="tc-body">'
+      + `<span class="tc-title">${escapeHtmlAttr(title)}</span>`
+      + (titleAlt ? `<span class="tc-title-alt">${escapeHtmlAttr(titleAlt)}</span>` : '')
+      + rolesBlock
+      + '</div></a></div>';
+  }).join('');
+
+  const linkButtons = [];
+  if (spotifyArtistUrl) {
+    linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(spotifyArtistUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(RECORDING_LABELS[lang].artistSpotify)}</a>`);
+  }
+  linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(pathFor(lang, 'credits'))}">${escapeHtmlAttr((lang === 'fa' ? 'بازگشت به ' : 'Back to ') + NAV_LABELS.credits[lang])}</a>`);
+  linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(pathFor(lang, 'home'))}">${escapeHtmlAttr(RECORDING_LABELS[lang].home)}</a>`);
+
+  return '<main class="wrap article">'
+    + headerHtml
+    + '<div class="hr"></div>'
+    + `<div class="trackcard-grid">${trackCards}</div>`
+    + `<div class="linkrow" style="margin-top:28px">${linkButtons.join('')}</div>`
+    + '</main>';
+}
+
 async function buildEntityGraph(pathname, env) {
   const { lang, slug } = parseSitePath(pathname);
   const nodes = [buildPersonNode(lang)];
   const base = { canonicalPath: pathFor(lang, slug), enPath: pathFor('en', slug), faPath: pathFor('fa', slug) };
+
+  const artistSlug = parseArtistSlug(slug);
+  if (artistSlug) {
+    const creditsData = await readCreditsReadOnly(env);
+    const entries = creditsData ? findArtistEntries(creditsData, artistSlug.artistSlug) : [];
+    if (entries.length) {
+      const first = entries[0];
+      const artistId = SITE_ORIGIN + '/credits#artist-' + artistSlug.artistSlug;
+      const artistNode = { '@type': 'MusicGroup', '@id': artistId, name: first.artist_en };
+      if (first.artist_fa) artistNode.alternateName = first.artist_fa;
+      const spotifyArtistUrl = entries.map((e) => e.spotify_artist_url).find(Boolean);
+      if (spotifyArtistUrl) artistNode.sameAs = spotifyArtistUrl;
+      nodes.push(artistNode);
+
+      const pageUrl = SITE_ORIGIN + base.canonicalPath;
+      const primaryName = lang === 'fa' ? (first.artist_fa || first.artist_en) : (first.artist_en || first.artist_fa);
+      nodes.push({
+        '@type': 'CollectionPage',
+        '@id': pageUrl + '#webpage',
+        url: pageUrl,
+        name: primaryName,
+        inLanguage: lang,
+        about: { '@id': artistId },
+      });
+      nodes.push({
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: NAV_LABELS.home[lang], item: SITE_ORIGIN + pathFor(lang, 'home') },
+          { '@type': 'ListItem', position: 2, name: NAV_LABELS.credits[lang], item: SITE_ORIGIN + pathFor(lang, 'credits') },
+          { '@type': 'ListItem', position: 3, name: primaryName, item: pageUrl },
+        ],
+      });
+    }
+    return { lang, slug, nodes, ...base };
+  }
 
   const recSlug = parseRecordingSlug(slug);
   if (recSlug) {
@@ -1126,6 +1284,45 @@ async function tryServeRecordingPage(env, pathname) {
     .on('meta[property="og:title"]', new SetAttribute('content', titleText))
     .on('meta[property="og:description"]', new SetAttribute('content', descText))
     .on('meta[property="og:type"]', new SetAttribute('content', 'music.song'))
+    .on('main', new ReplaceElement(mainHtml))
+    .on('#creditsConfig', new RemoveElement())
+    .on('#playbackController', new RemoveElement())
+    .on('script[src="/credits-render.js"]', new RemoveElement())
+    .on('script[src="https://open.spotify.com/embed/iframe-api/v1"]', new RemoveElement())
+    .on('script[src="https://www.youtube.com/iframe_api"]', new RemoveElement());
+
+  const stage1 = detailRewriter.transform(shellRes);
+  return applyEntitySeo(stage1, env, pathname, ogImage);
+}
+
+const ARTIST_PATH_RE = /^\/(fa\/)?credits\/artist\/([a-z0-9-]+)\/?$/;
+
+async function tryServeArtistPage(env, pathname) {
+  const m = ARTIST_PATH_RE.exec(pathname);
+  if (!m) return null;
+  const lang = m[1] ? 'fa' : 'en';
+  const artistSlug = m[2];
+
+  const creditsData = await readCreditsReadOnly(env);
+  if (!creditsData) return null;
+  const entries = findArtistEntries(creditsData, artistSlug);
+  if (!entries.length) return null; // unknown artist slug — no fabricated page
+
+  const shellPath = (lang === 'fa' ? '/fa/' : '/') + 'credits.html';
+  const shellRes = await env.ASSETS.fetch(new Request('https://internal' + shellPath));
+  if (!shellRes.ok) return null;
+
+  const titleText = buildArtistTitleText(entries, lang);
+  const descText = buildArtistDescriptionText(entries, lang);
+  const mainHtml = buildArtistPageContent(entries, lang, artistSlug);
+  const photo = entries.map((e) => e.artist_image).find(Boolean) || entries.map((e) => e.cover_url).find(Boolean);
+  const ogImage = isLikelyImageUrl(photo) ? absoluteCoverUrl(photo) : PORTRAIT_URL;
+
+  const detailRewriter = new HTMLRewriter()
+    .on('title', new ReplaceText(titleText))
+    .on('meta[name="description"]', new SetAttribute('content', descText))
+    .on('meta[property="og:title"]', new SetAttribute('content', titleText))
+    .on('meta[property="og:description"]', new SetAttribute('content', descText))
     .on('main', new ReplaceElement(mainHtml))
     .on('#creditsConfig', new RemoveElement())
     .on('#playbackController', new RemoveElement())
@@ -1478,6 +1675,15 @@ export default {
     } catch (err) {
       console.error('tryServeRecordingPage failed', err && err.stack || err);
       // Fall through to the normal static-asset lookup below.
+    }
+
+    // A per-artist page (/credits/artist/<slug>) is generated the same
+    // way — checked separately since it's a different path shape.
+    try {
+      const artistResponse = await tryServeArtistPage(env, pathname);
+      if (artistResponse) return artistResponse;
+    } catch (err) {
+      console.error('tryServeArtistPage failed', err && err.stack || err);
     }
 
     // Everything else: the public static site, with entity/structured-data
