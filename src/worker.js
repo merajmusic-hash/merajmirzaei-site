@@ -1335,7 +1335,21 @@ async function applyEntitySeo(response, env, pathname, ogImageOverride) {
     + '  }catch(e){}\n'
     + '})();\n';
 
-  const rewriter = new HTMLRewriter()
+  // Only the two credits hubs get the artist index — never a recording
+  // or artist detail page, which reuse the same hub shell but replace
+  // <main> wholesale (the #creditsRoot selector simply won't match
+  // there, but checking the path keeps the data read off those requests).
+  let artistIndexHtml = null;
+  if (canonicalPath === pathFor('en', 'credits') || canonicalPath === pathFor('fa', 'credits')) {
+    try {
+      artistIndexHtml = await buildArtistIndexHtml(env, lang);
+    } catch (err) {
+      // A missing index is cosmetic; a 500 on the hub is not.
+      console.error('buildArtistIndexHtml failed', (err && err.stack) || err);
+    }
+  }
+
+  let rewriter = new HTMLRewriter()
     .on('script[type="application/ld+json"]', new RemoveElement())
     .on('link[rel="alternate"][hreflang="en"]', new SetAttribute('href', SITE_ORIGIN + enPath))
     .on('link[rel="alternate"][hreflang="fa"]', new SetAttribute('href', SITE_ORIGIN + faPath))
@@ -1344,6 +1358,10 @@ async function applyEntitySeo(response, env, pathname, ogImageOverride) {
     .on('script#langRedirect', new ReplaceScriptBody(langRedirectBody))
     .on('a#langtog', new LangtogRewriter(langtogHref))
     .on('a[href$=".html"]', new InternalLinkRewriter(lang));
+
+  if (artistIndexHtml) {
+    rewriter = rewriter.on('div#creditsRoot', new BeforeElementInjector(artistIndexHtml));
+  }
 
   return rewriter.transform(response);
 }
@@ -1697,6 +1715,74 @@ async function handleUploadImage(request, env) {
     return json({ ok: true, path: '/images/covers/' + path.split('/').pop() });
   } catch (e) {
     return json({ error: e.message || 'GitHub upload failed' }, 502);
+  }
+}
+
+// ---------------------------------------------------------------------
+// crawlable artist index on the credits hub.
+//
+// Until now the only links from the credits hub down to the per-artist
+// pages (and through them to the ~182 recording pages) were written by
+// credits-render.js *after* the page loads, and they pointed at
+// /credits?artist=<slug> rather than at the real /credits/artist/<slug>
+// page. In the HTML a crawler actually receives, every artist page and
+// every recording page was therefore an orphan: present in sitemap.xml,
+// linked from nowhere. That is exactly the shape Search Console reports
+// as "Discovered - currently not indexed".
+//
+// This injects a real, visible, server-rendered <a> per artist into the
+// hub itself, built from the same live data/credits.json everything else
+// on this page uses, so it can never drift from the sitemap.
+// ---------------------------------------------------------------------
+
+const ARTIST_INDEX_LABELS = {
+  en: { heading: 'Artists', intro: 'Every artist with a credit on this sheet — each name opens that artist\u2019s own page.' },
+  fa: { heading: 'آرتیست‌ها', intro: 'همهٔ آرتیست‌هایی که در این کارنامه کردیتی دارند — هر نام، صفحهٔ همان آرتیست را باز می‌کند.' },
+};
+
+async function buildArtistIndexHtml(env, lang) {
+  const creditsData = await readCreditsReadOnly(env);
+  if (!creditsData) return null;
+
+  const bySlug = new Map();
+  for (const entry of titledEntriesFor(creditsData, 'credits')) {
+    if (!entry.artist_en || entry.artist_en === 'MIRAGE') continue;
+    const slug = slugifyName(entry.artist_en);
+    if (!bySlug.has(slug)) {
+      bySlug.set(slug, {
+        slug,
+        label: lang === 'fa' ? (entry.artist_fa || entry.artist_en) : entry.artist_en,
+        count: 0,
+      });
+    }
+    bySlug.get(slug).count += 1;
+  }
+  if (!bySlug.size) return null;
+
+  const artists = [...bySlug.values()].sort((a, b) => a.label.localeCompare(b.label, lang === 'fa' ? 'fa' : 'en'));
+  const L = ARTIST_INDEX_LABELS[lang] || ARTIST_INDEX_LABELS.en;
+
+  const links = artists.map((a) => {
+    const href = pathFor(lang, 'credits/artist/' + a.slug);
+    return `<a href="${escapeHtmlAttr(href)}">${escapeHtmlAttr(a.label)}</a>`;
+  }).join('\n    ');
+
+  return `<section id="artistIndex" style="border-bottom:none;padding-bottom:8px">
+  <h2 style="margin-bottom:6px">${escapeHtmlAttr(L.heading)}</h2>
+  <p style="color:var(--muted);font-size:15px;margin-top:0">${escapeHtmlAttr(L.intro)}</p>
+  <nav class="roster" aria-label="${escapeHtmlAttr(L.heading)}">
+    ${links}
+  </nav>
+</section>
+`;
+}
+
+class BeforeElementInjector {
+  constructor(html) {
+    this.html = html;
+  }
+  element(element) {
+    element.before(this.html, { html: true });
   }
 }
 

@@ -141,7 +141,10 @@
     var imgHtml = img ? '<img class="aw-img" src="'+esc(img)+'" loading="lazy" alt="">' : '';
     var nameHtml = '<span class="aw-name"><span class="aw-en">'+esc(nameEn)+'</span>'
       + (nameFa ? '<span class="aw-fa">'+esc(nameFa)+'</span>' : '') + '</span>';
-    var creditsHref = (lang === 'fa' ? '/fa/credits' : '/credits') + '?artist=' + slug;
+    // The artist's own indexable page, not a query-string filter on the
+    // hub. The filtered-hub URL was never a crawlable route to
+    // /credits/artist/<slug>, which left every artist page orphaned.
+    var creditsHref = (lang === 'fa' ? '/fa/credits/artist/' : '/credits/artist/') + slug;
     return '<a class="'+cls+'" href="'+creditsHref+'">'+imgHtml+nameHtml+'</a>';
   }
 
