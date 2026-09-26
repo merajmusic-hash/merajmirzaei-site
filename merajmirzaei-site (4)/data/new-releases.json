@@ -1,12 +1,21 @@
 [
   {
-    "id": "nr-peyvastegi",
-    "release_id": "mirage-peyvastegi",
-    "title_en": "Peyvastegi",
-    "title_fa": "پیوستگی",
-    "youtube_url": "https://www.youtube.com/watch?v=cOmoPL2yU2U",
-    "video_url": "",
+    "id": "nr-muik1jz5qcbh",
+    "release_id": "new-1790329990719-83l61",
+    "title_en": "Didi Ey Tanha Omidam",
+    "title_fa": "دیدی ای تنها امیدم",
+    "youtube_url": "",
+    "video_url": "/media/590930014/03-tanha-omidam-muik2i6g.mp4",
     "order": 0
+  },
+  {
+    "id": "nr-muik0ra089eu",
+    "release_id": "",
+    "title_en": "Ki ashkato pak mikone",
+    "title_fa": "",
+    "youtube_url": "",
+    "video_url": "/media/590928650/ki-ashkato-pak-mikone-muik1grc.mp4",
+    "order": 1
   },
   {
     "id": "nr-farangis",
@@ -15,7 +24,7 @@
     "title_fa": "فرنگیس",
     "youtube_url": "https://www.youtube.com/watch?v=ZBtpmoz0w-Y",
     "video_url": "",
-    "order": 1
+    "order": 2
   },
   {
     "id": "nr-labet-bekhandeh",
@@ -24,7 +33,7 @@
     "title_fa": "لبت بخنده",
     "youtube_url": "https://www.youtube.com/watch?v=BnXpaotM7VI",
     "video_url": "",
-    "order": 2
+    "order": 3
   },
   {
     "id": "nr-baz-baroon",
@@ -33,6 +42,6 @@
     "title_fa": "باز بارون",
     "youtube_url": "https://www.youtube.com/watch?v=WfmyGSRZkkU",
     "video_url": "",
-    "order": 3
+    "order": 4
   }
 ]
