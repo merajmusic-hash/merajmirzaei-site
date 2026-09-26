@@ -9,31 +9,13 @@
     "order": 0
   },
   {
-    "id": "nr-muik0ra089eu",
-    "release_id": "",
-    "title_en": "Ki ashkato pak mikone",
-    "title_fa": "",
-    "youtube_url": "",
-    "video_url": "/media/590928650/ki-ashkato-pak-mikone-muik1grc.mp4",
-    "order": 1
-  },
-  {
-    "id": "nr-farangis",
-    "release_id": "mirage-farangis",
-    "title_en": "Farangis",
-    "title_fa": "فرنگیس",
-    "youtube_url": "https://www.youtube.com/watch?v=ZBtpmoz0w-Y",
-    "video_url": "",
-    "order": 2
-  },
-  {
     "id": "nr-labet-bekhandeh",
     "release_id": "mirage-labet-bekhandeh",
     "title_en": "Labet Bekhandeh",
     "title_fa": "لبت بخنده",
     "youtube_url": "https://www.youtube.com/watch?v=BnXpaotM7VI",
     "video_url": "",
-    "order": 3
+    "order": 1
   },
   {
     "id": "nr-baz-baroon",
@@ -42,6 +24,24 @@
     "title_fa": "باز بارون",
     "youtube_url": "https://www.youtube.com/watch?v=WfmyGSRZkkU",
     "video_url": "",
+    "order": 2
+  },
+  {
+    "id": "nr-farangis",
+    "release_id": "mirage-farangis",
+    "title_en": "Farangis",
+    "title_fa": "فرنگیس",
+    "youtube_url": "https://www.youtube.com/watch?v=ZBtpmoz0w-Y",
+    "video_url": "",
+    "order": 3
+  },
+  {
+    "id": "nr-muik0ra089eu",
+    "release_id": "",
+    "title_en": "Ki ashkato pak mikone",
+    "title_fa": "",
+    "youtube_url": "",
+    "video_url": "/media/590928650/ki-ashkato-pak-mikone-muik1grc.mp4",
     "order": 4
   }
 ]
