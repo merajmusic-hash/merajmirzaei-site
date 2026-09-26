@@ -17,7 +17,15 @@
     --header-h:56px; /* kept in sync with the real <header> height by JS */
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--ink);color:var(--text);font-family:system-ui,sans-serif;font-size:13px}
+  /* The page itself never scrolls: header, messages and footer stay put and
+     only the table area (.wrap) scrolls, in both directions. That makes
+     .wrap the one scroll box the sticky column headers and frozen columns
+     are measured against, so the headers sit on top of the rows and stay
+     visible while scrolling. */
+  html,body{height:100%}
+  body{margin:0;background:var(--ink);color:var(--text);font-family:system-ui,sans-serif;font-size:13px;
+    display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
+  body > header, body > #msg, body > .filter-active-note, body > footer{flex:none}
   header{position:sticky;top:0;z-index:10;background:rgba(11,13,16,.97);border-bottom:1px solid var(--line);
     padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
   header h1{font-size:15px;margin:0;font-weight:700;letter-spacing:.02em}
@@ -31,6 +39,9 @@
   button.primary{background:var(--brass);color:var(--ink);border-color:var(--brass);font-weight:700}
   button.danger{color:var(--bad)}
   button.small{padding:3px 8px;font-size:11px}
+  a.hdr-link{font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;
+    background:var(--panel-2);color:var(--text);text-decoration:none}
+  a.hdr-link:hover{border-color:var(--brass)}
   .msg{padding:8px 12px;border-radius:4px;font-size:13px;margin:0 16px}
   .msg.ok{background:rgba(127,191,127,.12);color:var(--good);border:1px solid rgba(127,191,127,.3)}
   .msg.err{background:rgba(224,133,133,.12);color:var(--bad);border:1px solid rgba(224,133,133,.3)}
@@ -39,15 +50,19 @@
   .tab-btn{background:transparent;border-color:transparent;color:var(--muted)}
   .tab-btn.active{background:var(--panel-2);border-color:var(--line);color:var(--text);font-weight:700}
 
-  .wrap{padding:16px;overflow-x:auto}
-  /* --header-h is measured and kept in sync with the real (possibly
-     multi-line, on a narrow viewport) <header> height by JS below, so the
-     sticky column headers always sit exactly below it instead of a
-     hardcoded guess drifting out of sync and overlapping content. */
+  /* No top padding on the scroll box itself: sticky headers stop at a
+     scroll container's padding edge, which would leave a strip of scrolled
+     rows showing above them. The first child gets that space instead. */
+  .wrap{padding:0 16px 16px;overflow:auto;flex:1 1 auto;min-height:0}
+  .wrap > :first-child{margin-top:16px}
+  /* Column headers stick to the top of .wrap's scroll box (top:0). They
+     used to use top:var(--header-h) to clear the page header, but .wrap is
+     itself a scroll container, so that offset was applied inside it and
+     pushed every header row down on top of the first data row. */
   table{border-collapse:collapse;table-layout:fixed}
   .homepage-table{min-width:640px;table-layout:auto}
   th, td{border:1px solid var(--line);padding:4px 6px;vertical-align:top;text-align:left}
-  th{background:var(--panel);position:sticky;top:var(--header-h, 56px);font-size:11px;text-transform:uppercase;
+  th{background:var(--panel);position:sticky;top:-1px;font-size:11px;text-transform:uppercase;
     letter-spacing:.05em;color:var(--muted);white-space:nowrap;z-index:5}
   /* Frozen identifying columns (Pages, Artist EN, Title EN): pinned to the
      left edge of the horizontally-scrolling .wrap so the row stays
@@ -145,6 +160,7 @@
   <span id="dirtyFlag" class="hint" style="display:none">Unsaved changes</span>
   <button type="button" id="exportCsvBtn" class="small" title="Download every field of every credit, as currently shown, as a CSV file">Export CSV</button>
   <button type="button" id="exportJsonBtn" class="small" title="Download every field of every credit, as currently shown, as a JSON file">Export JSON</button>
+  <a class="hdr-link" href="https://github.com/merajmusic-hash/merajmirzaei-site/releases/tag/site-backups" target="_blank" rel="noopener noreferrer" title="Automatic backups of all site data — updated every time you Save, plus one copy per day">Backups</a>
   <button id="saveBtn" class="primary">Save</button>
   <form method="POST" action="/admin/logout"><button type="submit">Log out</button></form>
 </header>
@@ -178,9 +194,10 @@
   var addRowBtn = document.getElementById('addRowBtn');
   var headerEl = document.querySelector('header');
 
-  // The sticky column headers (th{top:var(--header-h)}) need to sit exactly
-  // below the real page <header>, which can grow taller than one line (it
-  // wraps on a narrow viewport) — so its height is measured, not guessed.
+  // --header-h tracks the real page <header> height (it wraps onto more
+  // lines on a narrow viewport). The column headers no longer depend on it
+  // — they stick inside the scrolling .wrap — but it's kept up to date for
+  // anything else that needs the header's height.
   function syncHeaderHeight(){
     document.documentElement.style.setProperty('--header-h', headerEl.offsetHeight + 'px');
   }
@@ -1095,7 +1112,7 @@
     state.entries.push(blankEntry(pages));
     state.entriesDirty = true; setDirty();
     render();
-    window.scrollTo(0, document.body.scrollHeight);
+    wrap.scrollTop = wrap.scrollHeight; // the table area scrolls, not the page
   });
 
   // ---------------------------------------------------------------------
