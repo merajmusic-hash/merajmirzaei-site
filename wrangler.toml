@@ -10,3 +10,10 @@ run_worker_first = true
 # Trivial redeploy trigger (2026-09-04): pick up the ADMIN_PASSWORD and
 # GITHUB_TOKEN secrets, now correctly set as Runtime secrets under
 # Settings, rather than the Builds-time variables used previously.
+
+# Song comments on the homepage New Release player (see handlePostComment
+# in src/worker.js). Namespace "merajmirzaei-comments" in the Cloudflare
+# account that owns this Worker.
+[[kv_namespaces]]
+binding = "COMMENTS"
+id = "148c52e34410416da2657be76c3b26e4"
