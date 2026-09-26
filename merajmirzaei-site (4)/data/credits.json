@@ -3283,22 +3283,22 @@
     "artist_en": "MIRAGE",
     "artist_fa": "MIRAGE",
     "title_en": "Didi Ey Tanha Omidam ",
-    "title_fa": "",
+    "title_fa": "دیدی ای تنها امیدم",
     "release_type": "single",
     "album_name": "",
-    "year": "",
+    "year": "2026",
     "label": "",
-    "role_arrangement": false,
-    "role_production": false,
-    "role_mix": false,
-    "role_mastering": false,
+    "role_arrangement": true,
+    "role_production": true,
+    "role_mix": true,
+    "role_mastering": true,
     "links": [
       {
-        "label": "",
+        "label": "Spotify",
         "url": "https://open.spotify.com/album/6OSanHKLnzJ000FSjMgv8b?si=DSyrRkaYQzSXEM2Z5kRkzg"
       },
       {
-        "label": "",
+        "label": "Download on Telegram",
         "url": "https://t.me/merajmirzaei"
       }
     ],
