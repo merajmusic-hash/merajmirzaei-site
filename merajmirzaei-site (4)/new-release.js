@@ -13,6 +13,10 @@
  * - Videos start muted (browsers only allow muted autoplay); the speaker
  *   button in the corner turns sound on/off, and the choice carries over
  *   to the next videos.
+ * - Comments: visitors leave a name + comment on the song that's playing
+ *   (the box under the video). They wait for approval on the admin panel,
+ *   then float up over the bottom of that song's video, Instagram-Live
+ *   style, one after another.
  *
  * Markup it expects (see index.html / fa/index.html):
  *   #reel        wrapper (hidden if there is nothing to play)
@@ -104,6 +108,129 @@
     }
   });
   paintSoundBtn();
+
+  // ---- comments -------------------------------------------------------
+  var T = lang === 'fa'
+    ? { name: 'اسم شما', text: 'یه کامنت بنویس…', send: 'ارسال', thanks: 'ممنون! کامنتت بعد از تأیید نمایش داده می‌شه.',
+        needName: 'لطفاً اسمت رو بنویس.', needText: 'لطفاً کامنتت رو بنویس.', links: 'لینک توی کامنت مجاز نیست.',
+        rate: 'یه دقیقه صبر کن و دوباره بفرست.', fail: 'ارسال نشد، دوباره امتحان کن.' }
+    : { name: 'Your name', text: 'Add a comment…', send: 'Send', thanks: 'Thanks! Your comment will appear once it’s approved.',
+        needName: 'Please write your name.', needText: 'Please write a comment.', links: 'Links aren’t allowed in comments.',
+        rate: 'Please wait a minute and try again.', fail: 'Couldn’t send — please try again.' };
+
+  var floatBox = document.createElement('div');
+  floatBox.className = 'reelcomments';
+  floatBox.setAttribute('aria-live', 'polite');
+  stage.appendChild(floatBox);
+
+  var form = document.createElement('form');
+  form.className = 'reelform';
+  form.setAttribute('autocomplete', 'off');
+  form.noValidate = true;   // our own messages, in the page's language
+  form.innerHTML =
+    '<input class="rf-name" name="name" maxlength="40" required>'
+    + '<input class="rf-text" name="text" maxlength="200" required>'
+    + '<input class="rf-hp" name="website" tabindex="-1" aria-hidden="true">'
+    + '<button type="submit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg></button>';
+  var nameIn = form.querySelector('.rf-name');
+  var textIn = form.querySelector('.rf-text');
+  var sendBtn = form.querySelector('button');
+  nameIn.placeholder = T.name; nameIn.setAttribute('aria-label', T.name);
+  textIn.placeholder = T.text; textIn.setAttribute('aria-label', T.text);
+  sendBtn.setAttribute('aria-label', T.send); sendBtn.title = T.send;
+  if(lang === 'fa'){ nameIn.dir = 'auto'; textIn.dir = 'auto'; }
+  var formMsg = document.createElement('p');
+  formMsg.className = 'reelformmsg';
+  reel.insertBefore(form, nav);
+  reel.insertBefore(formMsg, nav);
+  var formShownAt = Date.now();
+  // The song a comment is about is the one playing when the visitor starts
+  // typing — not whatever the reel has moved on to by the time they send.
+  var composeItem = null;
+  textIn.addEventListener('focus', function(){ if(!composeItem) composeItem = items[i]; });
+  try{ nameIn.value = localStorage.getItem('mm_comment_name') || ''; }catch(e){}
+
+  var commentCache = {};   // song -> [{name,text}]
+  var floatTimer = null, floatIdx = 0, floatSong = null;
+
+  function songKey(it){ return it.release_id ? String(it.release_id) : 'nr:' + String(it.id || ''); }
+
+  function floatOne(c){
+    var el = document.createElement('div');
+    el.className = 'rc';
+    el.dir = 'auto';
+    var b = document.createElement('b');
+    b.textContent = c.name;
+    el.appendChild(b);
+    el.appendChild(document.createTextNode(c.text));
+    floatBox.appendChild(el);
+    while(floatBox.children.length > 4) floatBox.removeChild(floatBox.firstChild);
+    setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, 6200);
+  }
+
+  function stopFloating(){
+    if(floatTimer){ clearTimeout(floatTimer); floatTimer = null; }
+    floatBox.innerHTML = '';
+  }
+
+  function floatLoop(song){
+    var list = commentCache[song] || [];
+    if(song !== floatSong || !list.length) return;
+    if(floatIdx >= list.length){
+      floatIdx = 0;
+      floatTimer = setTimeout(function(){ floatLoop(song); }, 5000);  // pause, then go round again
+      return;
+    }
+    floatOne(list[floatIdx++]);
+    floatTimer = setTimeout(function(){ floatLoop(song); }, 2600);
+  }
+
+  function startComments(it){
+    stopFloating();
+    var song = songKey(it);
+    floatSong = song;
+    floatIdx = 0;
+    if(commentCache[song]){ floatTimer = setTimeout(function(){ floatLoop(song); }, 1200); return; }
+    fetch('/api/comments?song=' + encodeURIComponent(song))
+      .then(function(r){ return r.ok ? r.json() : { comments: [] }; })
+      .then(function(j){
+        commentCache[song] = (j && j.comments) || [];
+        if(floatSong === song) floatTimer = setTimeout(function(){ floatLoop(song); }, 1200);
+      })
+      .catch(function(){ commentCache[song] = []; });
+  }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var it = composeItem || items[i];
+    if(!it) return;
+    var name = nameIn.value.trim(), text = textIn.value.trim();
+    if(!name){ formMsg.textContent = T.needName; nameIn.focus(); return; }
+    if(!text){ formMsg.textContent = T.needText; textIn.focus(); return; }
+    sendBtn.disabled = true;
+    formMsg.textContent = '';
+    fetch('/api/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ song: songKey(it), name: name, text: text, lang: lang,
+        website: form.querySelector('.rf-hp').value, elapsed: Date.now() - formShownAt })
+    }).then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ return { ok: r.ok, j: j }; }); })
+      .then(function(res){
+        sendBtn.disabled = false;
+        if(res.ok && res.j.ok){
+          try{ localStorage.setItem('mm_comment_name', name); }catch(err){}
+          textIn.value = '';
+          formMsg.textContent = T.thanks;
+          if(songKey(it) === floatSong) floatOne({ name: name, text: text });   // the sender sees it right away
+          composeItem = null;
+          return;
+        }
+        var code = res.j && res.j.code;
+        formMsg.textContent = code === 'links' ? T.links : code === 'rate' ? T.rate
+          : code === 'name' ? T.needName : code === 'text' ? T.needText : T.fail;
+      })
+      .catch(function(){ sendBtn.disabled = false; formMsg.textContent = T.fail; });
+  });
 
   function youtubeId(url){
     var m = String(url || '').match(/(?:youtube\.com\/(?:watch\?(?:[^#]*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
@@ -206,6 +333,7 @@
       link.style.display = 'none';
     }
     markOn();
+    startComments(it);
   }
 
   function next(){ go(i + 1); }
