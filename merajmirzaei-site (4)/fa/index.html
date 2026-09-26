@@ -228,6 +228,11 @@ button.rel{display:flex;align-items:center;gap:14px}
 .reelstage video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;display:block}
 .reeltitle{text-align:center;margin:0 0 14px}
 .reellink{position:absolute;inset:0;z-index:2;cursor:pointer}
+.reelsound{position:absolute;right:10px;bottom:10px;z-index:3;width:36px;height:36px;padding:0;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:50%;
+  background:rgba(11,13,16,.6);color:#fff;border:1px solid rgba(255,255,255,.25);transition:.2s}
+.reelsound:hover{color:var(--brass);border-color:var(--brass)}
+.reelsound svg{width:17px;height:17px;display:block}
 .reelnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;justify-content:center}
 .reelnav button,.reelnav a{text-decoration:none;display:inline-block;font:inherit;font-family:var(--mono);font-size:11px;
   letter-spacing:.08em;text-transform:uppercase;cursor:pointer;
