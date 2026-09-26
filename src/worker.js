@@ -1957,6 +1957,163 @@ async function serveMedia(request, env, ctx, match) {
 }
 
 // ---------------------------------------------------------------------
+// Song comments on the homepage "New Release" player.
+//
+// A visitor leaves a name + comment on the song that's playing. It waits
+// in a queue until approved on the admin panel's "Comments" tab, and only
+// then floats over that song's video for everyone. Stored in Workers KV
+// (binding COMMENTS — see wrangler.toml):
+//   p:<id>               a comment waiting for approval
+//   a:<song>:<id>        an approved comment; the record is also kept as
+//                        the key's metadata, so one list() call returns a
+//                        song's comments without a read per comment
+//   rl:<visitor hash>    one-minute marker that rate-limits posting
+// <song> is the video's release_id (its song page), or "nr:<video id>" for
+// a video not linked to a song page.
+// ---------------------------------------------------------------------
+
+const COMMENT_SONG_RE = /^[a-z0-9][a-z0-9:_-]{0,120}$/;
+const COMMENT_ID_RE = /^[a-z0-9]{6,12}-[a-z0-9]{4,8}$/;
+const COMMENTS_PER_SONG_MAX = 200;
+
+function cleanCommentText(s, maxChars, maxBytes) {
+  let out = String(s == null ? '' : s)
+    // (keeps U+200C, the Persian half-space, and U+200D used inside emoji)
+    .replace(/[\u0000-\u001F\u007F\u200B\uFEFF]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  out = Array.from(out).slice(0, maxChars).join('');
+  // Keep every record well inside KV's 1 KB metadata limit.
+  const enc = new TextEncoder();
+  while (out && enc.encode(out).length > maxBytes) out = Array.from(out).slice(0, -1).join('');
+  return out;
+}
+
+async function sha256Hex(s) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// The songs that can be commented on: exactly the videos in the playlist.
+async function commentableSongs(env) {
+  const res = await env.ASSETS.fetch(new Request('https://internal/data/new-releases.json'));
+  if (!res.ok) return new Set();
+  const list = await res.json().catch(() => []);
+  const songs = new Set();
+  for (const it of Array.isArray(list) ? list : []) {
+    if (!it) continue;
+    if (it.release_id) songs.add(String(it.release_id));
+    if (it.id) songs.add('nr:' + String(it.id));
+  }
+  return songs;
+}
+
+function commentsCacheKey(origin, song) {
+  return new Request(`${origin}/api/comments?song=${encodeURIComponent(song)}`, { method: 'GET' });
+}
+
+async function handlePostComment(request, env) {
+  if (!env.COMMENTS) return json({ error: 'Comments are not available yet.', code: 'unavailable' }, 503);
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== 'object') return json({ error: 'Invalid request' }, 400);
+  // Bots: a filled-in hidden field, or a form sent within 2 s of appearing.
+  // Pretend it worked so they don't learn anything.
+  if (body.website) return json({ ok: true, pending: true });
+  if (typeof body.elapsed === 'number' && body.elapsed < 2000) return json({ ok: true, pending: true });
+
+  const song = String(body.song || '');
+  if (!COMMENT_SONG_RE.test(song)) return json({ error: 'Invalid song' }, 400);
+  const name = cleanCommentText(body.name, 40, 120);
+  const text = cleanCommentText(body.text, 200, 600);
+  if (!name) return json({ error: 'Please write your name.', code: 'name' }, 400);
+  if (!text) return json({ error: 'Please write a comment.', code: 'text' }, 400);
+  if (/(https?:\/\/|www\.|\.com\b|\.ir\b)/i.test(name + ' ' + text)) {
+    return json({ error: 'Links are not allowed in comments.', code: 'links' }, 400);
+  }
+  if (!(await commentableSongs(env)).has(song)) return json({ error: 'Invalid song' }, 400);
+
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const rlKey = 'rl:' + (await sha256Hex('comment|' + ip)).slice(0, 32);
+  if (await env.COMMENTS.get(rlKey)) {
+    return json({ error: 'Please wait a minute before commenting again.', code: 'rate' }, 429);
+  }
+
+  const ts = Date.now();
+  const id = ts.toString(36) + '-' + crypto.getRandomValues(new Uint32Array(1))[0].toString(36).padStart(4, '0').slice(0, 8);
+  const rec = { id, song, name, text, ts, lang: body.lang === 'fa' ? 'fa' : 'en' };
+  await env.COMMENTS.put('p:' + id, JSON.stringify(rec), { metadata: rec });
+  await env.COMMENTS.put(rlKey, '1', { expirationTtl: 60 });
+  return json({ ok: true, pending: true });
+}
+
+async function handleGetComments(request, env, ctx) {
+  const url = new URL(request.url);
+  const song = url.searchParams.get('song') || '';
+  if (!COMMENT_SONG_RE.test(song)) return json({ error: 'Invalid song' }, 400);
+  if (!env.COMMENTS) return json({ comments: [] });
+
+  const cache = (typeof caches !== 'undefined' && caches.default) || null;
+  const key = commentsCacheKey(url.origin, song);
+  if (cache) {
+    const hit = await cache.match(key).catch(() => undefined);
+    if (hit) return hit;
+  }
+  const listed = await env.COMMENTS.list({ prefix: `a:${song}:`, limit: COMMENTS_PER_SONG_MAX });
+  const comments = listed.keys
+    .map((k) => k.metadata)
+    .filter((m) => m && m.text)
+    .sort((a, b) => a.ts - b.ts)
+    .map((m) => ({ name: m.name, text: m.text, ts: m.ts }));
+  const res = new Response(JSON.stringify({ comments }), {
+    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=30' },
+  });
+  if (cache && ctx && ctx.waitUntil) ctx.waitUntil(cache.put(key, res.clone()).catch(() => {}));
+  return res;
+}
+
+async function handleAdminListComments(env) {
+  if (!env.COMMENTS) return json({ error: 'Comments storage is not connected yet.', code: 'unavailable' }, 503);
+  const [pending, approved] = await Promise.all([
+    env.COMMENTS.list({ prefix: 'p:', limit: 1000 }),
+    env.COMMENTS.list({ prefix: 'a:', limit: 1000 }),
+  ]);
+  const shape = (k) => (k.metadata ? { key: k.name, ...k.metadata } : null);
+  const newestFirst = (a, b) => b.ts - a.ts;
+  return json({
+    pending: pending.keys.map(shape).filter(Boolean).sort(newestFirst),
+    approved: approved.keys.map(shape).filter(Boolean).sort(newestFirst),
+  });
+}
+
+async function handleAdminApproveComment(request, env) {
+  if (!env.COMMENTS) return json({ error: 'Comments storage is not connected yet.' }, 503);
+  const body = await request.json().catch(() => null);
+  const id = body && String(body.id || '');
+  if (!id || !COMMENT_ID_RE.test(id)) return json({ error: 'Invalid comment' }, 400);
+  const raw = await env.COMMENTS.get('p:' + id);
+  if (!raw) return json({ error: 'That comment is no longer waiting — reload the page.' }, 404);
+  const rec = JSON.parse(raw);
+  if (!COMMENT_SONG_RE.test(rec.song || '')) return json({ error: 'Invalid comment' }, 400);
+  await env.COMMENTS.put(`a:${rec.song}:${id}`, JSON.stringify(rec), { metadata: rec });
+  await env.COMMENTS.delete('p:' + id);
+  const cache = (typeof caches !== 'undefined' && caches.default) || null;
+  if (cache) await cache.delete(commentsCacheKey(new URL(request.url).origin, rec.song)).catch(() => {});
+  return json({ ok: true });
+}
+
+async function handleAdminDeleteComment(request, env) {
+  if (!env.COMMENTS) return json({ error: 'Comments storage is not connected yet.' }, 503);
+  const body = await request.json().catch(() => null);
+  const key = body && String(body.key || '');
+  const m = /^(p:|a:([a-z0-9][a-z0-9:_-]{0,120}):)([a-z0-9]{6,12}-[a-z0-9]{4,8})$/.exec(key);
+  if (!m) return json({ error: 'Invalid comment' }, 400);
+  await env.COMMENTS.delete(key);
+  const cache = (typeof caches !== 'undefined' && caches.default) || null;
+  if (cache && m[2]) await cache.delete(commentsCacheKey(new URL(request.url).origin, m[2])).catch(() => {});
+  return json({ ok: true });
+}
+
+// ---------------------------------------------------------------------
 // crawlable artist index on the credits hub.
 //
 // Until now the only links from the credits hub down to the per-artist
@@ -2128,6 +2285,15 @@ async function routeAdminRequest(request, env, pathname) {
     if (!env.GITHUB_TOKEN) return json({ error: 'Admin not fully configured (missing GITHUB_TOKEN)' }, 503);
     return handleUploadVideo(request, env);
   }
+  if (pathname === '/admin/api/comments' && request.method === 'GET') {
+    return handleAdminListComments(env);
+  }
+  if (pathname === '/admin/api/comments/approve' && request.method === 'POST') {
+    return handleAdminApproveComment(request, env);
+  }
+  if (pathname === '/admin/api/comments/delete' && request.method === 'POST') {
+    return handleAdminDeleteComment(request, env);
+  }
   return new Response('Not found', { status: 404 });
 }
 
@@ -2144,6 +2310,18 @@ export default {
       } catch (err) {
         console.error('serveMedia failed', err && err.stack || err);
         return new Response('Video temporarily unavailable', { status: 502 });
+      }
+    }
+
+    // Public song comments (see handlePostComment above).
+    if (pathname === '/api/comments') {
+      try {
+        if (request.method === 'GET') return await handleGetComments(request, env, ctx);
+        if (request.method === 'POST') return await handlePostComment(request, env);
+        return new Response('Method not allowed', { status: 405, headers: { Allow: 'GET, POST' } });
+      } catch (err) {
+        console.error('comments failed', err && err.stack || err);
+        return json({ error: 'Something went wrong — please try again.' }, 500);
       }
     }
 
