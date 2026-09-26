@@ -298,10 +298,27 @@
     return html;
   }
 
+  // A freshly uploaded image is committed to the repo straight away, but it
+  // only exists on the live site once Cloudflare has redeployed (about a
+  // minute). Until then its /images/covers/... path 404s — so the thumbnail
+  // shows the file just picked (entry._coverPreview), and any thumbnail
+  // that fails to load is retried for a couple of minutes before being
+  // shown as broken.
+  window.__retryThumb = function(img){
+    var n = Number(img.getAttribute('data-retry') || 0);
+    var base = img.getAttribute('data-src');
+    if(!base || n >= 8 || !/^\/images\//.test(base)){ img.style.opacity = 0.2; return; }
+    img.setAttribute('data-retry', String(n + 1));
+    img.style.opacity = 0.35;
+    setTimeout(function(){ img.src = base + '?r=' + Date.now(); }, 15000);
+  };
+
   function renderCover(entry){
-    var thumb = entry.cover_url
-      ? '<img class="cover-thumb" src="'+esc(entry.cover_url)+'" onerror="this.style.opacity=0.2">'
+    var src = entry._coverPreview || entry.cover_url;
+    var thumb = src
+      ? '<img class="cover-thumb" src="'+esc(src)+'" data-src="'+esc(entry.cover_url)+'" onload="this.style.opacity=1" onerror="__retryThumb(this)">'
       : '<div class="cover-thumb"></div>';
+    if(entry._coverPreview) thumb += '<div class="hint">New image \u2014 on the site about a minute after Save</div>';
     return thumb
       + '<input type="text" placeholder="Image URL or path" value="'+esc(entry.cover_url)+'" data-id="'+esc(entry.id)+'" data-field="cover_url">'
       + '<button type="button" class="small" data-id="'+esc(entry.id)+'" data-action="upload-cover">Upload…</button>'
@@ -1051,8 +1068,9 @@
       }
       entry[field] = t.value;
       if(field === 'cover_url'){
+        delete entry._coverPreview;
         var thumb = t.closest('td').querySelector('.cover-thumb');
-        if(thumb && thumb.tagName === 'IMG') thumb.src = t.value;
+        if(thumb && thumb.tagName === 'IMG'){ thumb.setAttribute('data-src', t.value); thumb.setAttribute('data-retry', '0'); thumb.src = t.value; }
       }
       return;
     }
@@ -1143,8 +1161,9 @@
           .then(function(res){
             if(!res.ok){ showMsg('Upload failed: ' + (res.j.error||'unknown error'), 'err'); return; }
             entry2.cover_url = res.j.path;
+            try{ entry2._coverPreview = URL.createObjectURL(file); }catch(e){}
             state.entriesDirty = true; setDirty();
-            showMsg('Image uploaded. Remember to Save.', 'ok');
+            showMsg('Image uploaded. Now press Save \u2014 the new image shows on the live site about a minute later.', 'ok');
             render();
           }).catch(function(err){ showMsg('Upload failed: ' + err.message, 'err'); });
       };
@@ -1295,7 +1314,7 @@
     downloadFile('credits-' + todayStamp() + '.csv', buildCsv(state.entries), 'text/csv;charset=utf-8');
   });
   document.getElementById('exportJsonBtn').addEventListener('click', function(){
-    downloadFile('credits-' + todayStamp() + '.json', JSON.stringify(state.entries, null, 2), 'application/json;charset=utf-8');
+    downloadFile('credits-' + todayStamp() + '.json', JSON.stringify(state.entries, function(k, v){ return k.charAt(0) === '_' ? undefined : v; }, 2), 'application/json;charset=utf-8');
   });
 
   // ---------------------------------------------------------------------
@@ -1310,7 +1329,11 @@
         fetch('/admin/api/save', {
           method: 'POST',
           headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ content: state.entries, sha: state.entriesSha })
+          // Fields starting with "_" (like _coverPreview) are for this page
+          // only and are never saved.
+          body: JSON.stringify({ content: state.entries.map(function(e){
+            var o = {}; for(var k in e){ if(k.charAt(0) !== '_') o[k] = e[k]; } return o;
+          }), sha: state.entriesSha })
         }).then(function(r){ return r.json().then(function(j){ return {kind:'entries', ok:r.ok, j:j}; }); })
       );
     }
