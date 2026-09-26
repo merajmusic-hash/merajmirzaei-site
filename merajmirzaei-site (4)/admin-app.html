@@ -110,6 +110,25 @@
     display:inline-block;vertical-align:middle;background:var(--panel-2)}
   tr.no-match td{background:rgba(224,133,133,.06)}
   .add-artist-row{display:flex;gap:8px;align-items:center;padding:10px 16px}
+
+  /* New Release tab */
+  .nr-intro{color:var(--muted);font-size:12px;margin:0 0 12px;max-width:760px;line-height:1.5}
+  .nr-top{display:flex;gap:10px;align-items:center;margin:0 0 12px}
+  .nr-table{min-width:760px;table-layout:auto}
+  .nr-table td{vertical-align:middle}
+  .nr-num{color:var(--muted);font-size:11px;text-align:center;width:28px}
+  .nr-thumb{width:40px;height:71px;object-fit:cover;border-radius:3px;border:1px solid var(--line);
+    background:#000;display:block}
+  .nr-thumb.empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:10px}
+  .nr-video{min-width:300px}
+  .nr-video .or{color:var(--muted);font-size:11px;margin:0 6px}
+  .nr-video input.bad{border-color:var(--bad)}
+  .nr-file{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .nr-file .fname{color:var(--good);font-size:12px;word-break:break-all}
+  .nr-progress{display:flex;align-items:center;gap:8px;min-width:240px}
+  .nr-progress .track{flex:1;height:6px;background:var(--panel-2);border-radius:3px;overflow:hidden;border:1px solid var(--line)}
+  .nr-progress .bar{height:100%;width:0;background:var(--brass);transition:width .2s}
+  .nr-progress .pct{font-size:11px;color:var(--brass);min-width:34px;text-align:right}
 </style>
 </head>
 <body>
@@ -119,6 +138,7 @@
     <button type="button" class="tab-btn" data-tab="credits">Credits</button>
     <button type="button" class="tab-btn" data-tab="releases">Releases</button>
     <button type="button" class="tab-btn" data-tab="homepage">Homepage</button>
+    <button type="button" class="tab-btn" data-tab="newrelease">New Release</button>
   </div>
   <input type="search" id="filter" placeholder="Filter by artist or title…" style="width:220px">
   <span class="spacer"></span>
@@ -144,6 +164,7 @@
   var state = {
     entries: [], entriesSha: null, entriesDirty: false,
     homepage: [], homepageSha: null, homepageDirty: false,
+    newReleases: [], newReleasesSha: null, newReleasesDirty: false,
     tab: 'credits',
   };
   window.__adminState = state; // testability hook only; not a security boundary
@@ -177,7 +198,7 @@
   }
 
   function setDirty(){
-    var v = state.entriesDirty || state.homepageDirty;
+    var v = state.entriesDirty || state.homepageDirty || state.newReleasesDirty;
     dirtyFlag.style.display = v ? '' : 'none';
   }
 
@@ -534,6 +555,223 @@
   function homepageOid(){ return 'h' + (++homepageOidCounter); }
 
   // ---------------------------------------------------------------------
+  // New Release tab — data/new-releases.json: the homepage video player's
+  // playlist, played top to bottom. Each row's video is either a file
+  // uploaded here (stored by the Worker, played natively) or a YouTube
+  // link. Rows are addressed by their own id (data-nr), never by index.
+  // ---------------------------------------------------------------------
+
+  var MAX_VIDEO_BYTES = 95 * 1024 * 1024;
+  var VIDEO_TYPES = {'video/mp4':1, 'video/quicktime':1, 'video/webm':1};
+  var VIDEO_TYPE_BY_EXT = {mp4:'video/mp4', m4v:'video/mp4', mov:'video/quicktime', webm:'video/webm'};
+
+  function youtubeId(url){
+    var m = String(url || '').match(/(?:youtube\.com\/(?:watch\?(?:[^#]*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    return m ? m[1] : null;
+  }
+
+  function nrById(id){
+    for(var i=0;i<state.newReleases.length;i++){ if(state.newReleases[i].id === id) return state.newReleases[i]; }
+    return null;
+  }
+
+  function nrNewId(){ return 'nr-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  function nrUploading(){
+    return state.newReleases.some(function(it){ return it._uploading != null; });
+  }
+
+  // Songs on the Releases page — what a video (and its name) links to.
+  function releaseEntries(){
+    return state.entries
+      .filter(function(e){ return hasPage(e, 'releases') && (e.title_en || e.title_fa); })
+      .slice().sort(byOrder);
+  }
+
+  function nrSongCell(it){
+    var id = esc(it.id);
+    var list = releaseEntries();
+    var known = list.some(function(e){ return e.id === it.release_id; });
+    var html = '<select data-nr="'+id+'" data-field="release_id" style="max-width:230px">'
+      + '<option value="">— choose the song —</option>';
+    if(it.release_id && !known) html += '<option value="'+esc(it.release_id)+'" selected>(missing from Releases) '+esc(it.release_id)+'</option>';
+    list.forEach(function(e){
+      var label = (e.title_en || e.title_fa) + (e.artist_en ? ' — ' + e.artist_en : '');
+      html += '<option value="'+esc(e.id)+'"'+(e.id === it.release_id ? ' selected' : '')+'>'+esc(label)+'</option>';
+    });
+    html += '</select>';
+    if(!it.release_id) html += '<div class="hint">Not linked yet — the video won’t be clickable.</div>';
+    else if(!known) html += '<div class="hint" style="color:var(--bad)">This song is no longer on the Releases page.</div>';
+    return html;
+  }
+
+  function nrThumb(it){
+    if(it.video_url) return '<video class="nr-thumb" src="'+esc(it.video_url)+'#t=0.5" preload="metadata" muted playsinline></video>';
+    var yid = youtubeId(it.youtube_url);
+    if(yid) return '<img class="nr-thumb" src="https://i.ytimg.com/vi/'+esc(yid)+'/hqdefault.jpg" alt="">';
+    return '<div class="nr-thumb empty">no video</div>';
+  }
+
+  function nrVideoCell(it){
+    var id = esc(it.id);
+    var fileInput = '<input type="file" class="upload-input" data-nr="'+id+'" accept="video/mp4,video/quicktime,video/webm,.mp4,.m4v,.mov,.webm">';
+    if(it._uploading != null){
+      return '<div class="nr-progress" data-nr-progress="'+id+'"><div class="track"><div class="bar" style="width:'+it._uploading+'%"></div></div>'
+        + '<span class="pct">'+it._uploading+'%</span></div><div class="hint">Uploading — keep this page open.</div>';
+    }
+    if(it.video_url){
+      var fname = it.video_url.split('/').pop();
+      return '<div class="nr-file"><span class="fname">▶ Uploaded: '+esc(fname)+'</span>'
+        + '<a class="hint" href="'+esc(it.video_url)+'" target="_blank" rel="noopener noreferrer">open</a>'
+        + '<button type="button" class="small" data-nr="'+id+'" data-action="nr-upload">Replace file</button>'
+        + '<button type="button" class="small" data-nr="'+id+'" data-action="nr-clear-file">Remove file</button>'
+        + fileInput + '</div>';
+    }
+    var bad = it.youtube_url && !youtubeId(it.youtube_url);
+    return '<div class="nr-file">'
+      + '<button type="button" class="small primary" data-nr="'+id+'" data-action="nr-upload">Upload video file</button>'
+      + '<span class="or">or</span>'
+      + '<input type="text" style="flex:1;min-width:200px" placeholder="paste a YouTube link" value="'+esc(it.youtube_url)+'" data-nr="'+id+'" data-field="youtube_url"'+(bad ? ' class="bad" title="Not a YouTube link"' : '')+'>'
+      + fileInput + '</div>'
+      + '<div class="hint">MP4 recommended · max 95 MB</div>';
+  }
+
+  function renderNewReleaseTab(){
+    var q = (filterEl.value||'').trim().toLowerCase();
+    var filtering = !!q;
+    filterNote.style.display = filtering ? '' : 'none';
+
+    var visible = state.newReleases.slice().sort(byOrder);
+    if(filtering) visible = visible.filter(function(it){
+      return ((it.title_en||'') + ' ' + (it.title_fa||'')).toLowerCase().indexOf(q) !== -1;
+    });
+
+    wrap.innerHTML = '';
+    var intro = document.createElement('p');
+    intro.className = 'nr-intro';
+    intro.textContent = 'These videos play on the homepage under "New Release", top to bottom, then start again. '
+      + 'The video and its name both link to the song’s page on Releases. For each one: choose the song, '
+      + 'upload the video file (or paste a YouTube link), then press Save. Drag ⠿ to change the order.';
+    wrap.appendChild(intro);
+
+    var top = document.createElement('div');
+    top.className = 'nr-top';
+    top.innerHTML = '<button type="button" class="primary" data-action="nr-add">+ Add video</button>'
+      + '<span class="hint">New videos are added at the top, so they play first.</span>';
+    wrap.appendChild(top);
+
+    var table = document.createElement('table');
+    table.className = 'nr-table';
+    table.innerHTML = '<thead><tr><th></th><th>#</th><th></th><th>Song page (Releases)</th><th>Name shown (EN)</th><th>Name shown (FA)</th><th>Video</th><th></th></tr></thead>';
+    var tbody = document.createElement('tbody');
+    tbody.id = 'nrRows';
+    tbody.className = filtering ? 'drag-disabled' : '';
+    visible.forEach(function(it, k){
+      var id = esc(it.id);
+      var tr = document.createElement('tr');
+      tr.setAttribute('data-nr-row', it.id);
+      tr.innerHTML =
+        '<td class="drag-col"><span class="drag-handle" draggable="true" title="Drag to reorder">⠿</span></td>'
+        + '<td class="nr-num">'+(k+1)+'</td>'
+        + '<td>'+nrThumb(it)+'</td>'
+        + '<td>'+nrSongCell(it)+'</td>'
+        + '<td><input type="text" value="'+esc(it.title_en)+'" data-nr="'+id+'" data-field="title_en" placeholder="e.g. Peyvastegi"></td>'
+        + '<td><input type="text" dir="rtl" value="'+esc(it.title_fa)+'" data-nr="'+id+'" data-field="title_fa" placeholder="مثلاً پیوستگی"></td>'
+        + '<td class="nr-video">'+nrVideoCell(it)+'</td>'
+        + '<td><button type="button" class="small danger" data-nr="'+id+'" data-action="nr-delete">Remove</button></td>';
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    if(!state.newReleases.length){
+      var empty = document.createElement('p');
+      empty.className = 'hint';
+      empty.style.padding = '14px 0';
+      empty.textContent = 'No videos yet — the New Release player is hidden on the homepage until you add one.';
+      wrap.appendChild(empty);
+    }
+
+    if(!filtering) attachFlatDnD(tbody, recomputeNrOrder);
+  }
+
+  function recomputeNrOrder(){
+    var n = 0;
+    document.querySelectorAll('#nrRows > tr').forEach(function(tr){
+      var it = nrById(tr.getAttribute('data-nr-row'));
+      if(it) it.order = n++;
+    });
+    state.newReleasesDirty = true;
+    setDirty();
+    render();
+  }
+
+  function nrAdd(){
+    var sorted = state.newReleases.slice().sort(byOrder);
+    var it = { id: nrNewId(), release_id: '', title_en: '', title_fa: '', youtube_url: '', video_url: '', order: 0 };
+    state.newReleases = [it].concat(sorted);
+    state.newReleases.forEach(function(x, k){ x.order = k; });
+    state.newReleasesDirty = true; setDirty();
+    filterEl.value = '';
+    render();
+    var first = wrap.querySelector('select[data-nr="'+it.id+'"][data-field="release_id"]');
+    if(first) first.focus();
+  }
+
+  function nrUpdateProgress(it){
+    var box = wrap.querySelector('[data-nr-progress="'+it.id+'"]');
+    if(!box) return;
+    box.querySelector('.bar').style.width = it._uploading + '%';
+    box.querySelector('.pct').textContent = it._uploading + '%';
+  }
+
+  function nrUpload(it, file){
+    var type = file.type;
+    if(!VIDEO_TYPES[type]){
+      var ext = (file.name.split('.').pop() || '').toLowerCase();
+      type = VIDEO_TYPE_BY_EXT[ext] || type;
+    }
+    if(!VIDEO_TYPES[type]){ showMsg('That file type can’t be used. Please use an MP4 (recommended), MOV or WebM video.', 'err'); return; }
+    if(file.size > MAX_VIDEO_BYTES){
+      showMsg('This video is ' + (file.size/1048576).toFixed(0) + ' MB — the limit is 95 MB. Export a smaller MP4 and try again.', 'err');
+      return;
+    }
+    if(!it.title_en) it.title_en = file.name.replace(/\.[^.]+$/, '');
+    it._uploading = 0;
+    render();
+    showMsg('Uploading video…', 'ok');
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/api/upload-video');
+    xhr.setRequestHeader('Content-Type', type);
+    xhr.setRequestHeader('X-Filename-Hint', encodeURIComponent(it.title_en || 'video'));
+    xhr.upload.onprogress = function(e){
+      if(!e.lengthComputable) return;
+      // Hold at 99% until the server confirms it has stored the file.
+      it._uploading = Math.min(99, Math.round(e.loaded / e.total * 100));
+      nrUpdateProgress(it);
+    };
+    xhr.onload = function(){
+      var j = {};
+      try{ j = JSON.parse(xhr.responseText); }catch(err){}
+      it._uploading = null;
+      if(xhr.status >= 200 && xhr.status < 300 && j.ok){
+        it.video_url = j.path;
+        it.youtube_url = '';
+        state.newReleasesDirty = true; setDirty();
+        showMsg('Video uploaded. Press Save to put it on the site.', 'ok');
+      } else {
+        showMsg('Upload failed: ' + (j.error || ('server answered ' + xhr.status)), 'err');
+      }
+      render();
+    };
+    xhr.onerror = function(){
+      it._uploading = null;
+      showMsg('Upload failed: the connection dropped. Please try again.', 'err');
+      render();
+    };
+    xhr.send(file);
+  }
+
+  // ---------------------------------------------------------------------
   // drag & drop — a dragged element's real DOM node is repositioned live
   // on dragover (the classic vanilla "sortable list" trick), so by drop
   // time the DOM already reflects the new order and in-progress input
@@ -638,11 +876,12 @@
   function render(){
     if(state.tab === 'credits') renderCreditsTab();
     else if(state.tab === 'releases') renderReleasesTab();
+    else if(state.tab === 'newrelease') renderNewReleaseTab();
     else renderHomepageTab();
     Array.prototype.forEach.call(tabsEl.querySelectorAll('.tab-btn'), function(btn){
       btn.classList.toggle('active', btn.getAttribute('data-tab') === state.tab);
     });
-    addRowBtn.style.display = state.tab === 'homepage' ? 'none' : '';
+    addRowBtn.style.display = (state.tab === 'homepage' || state.tab === 'newrelease') ? 'none' : '';
   }
   window.__adminRender = render; // testability hook only; not a security boundary
 
@@ -664,6 +903,20 @@
 
   wrap.addEventListener('input', function(e){
     var t = e.target;
+    var nrId = t.getAttribute('data-nr');
+    if(nrId != null && t.type !== 'file'){
+      var nr = nrById(nrId);
+      var nrField = t.getAttribute('data-field');
+      if(!nr || !nrField) return;
+      nr[nrField] = t.value;
+      if(nrField === 'youtube_url'){
+        var bad = !!t.value && !youtubeId(t.value);
+        t.classList.toggle('bad', bad);
+        t.title = bad ? 'Not a YouTube link' : '';
+      }
+      state.newReleasesDirty = true; setDirty();
+      return;
+    }
     var id = t.getAttribute('data-id');
     var field = t.getAttribute('data-field');
     if(id != null && field){
@@ -701,6 +954,14 @@
   // no longer being actively typed into.
   wrap.addEventListener('focusout', function(e){
     var t = e.target;
+    if(state.tab === 'newrelease' && t.getAttribute && t.getAttribute('data-field') === 'youtube_url'){
+      // Refresh just this row's thumbnail — a full re-render here would
+      // swallow a click on another button that caused this blur.
+      var nrRow = t.closest('tr');
+      var nrIt = nrById(t.getAttribute('data-nr'));
+      if(nrRow && nrIt && nrRow.children[2]) nrRow.children[2].innerHTML = nrThumb(nrIt);
+      return;
+    }
     if(state.tab === 'credits' && t.getAttribute && t.getAttribute('data-field') === 'artist_en'){
       render();
     }
@@ -721,6 +982,26 @@
       }
       if(t.tagName === 'SELECT'){ entry[field] = t.value; state.entriesDirty = true; setDirty(); return; }
       if(t.type === 'checkbox'){ entry[field] = t.checked; state.entriesDirty = true; setDirty(); return; }
+    }
+    if(t.tagName === 'SELECT' && t.getAttribute('data-nr') != null){
+      var nrs = nrById(t.getAttribute('data-nr'));
+      if(!nrs) return;
+      nrs.release_id = t.value;
+      var rel = entryById(t.value);
+      if(rel){
+        nrs.title_en = rel.title_en || nrs.title_en;
+        nrs.title_fa = rel.title_fa || nrs.title_fa;
+      }
+      state.newReleasesDirty = true; setDirty();
+      render();
+      return;
+    }
+    if(t.type === 'file' && t.getAttribute('data-nr') != null){
+      var nrItem = nrById(t.getAttribute('data-nr'));
+      var vfile = t.files[0];
+      t.value = '';
+      if(nrItem && vfile) nrUpload(nrItem, vfile);
+      return;
     }
     if(t.type === 'file'){
       var fileId = t.getAttribute('data-id');
@@ -782,6 +1063,25 @@
     } else if(action === 'upload-cover'){
       var input = t.parentElement.querySelector('.upload-input');
       if(input) input.click();
+    } else if(action === 'nr-add'){
+      nrAdd();
+    } else if(action === 'nr-upload'){
+      var vinput = t.closest('td').querySelector('input[type=file][data-nr]');
+      if(vinput) vinput.click();
+    } else if(action === 'nr-clear-file'){
+      var nrc = nrById(t.getAttribute('data-nr'));
+      if(!nrc) return;
+      nrc.video_url = '';
+      state.newReleasesDirty = true; setDirty();
+      render();
+    } else if(action === 'nr-delete'){
+      var nrd = nrById(t.getAttribute('data-nr'));
+      if(!nrd) return;
+      if(nrd._uploading != null){ showMsg('Wait for the upload to finish first.', 'err'); return; }
+      state.newReleases = state.newReleases.filter(function(x){ return x !== nrd; });
+      state.newReleases.slice().sort(byOrder).forEach(function(x, k){ x.order = k; });
+      state.newReleasesDirty = true; setDirty();
+      render();
     } else if(action === 'delete-homepage-row'){
       var oid = t.getAttribute('data-oid');
       state.homepage = state.homepage.filter(function(h){ return String(h._oid) !== oid; });
@@ -900,6 +1200,27 @@
         }).then(function(r){ return r.json().then(function(j){ return {kind:'homepage', ok:r.ok, j:j}; }); })
       );
     }
+    if(state.newReleasesDirty){
+      if(nrUploading()){ showMsg('A video is still uploading — Save once it reaches 100%.', 'err'); return; }
+      var nrPayload = state.newReleases.slice().sort(byOrder).map(function(it, k){
+        return {
+          id: it.id,
+          release_id: it.release_id || '',
+          title_en: (it.title_en || '').trim(),
+          title_fa: (it.title_fa || '').trim(),
+          youtube_url: it.video_url ? '' : (it.youtube_url || '').trim(),
+          video_url: it.video_url || '',
+          order: k,
+        };
+      });
+      jobs.push(
+        fetch('/admin/api/save-new-releases', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ content: nrPayload, sha: state.newReleasesSha })
+        }).then(function(r){ return r.json().then(function(j){ return {kind:'newreleases', ok:r.ok, j:j}; }); })
+      );
+    }
     if(!jobs.length){ showMsg('Nothing to save.', 'ok'); return; }
     showMsg('Saving…', 'ok');
     Promise.all(jobs).then(function(results){
@@ -908,6 +1229,7 @@
         if(!r.ok) return;
         if(r.kind === 'entries'){ state.entriesSha = r.j.sha || state.entriesSha; state.entriesDirty = false; }
         if(r.kind === 'homepage'){ state.homepageSha = r.j.sha || state.homepageSha; state.homepageDirty = false; }
+        if(r.kind === 'newreleases'){ state.newReleasesSha = r.j.sha || state.newReleasesSha; state.newReleasesDirty = false; }
       });
       setDirty();
       if(failed.length){
@@ -921,7 +1243,7 @@
   document.getElementById('saveBtn2').addEventListener('click', save);
 
   window.addEventListener('beforeunload', function(e){
-    if(state.entriesDirty || state.homepageDirty){ e.preventDefault(); e.returnValue = ''; }
+    if(state.entriesDirty || state.homepageDirty || state.newReleasesDirty || nrUploading()){ e.preventDefault(); e.returnValue = ''; }
   });
 
   // ---------------------------------------------------------------------
@@ -933,8 +1255,10 @@
   Promise.all([
     fetch('/admin/api/credits').then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); }),
     fetch('/admin/api/homepage').then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); }),
+    fetch('/admin/api/new-releases').then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+      .catch(function(err){ return {ok:false, j:{error: err.message}}; }),
   ]).then(function(results){
-    var creditsRes = results[0], homepageRes = results[1];
+    var creditsRes = results[0], homepageRes = results[1], nrRes = results[2];
     if(!creditsRes.ok){ showMsg('Load failed: ' + (creditsRes.j.error||'unknown error'), 'err'); return; }
     state.entries = creditsRes.j.data || [];
     state.entriesSha = creditsRes.j.sha;
@@ -944,7 +1268,20 @@
     } else {
       showMsg('Homepage list failed to load: ' + (homepageRes.j.error||'unknown error'), 'err');
     }
+    if(nrRes.ok){
+      state.newReleases = (nrRes.j.data || []).map(function(it, k){
+        return {
+          id: it.id || nrNewId(),
+          release_id: it.release_id || '',
+          title_en: it.title_en || '', title_fa: it.title_fa || '',
+          youtube_url: it.youtube_url || '', video_url: it.video_url || '',
+          order: typeof it.order === 'number' ? it.order : k,
+        };
+      });
+      state.newReleasesSha = nrRes.j.sha;
+    }
     if(creditsRes.ok && homepageRes.ok) showMsg('', '');
+    if(!nrRes.ok) showMsg('New Release list failed to load: ' + (nrRes.j.error||'unknown error'), 'err');
     render();
   }).catch(function(err){ showMsg('Load failed: ' + err.message, 'err'); });
 })();
