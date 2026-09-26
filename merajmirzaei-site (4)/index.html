@@ -239,15 +239,18 @@ button.rel{display:flex;align-items:center;gap:14px}
   margin:0 auto;border-radius:6px;overflow:hidden;border:1px solid var(--line);
   background:#000}
 .reelstage iframe,.reelstage>div{position:absolute;inset:0;width:100%;height:100%;border:0}
+.reelstage video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;display:block}
+.reeltitle{text-align:center;margin:0 0 14px}
+.reellink{position:absolute;inset:0;z-index:2;cursor:pointer}
 .reelnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;justify-content:center}
-.reelnav button{font:inherit;font-family:var(--mono);font-size:11px;
+.reelnav button,.reelnav a{text-decoration:none;display:inline-block;font:inherit;font-family:var(--mono);font-size:11px;
   letter-spacing:.08em;text-transform:uppercase;cursor:pointer;
   background:none;color:var(--muted);border:1px solid var(--line);
   border-radius:2px;padding:8px 12px;transition:.2s}
-body.fa .reelnav button{font-family:var(--fa);font-size:13px;
+body.fa .reelnav button,body.fa .reelnav a{font-family:var(--fa);font-size:13px;
   letter-spacing:0;text-transform:none}
-.reelnav button:hover{color:var(--text);border-color:var(--muted)}
-.reelnav button.on{color:var(--brass);border-color:var(--brass)}
+.reelnav button:hover,.reelnav a[href]:hover{color:var(--text);border-color:var(--muted)}
+.reelnav button.on,.reelnav a.on{color:var(--brass);border-color:var(--brass)}
 
 /* release extras: video + telegram */
 .extra{border:1px solid var(--brass);border-top:0;
@@ -393,12 +396,10 @@ footer a:hover{color:var(--brass)}
       <div class="linkrow"><a class="btn" href="credits.html">See the credit sheet</a></div>
     </div>
     <div class="portrait">
-      <div class="reel">
-        <div class="reelstage"><div id="reel-player"></div></div>
-        <div class="reelnav" id="reel-nav"><button type="button" data-i="0">Peyvastegi</button>
-          <button type="button" data-i="1">Farangis</button>
-          <button type="button" data-i="2" class="on">Labet Bekhandeh</button>
-          <button type="button" data-i="3">Baz Baroon</button></div>
+      <div class="reel" id="reel">
+        <p class="kicker reeltitle">New Release</p>
+        <div class="reelstage" id="reel-stage"></div>
+        <div class="reelnav" id="reel-nav"></div>
       </div>
     </div>
   </div>
@@ -444,36 +445,8 @@ footer a:hover{color:var(--brass)}
 
 <script>window.__CREDITS_CONFIG__ = { lang: 'en', page: 'roster', mount: '#artistWall' };</script>
 <script src="/credits-render.js"></script>
-<script src="https://www.youtube.com/iframe_api"></script>
-<script>
-(function(){
-  var IDS = ["cOmoPL2yU2U", "ZBtpmoz0w-Y", "BnXpaotM7VI", "WfmyGSRZkkU"];
-  var i = 2, yt = null;
-  window.onYouTubeIframeAPIReady = function(){
-    yt = new YT.Player('reel-player', {
-      videoId: IDS[i],
-      playerVars:{rel:0, playsinline:1, modestbranding:1, mute:1, autoplay:1},
-      events:{
-        onReady: function(e){ e.target.mute(); e.target.playVideo(); },
-        onStateChange: function(e){
-          if(e.data === YT.PlayerState.ENDED){ go((i+1) % IDS.length); }
-        }
-      }
-    });
-  };
-  function go(n){
-    i = n;
-    if(yt && yt.loadVideoById){ yt.loadVideoById(IDS[i]); }
-    var bs = document.querySelectorAll('#reel-nav button');
-    for(var k=0;k<bs.length;k++){ bs[k].className = (k===i ? 'on' : ''); }
-  }
-  var nav = document.getElementById('reel-nav');
-  if(nav) nav.addEventListener('click', function(e){
-    var b = e.target.closest('button'); if(!b) return;
-    go(parseInt(b.dataset.i,10));
-  });
-})();
-</script>
+<script>window.__NEW_RELEASE_CONFIG__ = { lang: 'en' };</script>
+<script src="/new-release.js"></script>
 <footer class="wrap">
   <p>Meraj Mirzaei — Mix &amp; Mastering, London.</p>
   <p><a href="https://musicbrainz.org/artist/5d52a3f9-f059-4c47-9f4e-0bdb61317fe3" target="_blank" rel="noopener noreferrer">MusicBrainz</a> ·
