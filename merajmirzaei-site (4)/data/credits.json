@@ -3240,41 +3240,6 @@
     "notes": ""
   },
   {
-    "id": "new-1790329990719-83l61",
-    "order": 97,
-    "pages": [
-      "releases"
-    ],
-    "artist_en": "MIRAGE",
-    "artist_fa": "MIRAGE",
-    "title_en": "Didi Ey Tanha Omidam",
-    "title_fa": "دیدی ای تنها امیدم",
-    "release_type": "single",
-    "album_name": "",
-    "year": "2026",
-    "label": "",
-    "role_arrangement": true,
-    "role_production": true,
-    "role_mix": true,
-    "role_mastering": true,
-    "links": [
-      {
-        "label": "Spotify",
-        "url": "https://open.spotify.com/album/6OSanHKLnzJ000FSjMgv8b?si=DSyrRkaYQzSXEM2Z5kRkzg"
-      },
-      {
-        "label": "Download on Telegram",
-        "url": "https://t.me/merajmirzaei"
-      }
-    ],
-    "start_seconds": "",
-    "cover_url": "/images/covers/didi-ey-tanha-omidam-muimfklq.jpg",
-    "status_musicbrainz": "not started",
-    "status_discogs": "not started",
-    "status_genius": "not started",
-    "notes": ""
-  },
-  {
     "id": "new-1790330185189-7ht8i",
     "order": 98,
     "pages": [
@@ -3304,6 +3269,41 @@
     ],
     "start_seconds": "",
     "cover_url": "/images/covers/dor-az-tasavor-mugse8lj.png",
+    "status_musicbrainz": "not started",
+    "status_discogs": "not started",
+    "status_genius": "not started",
+    "notes": ""
+  },
+  {
+    "id": "new-1790441193810-5wt4t",
+    "order": 99,
+    "pages": [
+      "releases"
+    ],
+    "artist_en": "MIRAGE",
+    "artist_fa": "MIRAGE",
+    "title_en": "Didi Ey Tanha Omidam ",
+    "title_fa": "",
+    "release_type": "single",
+    "album_name": "",
+    "year": "",
+    "label": "",
+    "role_arrangement": false,
+    "role_production": false,
+    "role_mix": false,
+    "role_mastering": false,
+    "links": [
+      {
+        "label": "",
+        "url": "https://open.spotify.com/album/6OSanHKLnzJ000FSjMgv8b?si=DSyrRkaYQzSXEM2Z5kRkzg"
+      },
+      {
+        "label": "",
+        "url": "https://t.me/merajmirzaei"
+      }
+    ],
+    "start_seconds": "",
+    "cover_url": "/images/covers/mirage-muimharb.jpg",
     "status_musicbrainz": "not started",
     "status_discogs": "not started",
     "status_genius": "not started",
