@@ -126,6 +126,20 @@
   tr.no-match td{background:rgba(224,133,133,.06)}
   .add-artist-row{display:flex;gap:8px;align-items:center;padding:10px 16px}
 
+  /* Comments tab */
+  .badge{display:inline-block;min-width:16px;padding:0 5px;margin-left:5px;border-radius:8px;
+    background:var(--brass);color:var(--ink);font-size:10px;font-weight:700;line-height:16px;text-align:center}
+  .badge:empty{display:none}
+  .c-section{font-size:13px;font-weight:700;margin:18px 0 8px}
+  .c-table{min-width:760px;table-layout:auto}
+  .c-table td{vertical-align:middle}
+  .c-when{white-space:nowrap;color:var(--muted);font-size:11px}
+  .c-song{white-space:nowrap}
+  .c-name{font-weight:700;white-space:nowrap}
+  .c-text{min-width:280px;max-width:520px;font-size:13px;line-height:1.4}
+  .c-actions{white-space:nowrap}
+  .c-actions button{margin-right:4px}
+
   /* New Release tab */
   .nr-intro{color:var(--muted);font-size:12px;margin:0 0 12px;max-width:760px;line-height:1.5}
   .nr-top{display:flex;gap:10px;align-items:center;margin:0 0 12px}
@@ -154,6 +168,7 @@
     <button type="button" class="tab-btn" data-tab="releases">Releases</button>
     <button type="button" class="tab-btn" data-tab="homepage">Homepage</button>
     <button type="button" class="tab-btn" data-tab="newrelease">New Release</button>
+    <button type="button" class="tab-btn" data-tab="comments">Comments<span id="commentsBadge" class="badge"></span></button>
   </div>
   <input type="search" id="filter" placeholder="Filter by artist or title…" style="width:220px">
   <span class="spacer"></span>
@@ -181,6 +196,7 @@
     entries: [], entriesSha: null, entriesDirty: false,
     homepage: [], homepageSha: null, homepageDirty: false,
     newReleases: [], newReleasesSha: null, newReleasesDirty: false,
+    comments: { pending: [], approved: [], loaded: false, error: null },
     tab: 'credits',
   };
   window.__adminState = state; // testability hook only; not a security boundary
@@ -789,6 +805,91 @@
   }
 
   // ---------------------------------------------------------------------
+  // Comments tab — visitors' comments from the homepage New Release player.
+  // Nothing appears on the site until it's approved here. Actions apply
+  // immediately (no Save needed): they talk straight to the Worker.
+  // ---------------------------------------------------------------------
+
+  var commentsBadge = document.getElementById('commentsBadge');
+
+  function loadComments(){
+    return fetch('/admin/api/comments').then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+      .then(function(res){
+        if(!res.ok){ state.comments.error = res.j.error || 'Could not load comments'; }
+        else { state.comments.pending = res.j.pending || []; state.comments.approved = res.j.approved || []; state.comments.error = null; }
+        state.comments.loaded = true;
+        commentsBadge.textContent = state.comments.pending.length ? String(state.comments.pending.length) : '';
+        if(state.tab === 'comments') render();
+      })
+      .catch(function(err){ state.comments.error = err.message; state.comments.loaded = true; if(state.tab === 'comments') render(); });
+  }
+
+  function songTitle(song){
+    song = String(song || '');
+    if(song.indexOf('nr:') === 0){
+      var nid = song.slice(3);
+      var it = state.newReleases.filter(function(x){ return x.id === nid; })[0];
+      return it ? (it.title_en || it.title_fa || nid) : nid;
+    }
+    var e = entryById(song);
+    return e ? (e.title_en || e.title_fa || song) + (e.artist_en ? ' — ' + e.artist_en : '') : song;
+  }
+
+  function fmtWhen(ts){
+    try{ return new Date(ts).toLocaleString('en-GB', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}); }
+    catch(e){ return ''; }
+  }
+
+  function commentRows(list, pending){
+    return list.map(function(c){
+      return '<tr>'
+        + '<td class="c-when">'+esc(fmtWhen(c.ts))+'</td>'
+        + '<td class="c-song">'+esc(songTitle(c.song))+'</td>'
+        + '<td class="c-name" dir="auto">'+esc(c.name)+'</td>'
+        + '<td class="c-text" dir="auto">'+esc(c.text)+'</td>'
+        + '<td class="c-actions">'
+        + (pending ? '<button type="button" class="small primary" data-action="c-approve" data-id="'+esc(c.id)+'">Approve</button>' : '')
+        + '<button type="button" class="small danger" data-action="c-delete" data-key="'+esc(c.key)+'">Delete</button>'
+        + '</td></tr>';
+    }).join('');
+  }
+
+  function renderCommentsTab(){
+    filterNote.style.display = 'none';
+    var q = (filterEl.value||'').trim().toLowerCase();
+    var match = function(c){ return !q || (c.name + ' ' + c.text + ' ' + songTitle(c.song)).toLowerCase().indexOf(q) !== -1; };
+    var C = state.comments;
+    var head = '<thead><tr><th>When</th><th>Song</th><th>Name</th><th>Comment</th><th></th></tr></thead>';
+    var html = '<p class="nr-intro">Comments visitors leave on the New Release player on the homepage. '
+      + 'Nothing appears on the site until you approve it here — approved comments float over that song’s video. '
+      + 'Approve and Delete take effect straight away (no Save needed).</p>';
+    if(!C.loaded) html += '<p class="hint">Loading…</p>';
+    else if(C.error) html += '<div class="msg err" style="margin:0">'+esc(C.error)+'</div>';
+    else {
+      var pend = C.pending.filter(match), appr = C.approved.filter(match);
+      html += '<div class="c-section">Waiting for approval ('+pend.length+')</div>';
+      html += pend.length ? '<table class="c-table">'+head+'<tbody>'+commentRows(pend, true)+'</tbody></table>'
+        : '<p class="hint">Nothing waiting.</p>';
+      html += '<div class="c-section">On the site ('+appr.length+')</div>';
+      html += appr.length ? '<table class="c-table">'+head+'<tbody>'+commentRows(appr, false)+'</tbody></table>'
+        : '<p class="hint">No approved comments yet.</p>';
+    }
+    wrap.innerHTML = html;
+  }
+
+  function commentAction(url, payload, okMsg){
+    showMsg('Working…', 'ok');
+    fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+      .then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+      .then(function(res){
+        if(!res.ok){ showMsg('Failed: ' + (res.j.error || 'unknown error'), 'err'); }
+        else showMsg(okMsg, 'ok');
+        return loadComments();
+      })
+      .catch(function(err){ showMsg('Failed: ' + err.message, 'err'); });
+  }
+
+  // ---------------------------------------------------------------------
   // drag & drop — a dragged element's real DOM node is repositioned live
   // on dragover (the classic vanilla "sortable list" trick), so by drop
   // time the DOM already reflects the new order and in-progress input
@@ -894,11 +995,12 @@
     if(state.tab === 'credits') renderCreditsTab();
     else if(state.tab === 'releases') renderReleasesTab();
     else if(state.tab === 'newrelease') renderNewReleaseTab();
+    else if(state.tab === 'comments') renderCommentsTab();
     else renderHomepageTab();
     Array.prototype.forEach.call(tabsEl.querySelectorAll('.tab-btn'), function(btn){
       btn.classList.toggle('active', btn.getAttribute('data-tab') === state.tab);
     });
-    addRowBtn.style.display = (state.tab === 'homepage' || state.tab === 'newrelease') ? 'none' : '';
+    addRowBtn.style.display = (state.tab === 'homepage' || state.tab === 'newrelease' || state.tab === 'comments') ? 'none' : '';
   }
   window.__adminRender = render; // testability hook only; not a security boundary
 
@@ -908,6 +1010,7 @@
     state.tab = btn.getAttribute('data-tab');
     filterEl.value = '';
     render();
+    if(state.tab === 'comments') loadComments();
   });
 
   filterEl.addEventListener('input', render);
@@ -1080,6 +1183,10 @@
     } else if(action === 'upload-cover'){
       var input = t.parentElement.querySelector('.upload-input');
       if(input) input.click();
+    } else if(action === 'c-approve'){
+      commentAction('/admin/api/comments/approve', { id: t.getAttribute('data-id') }, 'Approved — it will show on the site within a minute.');
+    } else if(action === 'c-delete'){
+      commentAction('/admin/api/comments/delete', { key: t.getAttribute('data-key') }, 'Deleted.');
     } else if(action === 'nr-add'){
       nrAdd();
     } else if(action === 'nr-upload'){
@@ -1300,6 +1407,7 @@
     if(creditsRes.ok && homepageRes.ok) showMsg('', '');
     if(!nrRes.ok) showMsg('New Release list failed to load: ' + (nrRes.j.error||'unknown error'), 'err');
     render();
+    loadComments();
   }).catch(function(err){ showMsg('Load failed: ' + err.message, 'err'); });
 })();
 </script>
