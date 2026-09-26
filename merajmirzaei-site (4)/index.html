@@ -247,6 +247,37 @@ button.rel{display:flex;align-items:center;gap:14px}
   background:rgba(11,13,16,.6);color:#fff;border:1px solid rgba(255,255,255,.25);transition:.2s}
 .reelsound:hover{color:var(--brass);border-color:var(--brass)}
 .reelsound svg{width:17px;height:17px;display:block}
+/* song comments: float up over the bottom of the video, Instagram-Live style */
+.reelcomments{position:absolute;left:10px;right:10px;bottom:54px;z-index:2;pointer-events:none;
+  display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+body.fa .reelcomments{align-items:flex-end}
+.reelcomments .rc{max-width:88%;padding:6px 11px;border-radius:14px;background:rgba(11,13,16,.58);
+  color:#fff;font-size:13px;line-height:1.4;overflow-wrap:anywhere;text-shadow:0 1px 2px rgba(0,0,0,.4);
+  animation:rcIn .35s ease-out both,rcOut .7s ease-in 5.4s forwards}
+body.fa .reelcomments .rc{font-family:var(--fa)}
+.reelcomments .rc b{font-weight:700;color:var(--brass);margin-inline-end:6px}
+@keyframes rcIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes rcOut{to{opacity:0;transform:translateY(-10px)}}
+.reelform{position:relative;display:flex;gap:6px;max-width:340px;margin:12px auto 0}
+.reelform input{min-width:0;font:inherit;font-size:13px;background:var(--panel);color:var(--text);
+  border:1px solid var(--line);border-radius:18px;padding:8px 12px}
+.reelform input:focus{outline:none;border-color:var(--brass)}
+body.fa .reelform input{font-family:var(--fa)}
+.reelform .rf-name{flex:0 0 32%}
+.reelform .rf-text{flex:1 1 auto}
+.reelform .rf-hp{position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;
+  clip-path:inset(50%);opacity:0;pointer-events:none}
+.reelform button{flex:none;width:36px;height:36px;padding:0;border-radius:50%;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;background:none;color:var(--brass);
+  border:1px solid var(--brass);transition:.2s}
+.reelform button:hover{background:var(--brass);color:var(--ink)}
+.reelform button:disabled{opacity:.5;cursor:default}
+.reelform button svg{width:16px;height:16px;display:block}
+body.fa .reelform button svg{transform:scaleX(-1)}
+.reelformmsg{max-width:340px;margin:6px auto 0;font-size:12px;color:var(--muted);text-align:center}
+.reelformmsg:empty{display:none}
+body.fa .reelformmsg{font-family:var(--fa)}
+@media(min-width:700px){.reelform,.reelformmsg{max-width:300px}}
 .reelnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;justify-content:center}
 .reelnav button,.reelnav a{text-decoration:none;display:inline-block;font:inherit;font-family:var(--mono);font-size:11px;
   letter-spacing:.08em;text-transform:uppercase;cursor:pointer;
