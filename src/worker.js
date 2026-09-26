@@ -25,6 +25,16 @@ const DATA_PATH = 'merajmirzaei-site (4)/data/credits.json';
 // actually render a tile (see credits-render.js's renderArtistWall).
 const HOMEPAGE_PATH = 'merajmirzaei-site (4)/data/homepage.json';
 const COVERS_DIR = 'merajmirzaei-site (4)/images/covers';
+// The homepage "New Release" video player: an ordered playlist of
+// {title_en, title_fa, youtube_url | video_url}, edited on the admin
+// panel's "New Release" tab and played top to bottom on the homepage.
+const NEW_RELEASES_PATH = 'merajmirzaei-site (4)/data/new-releases.json';
+// Uploaded video files are too big for the repo itself (Cloudflare refuses
+// to deploy any static asset over 25 MiB), so they're stored as assets of
+// one GitHub release with this tag, and served to visitors through
+// /media/<asset id>/<file name> by this Worker (see serveMedia below).
+const MEDIA_RELEASE_TAG = 'site-media';
+const GITHUB_API = 'https://api.github.com';
 
 const SESSION_COOKIE = 'mm_admin_session';
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
@@ -1719,6 +1729,234 @@ async function handleUploadImage(request, env) {
 }
 
 // ---------------------------------------------------------------------
+// homepage "New Release" video player — playlist data + video uploads.
+//
+// The playlist itself is a small JSON file in the repo like every other
+// piece of site data. A video can be either a YouTube link or a file
+// uploaded from the admin panel; uploaded files go to a GitHub release
+// (MEDIA_RELEASE_TAG) rather than into the repo, because the repo is what
+// Cloudflare deploys and it rejects any single static file over 25 MiB.
+// ---------------------------------------------------------------------
+
+const ALLOWED_VIDEO_TYPES = {
+  'video/mp4': 'mp4',
+  'video/quicktime': 'mov',
+  'video/webm': 'webm',
+};
+// Cloudflare accepts request bodies up to 100 MB on this plan; stay under.
+const MAX_VIDEO_BYTES = 95 * 1024 * 1024;
+// .mov files are served as video/mp4: an H.264 .mov is the same ISO media
+// container underneath, and Chrome/Firefox only play it when told "mp4".
+const VIDEO_MIME_BY_EXT = { mp4: 'video/mp4', mov: 'video/mp4', webm: 'video/webm' };
+const MEDIA_ROUTE_RE = /^\/media\/(\d{1,15})\/([a-z0-9][a-z0-9-]{0,80})\.(mp4|mov|webm)$/;
+// release_id: the credits.json id of the song on the Releases page that
+// the video (and its name) links to.
+const NR_STRING_FIELDS = ['id', 'release_id', 'title_en', 'title_fa', 'youtube_url', 'video_url'];
+
+function youtubeIdFrom(url) {
+  const m = String(url || '').match(
+    /(?:youtube\.com\/(?:watch\?(?:[^#]*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/
+  );
+  return m ? m[1] : null;
+}
+
+function validateNewReleases(data) {
+  if (!Array.isArray(data)) return 'data must be an array';
+  if (data.length > 200) return 'too many videos';
+  for (let i = 0; i < data.length; i++) {
+    const e = data[i];
+    const label = `Video ${i + 1}` + (e && e.title_en ? ` ("${e.title_en}")` : '');
+    if (!e || typeof e !== 'object') return `${label} is not an object`;
+    for (const f of NR_STRING_FIELDS) {
+      if (e[f] != null && typeof e[f] !== 'string') return `${label}: ${f} must be text`;
+      if (e[f] && e[f].length > 500) return `${label}: ${f} is too long`;
+    }
+    if (e.order != null && typeof e.order !== 'number') return `${label}: order must be a number`;
+    if (e.youtube_url && !youtubeIdFrom(e.youtube_url)) return `${label}: that doesn't look like a YouTube link`;
+    if (e.video_url && !MEDIA_ROUTE_RE.test(e.video_url)) return `${label}: invalid uploaded video path`;
+    if (!e.youtube_url && !e.video_url) return `${label} has no video yet — upload a file or paste a YouTube link`;
+  }
+  return null;
+}
+
+async function handleGetNewReleases(env) {
+  const file = await ghGetFile(env, NEW_RELEASES_PATH);
+  if (!file) return json({ data: [], sha: null });
+  const content = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
+  let data;
+  try {
+    data = JSON.parse(content);
+  } catch (e) {
+    return json({ error: 'data/new-releases.json is not valid JSON: ' + e.message }, 500);
+  }
+  return json({ data, sha: file.sha });
+}
+
+async function handleSaveNewReleases(request, env) {
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== 'object') return json({ error: 'Invalid request body' }, 400);
+  const { content, sha } = body;
+  const invalid = validateNewReleases(content);
+  if (invalid) return json({ error: invalid }, 400);
+
+  const text = JSON.stringify(content, null, 2) + '\n';
+  try {
+    const result = await ghPutFile(
+      env,
+      NEW_RELEASES_PATH,
+      base64FromUtf8(text),
+      sha || undefined,
+      `Update New Release videos via /admin`
+    );
+    return json({ ok: true, sha: result.content && result.content.sha });
+  } catch (e) {
+    if (e.status === 409) {
+      return json({ error: 'Someone else saved changes since you loaded this page. Reload and try again.' }, 409);
+    }
+    return json({ error: e.message || 'GitHub save failed' }, 502);
+  }
+}
+
+// Finds (or, on the very first upload, creates) the GitHub release that
+// holds uploaded videos. A published pre-release rather than a draft: a
+// draft's assets can't be looked up by tag.
+async function ghEnsureMediaRelease(env) {
+  const base = `${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}`;
+  const lookup = async () => {
+    const res = await fetch(`${base}/releases/tags/${MEDIA_RELEASE_TAG}`, { headers: ghHeaders(env) });
+    if (res.ok) return res.json();
+    if (res.status === 404) return null;
+    throw new Error(`GitHub release lookup failed: ${res.status}`);
+  };
+  const existing = await lookup();
+  if (existing) return existing;
+  const res = await fetch(`${base}/releases`, {
+    method: 'POST',
+    headers: { ...ghHeaders(env), 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      tag_name: MEDIA_RELEASE_TAG,
+      target_commitish: GITHUB_BRANCH,
+      name: 'Site media (homepage New Release videos)',
+      body: 'Video files uploaded from merajmirzaei.com/admin for the homepage "New Release" player. '
+        + 'Managed by the admin panel: deleting an asset here breaks that video on the site.',
+      prerelease: true,
+    }),
+  });
+  if (res.ok) return res.json();
+  // Two uploads racing to create it: the other one won, so just use it.
+  if (res.status === 422) {
+    const again = await lookup();
+    if (again) return again;
+  }
+  const j = await res.json().catch(() => ({}));
+  throw new Error(j.message || `GitHub release create failed: ${res.status}`);
+}
+
+// The browser sends the raw file as the request body (no base64/JSON
+// wrapping — videos are large), streamed straight through to GitHub.
+async function handleUploadVideo(request, env) {
+  const mime = (request.headers.get('Content-Type') || '').split(';')[0].trim().toLowerCase();
+  const ext = ALLOWED_VIDEO_TYPES[mime];
+  if (!ext) return json({ error: 'Unsupported video type. Use MP4 (recommended), MOV or WebM.' }, 400);
+  const size = Number(request.headers.get('Content-Length'));
+  if (!size || !request.body) return json({ error: 'Missing video data' }, 400);
+  if (size > MAX_VIDEO_BYTES) return json({ error: 'Video too large (max 95 MB).' }, 413);
+
+  let hint = '';
+  try { hint = decodeURIComponent(request.headers.get('X-Filename-Hint') || ''); } catch (e) { hint = ''; }
+  // (A Farsi-only title slugs down to nothing, hence the fallback.)
+  const slug = String(hint).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'video';
+  const name = `${slug}-${Date.now().toString(36)}.${ext}`;
+
+  try {
+    const release = await ghEnsureMediaRelease(env);
+    const uploadBase = String(release.upload_url || '').replace(/\{.*$/, '');
+    if (!uploadBase) throw new Error('GitHub release has no upload URL');
+    // FixedLengthStream makes the outgoing request carry a real
+    // Content-Length (GitHub's upload endpoint requires one) while still
+    // streaming, so a large video never has to fit in Worker memory.
+    const { readable, writable } = new FixedLengthStream(size);
+    const piping = request.body.pipeTo(writable).catch(() => {});
+    const res = await fetch(`${uploadBase}?name=${encodeURIComponent(name)}`, {
+      method: 'POST',
+      headers: { ...ghHeaders(env), 'Content-Type': mime },
+      body: readable,
+    });
+    await piping;
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok || !j.id) {
+      return json({ error: j.message || `GitHub upload failed (${res.status})` }, 502);
+    }
+    return json({ ok: true, path: `/media/${j.id}/${name}`, size: j.size || size });
+  } catch (e) {
+    return json({ error: e.message || 'Upload failed' }, 502);
+  }
+}
+
+// Public: /media/<asset id>/<name>. Resolves the release asset's
+// short-lived signed download URL and streams it with a proper video
+// Content-Type and byte-range support (video players seek with Range
+// requests). The whole file is also copied into Cloudflare's edge cache in
+// the background, so after the first view it plays from Cloudflare, not
+// GitHub.
+async function serveMedia(request, env, ctx, match) {
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    return new Response('Method not allowed', { status: 405, headers: { Allow: 'GET, HEAD' } });
+  }
+  const assetId = match[1];
+  const contentType = VIDEO_MIME_BY_EXT[match[3]];
+  const isHead = request.method === 'HEAD';
+  const url = new URL(request.url);
+  const cacheKey = new Request(url.origin + url.pathname, { method: 'GET' });
+  const range = request.headers.get('Range');
+  const rangeHeaders = range ? { Range: range } : {};
+  const cache = (typeof caches !== 'undefined' && caches.default) || null;
+
+  if (cache) {
+    const hit = await cache.match(new Request(cacheKey.url, { method: 'GET', headers: rangeHeaders })).catch(() => undefined);
+    if (hit) return isHead ? new Response(null, { status: hit.status, headers: hit.headers }) : hit;
+  }
+
+  const apiRes = await fetch(`${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/assets/${assetId}`, {
+    headers: { ...ghHeaders(env), Accept: 'application/octet-stream' },
+    redirect: 'manual',
+  });
+  if (apiRes.status === 404) return new Response('Not found', { status: 404 });
+  const upstreamUrl = apiRes.status >= 300 && apiRes.status < 400 ? apiRes.headers.get('Location') : null;
+  if (!upstreamUrl) return new Response('Video temporarily unavailable', { status: 502 });
+
+  const baseHeaders = {
+    'Content-Type': contentType,
+    'Accept-Ranges': 'bytes',
+    'X-Robots-Tag': 'noindex',
+  };
+
+  if (cache && ctx && ctx.waitUntil) {
+    ctx.waitUntil((async () => {
+      const full = await fetch(upstreamUrl);
+      if (full.status !== 200) return;
+      const headers = new Headers(baseHeaders);
+      headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+      const len = full.headers.get('Content-Length');
+      if (len) headers.set('Content-Length', len);
+      await cache.put(cacheKey, new Response(full.body, { status: 200, headers }));
+    })().catch(() => {}));
+  }
+
+  const direct = await fetch(upstreamUrl, { method: isHead ? 'HEAD' : 'GET', headers: rangeHeaders });
+  if (direct.status !== 200 && direct.status !== 206) {
+    return new Response('Video temporarily unavailable', { status: 502 });
+  }
+  const headers = new Headers(baseHeaders);
+  for (const h of ['Content-Length', 'Content-Range']) {
+    const v = direct.headers.get(h);
+    if (v) headers.set(h, v);
+  }
+  headers.set('Cache-Control', 'public, max-age=3600');
+  return new Response(isHead ? null : direct.body, { status: direct.status, headers });
+}
+
+// ---------------------------------------------------------------------
 // crawlable artist index on the credits hub.
 //
 // Until now the only links from the credits hub down to the per-artist
@@ -1878,13 +2116,36 @@ async function routeAdminRequest(request, env, pathname) {
     if (!env.GITHUB_TOKEN) return json({ error: 'Admin not fully configured (missing GITHUB_TOKEN)' }, 503);
     return handleUploadImage(request, env);
   }
+  if (pathname === '/admin/api/new-releases' && request.method === 'GET') {
+    if (!env.GITHUB_TOKEN) return json({ error: 'Admin not fully configured (missing GITHUB_TOKEN)' }, 503);
+    return handleGetNewReleases(env);
+  }
+  if (pathname === '/admin/api/save-new-releases' && request.method === 'POST') {
+    if (!env.GITHUB_TOKEN) return json({ error: 'Admin not fully configured (missing GITHUB_TOKEN)' }, 503);
+    return handleSaveNewReleases(request, env);
+  }
+  if (pathname === '/admin/api/upload-video' && request.method === 'POST') {
+    if (!env.GITHUB_TOKEN) return json({ error: 'Admin not fully configured (missing GITHUB_TOKEN)' }, 503);
+    return handleUploadVideo(request, env);
+  }
   return new Response('Not found', { status: 404 });
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const { pathname } = url;
+
+    // Uploaded New Release videos (see serveMedia above).
+    const mediaMatch = pathname.match(MEDIA_ROUTE_RE);
+    if (mediaMatch) {
+      try {
+        return await serveMedia(request, env, ctx, mediaMatch);
+      } catch (err) {
+        console.error('serveMedia failed', err && err.stack || err);
+        return new Response('Video temporarily unavailable', { status: 502 });
+      }
+    }
 
     try {
       if (pathname === '/admin/__diag') {
