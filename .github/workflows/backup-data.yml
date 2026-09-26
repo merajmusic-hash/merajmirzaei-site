@@ -1,0 +1,58 @@
+name: Back up site data
+
+# Every admin-panel Save commits to data/, which runs this. It keeps an
+# always-current copy of the site data (the same CSV/JSON the admin
+# "Export" buttons give) plus one dated snapshot per day, all as files on
+# the "site-backups" GitHub release — so nothing is committed back to the
+# repo and no extra site deploy is triggered.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'merajmirzaei-site (4)/data/**'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: backup-site-data
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build backup files
+        run: node scripts/backup-data.mjs "$RUNNER_TEMP/backup"
+
+      - name: Upload to the site-backups release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TAG=site-backups
+          DAY=$(TZ=Europe/London date +%F)
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --target main --prerelease \
+              --title "Site data backups" \
+              --notes "Automatic backups of the site data, updated every time the admin panel saves. The *-latest files are always the current data (credits-latest.csv is the same as the admin Export CSV). backup-YYYY-MM-DD.zip is the data as it was at the end of that day (the last 365 days are kept)."
+          fi
+          cd "$RUNNER_TEMP/backup"
+          zip -q -X "backup-$DAY.zip" ./*-latest.*
+          gh release upload "$TAG" ./*-latest.* "backup-$DAY.zip" --clobber
+          # Keep the newest 365 daily snapshots.
+          gh release view "$TAG" --json assets --jq '.assets[].name' \
+            | { grep -E '^backup-[0-9]{4}-[0-9]{2}-[0-9]{2}\.zip$' || true; } \
+            | sort -r | tail -n +366 \
+            | while read -r name; do gh release delete-asset "$TAG" "$name" -y; done
