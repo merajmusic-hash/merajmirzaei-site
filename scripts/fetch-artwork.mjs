@@ -29,12 +29,12 @@ const SITE_DIR = path.join(ROOT, "merajmirzaei-site (4)");
 const COVERS_DIR = path.join(SITE_DIR, "images", "covers");
 
 const PAGES = [
-  { file: path.join(SITE_DIR, "index.html"), parse: parseFlatThumbs("MIRAGE") },
-  { file: path.join(SITE_DIR, "fa", "index.html"), parse: parseFlatThumbs("MIRAGE") },
+  { file: path.join(SITE_DIR, "index.html"), parse: parseFlatThumbs("Miragesohi") },
+  { file: path.join(SITE_DIR, "fa", "index.html"), parse: parseFlatThumbs("Miragesohi") },
   { file: path.join(SITE_DIR, "credits.html"), parse: parseCreditsPage({ nameClass: "aname", titleClass: "t-main" }) },
   { file: path.join(SITE_DIR, "fa", "credits.html"), parse: parseCreditsPage({ nameClass: "aalt", titleClass: "t-lat" }) },
-  { file: path.join(SITE_DIR, "releases.html"), parse: parseFlatThumbs("MIRAGE", "rt") },
-  { file: path.join(SITE_DIR, "fa", "releases.html"), parse: parseFlatThumbs("MIRAGE", "ra") },
+  { file: path.join(SITE_DIR, "releases.html"), parse: parseFlatThumbs("Miragesohi", "rt") },
+  { file: path.join(SITE_DIR, "fa", "releases.html"), parse: parseFlatThumbs("Miragesohi", "ra") },
 ];
 
 const REQUEST_DELAY_MS = 300;

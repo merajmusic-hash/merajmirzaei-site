@@ -26,7 +26,7 @@ const STATIC_PAGES = [
   '/', '/fa/',
   '/credits', '/fa/credits',
   '/releases', '/fa/releases',
-  '/mirage', '/fa/mirage',
+  '/miragesohi', '/fa/miragesohi',
   '/gallery', '/fa/gallery',
   '/services', '/fa/services',
   '/journal', '/fa/journal',
@@ -211,7 +211,7 @@ for (const hub of ['credits', 'releases']) {
       recordingPageCount++;
     }
 
-    if (hub === 'credits' && entry.artist_en && entry.artist_en !== 'MIRAGE') {
+    if (hub === 'credits' && entry.artist_en && entry.artist_en !== 'Miragesohi') {
       artistSlugs.add(slugify(entry.artist_en));
     }
 
