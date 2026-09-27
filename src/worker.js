@@ -253,7 +253,7 @@ function validateHomepage(data) {
 
 const SITE_ORIGIN = 'https://merajmirzaei.com';
 const PERSON_ID = SITE_ORIGIN + '/#person';
-const MIRAGE_ID = SITE_ORIGIN + '/mirage#mirage';
+const MIRAGE_ID = SITE_ORIGIN + '/miragesohi#miragesohi';
 const PORTRAIT_URL = SITE_ORIGIN + '/images/portrait.jpg';
 
 // Same favicon set on every page, injected from this one place rather
@@ -297,7 +297,7 @@ const PERSON_LOCALIZED = {
   },
   fa: {
     jobTitle: 'مهندس میکس و مسترینگ',
-    description: 'معراج میرزایی (MIRAGE) — مهندس میکس و مسترینگ، تهیه‌کننده و ساند دیزاینر در لندن. بیش از ۲۰ سال کار در موسیقی ایرانی، الکترونیک و بین‌المللی.',
+    description: 'معراج میرزایی (Miragesohi) — مهندس میکس و مسترینگ، تهیه‌کننده و ساند دیزاینر در لندن. بیش از ۲۰ سال کار در موسیقی ایرانی، الکترونیک و بین‌المللی.',
   },
 };
 
@@ -307,7 +307,7 @@ function buildPersonNode(lang) {
     '@type': 'Person',
     '@id': PERSON_ID,
     name: 'Meraj Mirzaei',
-    alternateName: ['معراج میرزایی', 'MIRAGE'],
+    alternateName: ['معراج میرزایی', 'Miragesohi', 'MIRAGE'],
     jobTitle: loc.jobTitle,
     description: loc.description,
     url: SITE_ORIGIN + '/',
@@ -323,7 +323,8 @@ function buildMirageNode() {
   return {
     '@type': 'MusicGroup',
     '@id': MIRAGE_ID,
-    name: 'MIRAGE',
+    name: 'Miragesohi',
+    alternateName: 'MIRAGE',
     genre: ['Deep house', 'Melodic electronic', 'Trap', 'Pop'],
     foundingDate: '2025',
     member: { '@id': PERSON_ID },
@@ -338,7 +339,7 @@ const NAV_LABELS = {
   home: { en: 'Studio', fa: 'استودیو' },
   credits: { en: 'Credits', fa: 'کارنامه' },
   releases: { en: 'Releases', fa: 'ریلیزها' },
-  mirage: { en: 'MIRAGE', fa: 'MIRAGE' },
+  miragesohi: { en: 'Miragesohi', fa: 'Miragesohi' },
   gallery: { en: 'Gallery', fa: 'گالری' },
   services: { en: 'Services', fa: 'خدمات' },
   journal: { en: 'Journal', fa: 'یادداشت‌ها' },
@@ -437,11 +438,11 @@ function buildPageNode(slug, lang) {
         '@type': 'CollectionPage',
         '@id': SITE_ORIGIN + pathFor(lang, 'releases') + '#webpage',
         url: SITE_ORIGIN + pathFor(lang, 'releases'),
-        name: lang === 'fa' ? 'ریلیزهای جدید — MIRAGE | معراج میرزایی' : 'New Releases — MIRAGE | Meraj Mirzaei',
+        name: lang === 'fa' ? 'ریلیزهای جدید — Miragesohi | معراج میرزایی' : 'New Releases — Miragesohi | Meraj Mirzaei',
         inLanguage: lang,
         about: { '@id': MIRAGE_ID },
       };
-    case 'mirage':
+    case 'miragesohi':
       return buildMirageNode();
     case 'gallery':
       return {
@@ -686,7 +687,7 @@ function buildOneRecordingNode(entry, lang) {
   let byArtistRef = null;
   let artistNode = null;
   let usesMirage = false;
-  if (entry.artist_en === 'MIRAGE') {
+  if (entry.artist_en === 'Miragesohi') {
     usesMirage = true;
     byArtistRef = { '@id': MIRAGE_ID };
   } else if (entry.artist_en) {
@@ -862,10 +863,10 @@ function renderRecordingDetailContent(entry, lang, hub, story) {
   // The artist name links to their own per-artist page — every other
   // track of theirs credited to Meraj Mirzaei — rather than out to
   // Spotify; that external link (when verified) is offered separately,
-  // below, as its own button instead. MIRAGE has no per-artist page of
-  // its own (that's what /mirage already is), so on releases its name
+  // below, as its own button instead. Miragesohi has no per-artist page of
+  // its own (that's what /miragesohi already is), so on releases its name
   // stays plain text.
-  const artistPageHref = hub === 'credits' && entry.artist_en && entry.artist_en !== 'MIRAGE'
+  const artistPageHref = hub === 'credits' && entry.artist_en && entry.artist_en !== 'Miragesohi'
     ? pathFor(lang, 'credits/artist/' + slugifyName(entry.artist_en))
     : null;
   const artistLink = findLink(entry.links, RE_SPOTIFY_ARTIST);
@@ -1174,7 +1175,7 @@ async function buildEntityGraph(pathname, env) {
     const creditsData = await readCreditsReadOnly(env);
     if (creditsData) {
       const { nodes: recNodes, usesMirage } = buildRecordingsGraph(creditsData, slug, lang);
-      if (usesMirage && slug !== 'mirage') nodes.push(buildMirageNode());
+      if (usesMirage && slug !== 'miragesohi') nodes.push(buildMirageNode());
       nodes.push(...recNodes);
     }
   }
@@ -2141,7 +2142,7 @@ async function buildArtistIndexHtml(env, lang) {
 
   const bySlug = new Map();
   for (const entry of titledEntriesFor(creditsData, 'credits')) {
-    if (!entry.artist_en || entry.artist_en === 'MIRAGE') continue;
+    if (!entry.artist_en || entry.artist_en === 'Miragesohi') continue;
     const slug = slugifyName(entry.artist_en);
     if (!bySlug.has(slug)) {
       bySlug.set(slug, {
@@ -2193,7 +2194,7 @@ class BeforeElementInjector {
 // ---------------------------------------------------------------------
 
 const STATIC_SITEMAP_SLUGS = [
-  'home', 'credits', 'releases', 'mirage', 'gallery', 'services', 'journal',
+  'home', 'credits', 'releases', 'miragesohi', 'gallery', 'services', 'journal',
   'mastering-for-streaming', 'mixing-persian-vocals', 'traditional-instruments',
 ];
 
@@ -2226,7 +2227,7 @@ async function buildSitemapXml(env) {
           }
         }
 
-        if (hub === 'credits' && entry.artist_en && entry.artist_en !== 'MIRAGE') {
+        if (hub === 'credits' && entry.artist_en && entry.artist_en !== 'Miragesohi') {
           artistSlugs.add(slugifyName(entry.artist_en));
         }
       }
@@ -2301,6 +2302,18 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const { pathname } = url;
+
+    // The artist page was renamed from /mirage to /miragesohi (and its
+    // fa/ twin) when the MIRAGE alias became the artist's primary name.
+    // A permanent redirect keeps every old bookmark/backlink working and
+    // tells search engines to transfer the old URL's ranking signal to
+    // the new one, rather than leaving /mirage to 404.
+    if (pathname === '/mirage' || pathname === '/mirage.html' || pathname === '/mirage/') {
+      return Response.redirect(SITE_ORIGIN + '/miragesohi', 301);
+    }
+    if (pathname === '/fa/mirage' || pathname === '/fa/mirage.html' || pathname === '/fa/mirage/') {
+      return Response.redirect(SITE_ORIGIN + '/fa/miragesohi', 301);
+    }
 
     // Uploaded New Release videos (see serveMedia above).
     const mediaMatch = pathname.match(MEDIA_ROUTE_RE);
