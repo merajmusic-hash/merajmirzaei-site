@@ -337,6 +337,7 @@ function buildMirageNode() {
 // centralized here once instead of hand-duplicated per file.
 const NAV_LABELS = {
   home: { en: 'Studio', fa: 'استودیو' },
+  about: { en: 'About', fa: 'درباره من' },
   credits: { en: 'Credits', fa: 'کارنامه' },
   releases: { en: 'Releases', fa: 'ریلیزها' },
   miragesohi: { en: 'Miragesohi', fa: 'Miragesohi' },
@@ -421,6 +422,15 @@ function buildPageNode(slug, lang) {
         '@id': SITE_ORIGIN + pathFor(lang, 'home') + '#webpage',
         url: SITE_ORIGIN + pathFor(lang, 'home'),
         name: lang === 'fa' ? 'معراج میرزایی — مهندس میکس و مسترینگ، لندن' : 'Meraj Mirzaei — Mix & Mastering Engineer, London',
+        inLanguage: lang,
+        mainEntity: { '@id': PERSON_ID },
+      };
+    case 'about':
+      return {
+        '@type': 'AboutPage',
+        '@id': SITE_ORIGIN + pathFor(lang, 'about') + '#webpage',
+        url: SITE_ORIGIN + pathFor(lang, 'about'),
+        name: lang === 'fa' ? 'درباره من — معراج میرزایی، لندن' : 'About — Meraj Mirzaei, Mix & Mastering Engineer, London',
         inLanguage: lang,
         mainEntity: { '@id': PERSON_ID },
       };
@@ -2194,7 +2204,7 @@ class BeforeElementInjector {
 // ---------------------------------------------------------------------
 
 const STATIC_SITEMAP_SLUGS = [
-  'home', 'credits', 'releases', 'miragesohi', 'gallery', 'services', 'journal',
+  'home', 'about', 'credits', 'releases', 'miragesohi', 'gallery', 'services', 'journal',
   'mastering-for-streaming', 'mixing-persian-vocals', 'traditional-instruments',
 ];
 
