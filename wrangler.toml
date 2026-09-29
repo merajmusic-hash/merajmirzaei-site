@@ -17,3 +17,15 @@ run_worker_first = true
 [[kv_namespaces]]
 binding = "COMMENTS"
 id = "148c52e34410416da2657be76c3b26e4"
+
+# Collaboration submissions from the /collaborate page are stored in the
+# same KV namespace above (keys s:/sf:), and each new one is emailed to
+# the site owner through this binding (see handlePostCollab in
+# src/worker.js). It only delivers once Email Routing is enabled for
+# merajmirzaei.com in the Cloudflare dashboard (Email > Email Routing)
+# and this address is a verified destination address there. Until then
+# submissions are still saved; only the email is skipped, and the admin
+# "Submissions" tab shows why.
+[[send_email]]
+name = "SEND_EMAIL"
+destination_address = "merajmusic2@gmail.com"

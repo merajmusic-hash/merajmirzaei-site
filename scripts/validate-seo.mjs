@@ -24,11 +24,13 @@ const BASE = process.argv[2] || 'http://localhost:8787';
 
 const STATIC_PAGES = [
   '/', '/fa/',
+  '/about', '/fa/about',
   '/credits', '/fa/credits',
   '/releases', '/fa/releases',
   '/miragesohi', '/fa/miragesohi',
   '/gallery', '/fa/gallery',
   '/services', '/fa/services',
+  '/collaborate', '/fa/collaborate',
   '/journal', '/fa/journal',
   '/mastering-for-streaming', '/fa/mastering-for-streaming',
   '/mixing-persian-vocals', '/fa/mixing-persian-vocals',

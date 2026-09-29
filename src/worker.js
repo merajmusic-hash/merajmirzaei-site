@@ -1,3 +1,5 @@
+import { EmailMessage } from 'cloudflare:email';
+
 // Static-asset passthrough for the public site, plus a password-gated
 // /admin panel for editing data/credits.json and data/homepage.json. The
 // panel itself is server rendered by this Worker (never a plain static
@@ -343,6 +345,7 @@ const NAV_LABELS = {
   miragesohi: { en: 'Miragesohi', fa: 'Miragesohi' },
   gallery: { en: 'Gallery', fa: 'گالری' },
   services: { en: 'Services', fa: 'خدمات' },
+  collaborate: { en: 'Collaborate', fa: 'همکاری' },
   journal: { en: 'Journal', fa: 'یادداشت‌ها' },
 };
 
@@ -467,6 +470,15 @@ function buildPageNode(slug, lang) {
         areaServed: 'Worldwide',
         provider: { '@id': PERSON_ID },
         address: { '@type': 'PostalAddress', addressLocality: 'London', addressCountry: 'GB' },
+      };
+    case 'collaborate':
+      return {
+        '@type': 'ContactPage',
+        '@id': SITE_ORIGIN + pathFor(lang, 'collaborate') + '#webpage',
+        url: SITE_ORIGIN + pathFor(lang, 'collaborate'),
+        name: lang === 'fa' ? 'همکاری با من — معراج میرزایی' : 'Collaborate — Meraj Mirzaei',
+        inLanguage: lang,
+        about: { '@id': PERSON_ID },
       };
     case 'journal':
       return {
@@ -2125,6 +2137,443 @@ async function handleAdminDeleteComment(request, env) {
 }
 
 // ---------------------------------------------------------------------
+// Collaboration submissions — the /collaborate page's form.
+//
+// Poets, composers and mix/master clients send their work from there.
+// Everything they send is private: it's stored in the same Workers KV
+// namespace as the song comments (binding COMMENTS), never in this repo
+// (which is public), and it can only be read on the admin panel's
+// "Submissions" tab. Keys:
+//   s:<id>               the submission (JSON); a short summary is also
+//                        kept as the key's metadata
+//   sf:<id>:<n>          attached file n (raw bytes; name/type/size in
+//                        the metadata)
+//   rl:collab:<hash>     one-minute marker that rate-limits sending
+//   collab:mailstatus    how the last notification email went — shown on
+//                        the admin tab, so a broken email setup is visible
+// Every new submission is also emailed to the site owner through the
+// SEND_EMAIL binding (Cloudflare Email Routing — see wrangler.toml). The
+// email is best-effort: a submission is saved whether or not it's sent.
+// ---------------------------------------------------------------------
+
+const COLLAB_ROLES = ['poet', 'composer', 'mix'];
+const COLLAB_SERVICES = ['mix', 'master', 'mixmaster'];
+const COLLAB_ID_RE = /^[a-z0-9]{6,12}-[a-z0-9]{4,8}$/;
+const COLLAB_MAX_FILES = 3;
+// All files of one submission together. Each file is one KV value, and
+// KV's per-value limit is 25 MiB, so this keeps every file inside it.
+const COLLAB_MAX_BYTES = 25 * 1000 * 1000;
+// Files are attached to the notification email up to this total; above
+// it the email just points to the admin panel (Gmail's own cap is 25 MB,
+// and base64 makes an attachment a third bigger).
+const COLLAB_EMAIL_ATTACH_MAX = 15 * 1000 * 1000;
+const COLLAB_NOTIFY_TO = 'merajmusic2@gmail.com';
+const COLLAB_NOTIFY_FROM = 'site@merajmirzaei.com';
+// Accepted by file extension; the stored/served Content-Type always comes
+// from this table, never from what the browser claimed (so nothing
+// uploaded can ever be served back as HTML or script).
+const COLLAB_FILE_TYPES = {
+  mp3: 'audio/mpeg', wav: 'audio/wav', m4a: 'audio/mp4', aac: 'audio/aac', flac: 'audio/flac',
+  ogg: 'audio/ogg', opus: 'audio/ogg', aif: 'audio/aiff', aiff: 'audio/aiff',
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif',
+  heic: 'image/heic', heif: 'image/heif',
+  pdf: 'application/pdf', txt: 'text/plain; charset=utf-8',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  zip: 'application/zip',
+};
+const COLLAB_ROLE_FA = { poet: 'شاعر', composer: 'آهنگساز', mix: 'میکس و مستر' };
+const COLLAB_SERVICE_FA = { mix: 'میکس', master: 'مسترینگ', mixmaster: 'میکس و مستر' };
+
+// One line of text: control characters out, whitespace collapsed.
+function collabLine(s, maxChars) {
+  const out = String(s == null ? '' : s)
+    .replace(/[\u0000-\u001F\u007F​﻿]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return Array.from(out).slice(0, maxChars).join('');
+}
+
+// Multi-line text (lyrics, description): line breaks kept.
+function collabText(s, maxChars) {
+  const out = String(s == null ? '' : s)
+    .replace(/\r\n?/g, '\n')
+    // (keeps U+200C, the Persian half-space)
+    .replace(/[\u0000-\u0008\u000B-\u001F\u007F​﻿]/g, '')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{4,}/g, '\n\n\n')
+    .trim();
+  return Array.from(out).slice(0, maxChars).join('');
+}
+
+function collabFileName(name, ext) {
+  let base = String(name || '').split(/[\\/]/).pop()
+    .replace(/[\u0000-\u001F\u007F"<>|:*?]/g, '')
+    .trim();
+  if (!base) base = 'file.' + ext;
+  const arr = Array.from(base);
+  return arr.length > 120 ? arr.slice(0, 110).join('') + '.' + ext : base;
+}
+
+function collabSummary(rec) {
+  return {
+    id: rec.id, ts: rec.ts, role: rec.role, service: rec.service || '',
+    name: Array.from(rec.name || '').slice(0, 60).join(''),
+    files: (rec.files || []).length, read: !!rec.read,
+  };
+}
+
+function collabError(code, message, status = 400) {
+  return json({ error: message, code }, status);
+}
+
+async function handlePostCollab(request, env, ctx) {
+  if (!env.COMMENTS) return collabError('unavailable', 'Sending is not available right now.', 503);
+  const declared = Number(request.headers.get('Content-Length') || 0);
+  if (declared > COLLAB_MAX_BYTES + 2 * 1000 * 1000) {
+    return collabError('size', 'Files are too big (25 MB in total at most).', 413);
+  }
+  let form;
+  try {
+    form = await request.formData();
+  } catch (e) {
+    return collabError('invalid', 'Invalid request');
+  }
+  // Bots: a filled-in hidden field, or a form sent within 3 s of the page
+  // opening. Pretend it worked so they don't learn anything.
+  if (form.get('website')) return json({ ok: true });
+  const elapsed = Number(form.get('elapsed'));
+  if (Number.isFinite(elapsed) && elapsed < 3000) return json({ ok: true });
+
+  const role = String(form.get('role') || '');
+  if (!COLLAB_ROLES.includes(role)) return collabError('role', 'Choose poet, composer or mix & master.');
+  const lang = form.get('lang') === 'fa' ? 'fa' : 'en';
+  const name = collabLine(form.get('name'), 80);
+  const email = collabLine(form.get('email'), 120);
+  const phone = collabLine(form.get('phone'), 60);
+  const lyrics = role === 'poet' ? collabText(form.get('lyrics'), 20000) : '';
+  const description = collabText(form.get('description'), 5000);
+  const serviceRaw = String(form.get('service') || '');
+  const service = role === 'mix' && COLLAB_SERVICES.includes(serviceRaw) ? serviceRaw : '';
+  const viaTelegram = role === 'mix' && form.get('telegram') === '1';
+  const termsAccepted = form.get('terms') === '1';
+
+  let link = collabLine(form.get('link'), 500);
+  if (link) {
+    if (!/^https?:\/\//i.test(link)) link = 'https://' + link;
+    let parsed = null;
+    try { parsed = new URL(link); } catch (e) { parsed = null; }
+    if (!parsed || !/^https?:$/.test(parsed.protocol) || !parsed.hostname.includes('.')) {
+      return collabError('link', 'That link doesn\'t look right.');
+    }
+    link = parsed.href;
+  }
+
+  if (!name) return collabError('name', 'Please write your name.');
+  if (!email && !phone) return collabError('contact', 'Please leave an email or a phone number.');
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return collabError('email', 'That email doesn\'t look right.');
+  if (role === 'mix' && !termsAccepted) return collabError('terms', 'Please accept the terms.');
+
+  const files = form.getAll('files').filter((f) => f && typeof f === 'object' && typeof f.arrayBuffer === 'function' && f.size > 0);
+  if (files.length > COLLAB_MAX_FILES) return collabError('files_count', 'Up to 3 files.');
+  const fileRecs = [];
+  let total = 0;
+  for (const f of files) {
+    const m = /\.([a-z0-9]{1,5})$/.exec(String(f.name || '').toLowerCase());
+    const ext = m ? m[1] : '';
+    if (!COLLAB_FILE_TYPES[ext]) return collabError('file_type', 'That file type isn\'t accepted.');
+    total += f.size;
+    fileRecs.push({ name: collabFileName(f.name, ext), type: COLLAB_FILE_TYPES[ext], size: f.size, file: f });
+  }
+  if (total > COLLAB_MAX_BYTES) return collabError('size', 'Files are too big (25 MB in total at most).', 413);
+
+  const hasWork = role === 'poet' ? !!(lyrics || fileRecs.length)
+    : role === 'composer' ? !!(fileRecs.length || link)
+      : !!(fileRecs.length || link || viaTelegram);
+  if (!hasWork) return collabError('work', 'Please add your work.');
+
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const rlKey = 'rl:collab:' + (await sha256Hex('collab|' + ip)).slice(0, 32);
+  if (await env.COMMENTS.get(rlKey)) return collabError('rate', 'Please wait a minute before sending again.', 429);
+
+  const ts = Date.now();
+  const id = ts.toString(36) + '-' + crypto.getRandomValues(new Uint32Array(1))[0].toString(36).padStart(4, '0').slice(0, 8);
+  const buffers = [];
+  for (let i = 0; i < fileRecs.length; i++) {
+    const fr = fileRecs[i];
+    const buf = await fr.file.arrayBuffer();
+    buffers.push(buf);
+    await env.COMMENTS.put(`sf:${id}:${i}`, buf, { metadata: { name: fr.name, type: fr.type, size: fr.size } });
+  }
+  const rec = {
+    id, ts, role, lang, service, name, email, phone, link, viaTelegram, termsAccepted,
+    lyrics, description,
+    files: fileRecs.map(({ name: n, type, size }) => ({ name: n, type, size })),
+    read: false,
+  };
+  await env.COMMENTS.put('s:' + id, JSON.stringify(rec), { metadata: collabSummary(rec) });
+  await env.COMMENTS.put(rlKey, '1', { expirationTtl: 60 });
+
+  const notify = notifyCollab(env, rec, buffers);
+  if (ctx && ctx.waitUntil) ctx.waitUntil(notify);
+  else await notify;
+  return json({ ok: true });
+}
+
+// --- notification email -------------------------------------------------
+
+function collabEsc(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function bufferToBase64(buf) {
+  const bytes = new Uint8Array(buf);
+  let bin = '';
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(bin);
+}
+
+function mimeLines(b64) {
+  return b64.replace(/.{1,76}/g, '$&\r\n');
+}
+
+// RFC 2047 header text: plain ASCII as-is, anything else as UTF-8
+// base64 "encoded words", split into short pieces (a header line and
+// each encoded word have length limits).
+function mimeHeaderText(str) {
+  const s = String(str);
+  if (/^[\x20-\x7e]*$/.test(s)) return s;
+  const chars = Array.from(s);
+  const words = [];
+  for (let i = 0; i < chars.length; i += 12) {
+    words.push('=?UTF-8?B?' + base64FromUtf8(chars.slice(i, i + 12).join('')) + '?=');
+  }
+  return words.join('\r\n ');
+}
+
+// Content-Type name= / Content-Disposition filename= for an attachment.
+function mimeFileParam(param, name) {
+  if (/^[\x20-\x7e]*$/.test(name) && !name.includes('"')) return param + '="' + name + '"';
+  return param + '="=?UTF-8?B?' + base64FromUtf8(name) + '?="'
+    + (param === 'filename' ? '; filename*=UTF-8\'\'' + encodeURIComponent(name) : '');
+}
+
+function formatSize(bytes) {
+  return bytes >= 1000 * 1000 ? (bytes / 1000 / 1000).toFixed(1) + ' MB' : Math.max(1, Math.round(bytes / 1000)) + ' KB';
+}
+
+function buildCollabEmail(rec, attachments) {
+  const roleFa = COLLAB_ROLE_FA[rec.role] || rec.role;
+  const subject = (rec.role === 'mix' ? 'درخواست ' : 'همکاری تازه: ') + (rec.role === 'mix' ? (COLLAB_SERVICE_FA[rec.service] || roleFa) : roleFa) + ' — ' + rec.name;
+  const adminUrl = SITE_ORIGIN + '/admin#submissions';
+  const filesLine = rec.files.length
+    ? rec.files.map((f) => f.name + ' (' + formatSize(f.size) + ')').join('، ')
+      + (attachments.length ? ' — پیوست همین ایمیل' : ' — در پنل ادمین')
+    : '';
+  const rows = [
+    ['نوع', roleFa + (rec.service ? ' — ' + (COLLAB_SERVICE_FA[rec.service] || rec.service) : '')],
+    ['نام', rec.name],
+    ['ایمیل', rec.email],
+    ['تلفن / تلگرام', rec.phone],
+    ['لینک', rec.link],
+    ['تلگرام', rec.viaTelegram ? 'پروژه را در تلگرام می‌فرستد' : ''],
+    ['فایل‌ها', filesLine],
+  ].filter((r) => r[1]);
+
+  const text = [subject, '']
+    .concat(rows.map((r) => r[0] + ': ' + r[1]))
+    .concat(rec.description ? ['', 'توضیحات:', rec.description] : [])
+    .concat(rec.lyrics ? ['', 'متن شعر:', rec.lyrics] : [])
+    .concat(['', 'پنل ادمین: ' + adminUrl])
+    .join('\n');
+
+  const cell = 'padding:6px 10px;border-bottom:1px solid #e5e2dc;vertical-align:top';
+  const block = (title, body) => body
+    ? '<h3 style="font-size:14px;margin:18px 0 6px;color:#8a7650">' + collabEsc(title) + '</h3>'
+      + '<div style="white-space:pre-wrap;line-height:1.9;background:#f7f5f1;border-radius:4px;padding:10px 12px">' + collabEsc(body) + '</div>'
+    : '';
+  const htmlBody = '<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;font-size:14px;color:#1b1b1b;max-width:620px">'
+    + '<h2 style="font-size:17px;margin:0 0 12px">' + collabEsc(subject) + '</h2>'
+    + '<table style="border-collapse:collapse;width:100%">'
+    + rows.map((r) => '<tr><td style="' + cell + ';color:#777;white-space:nowrap">' + collabEsc(r[0]) + '</td><td style="' + cell + '" dir="auto">'
+      + (r[0] === 'لینک' ? '<a href="' + collabEsc(r[1]) + '">' + collabEsc(r[1]) + '</a>'
+        : r[0] === 'ایمیل' ? '<a href="mailto:' + collabEsc(r[1]) + '">' + collabEsc(r[1]) + '</a>'
+          : collabEsc(r[1]))
+      + '</td></tr>').join('')
+    + '</table>'
+    + block('توضیحات', rec.description)
+    + block('متن شعر', rec.lyrics)
+    + '<p style="margin:22px 0 0"><a href="' + adminUrl + '" style="display:inline-block;background:#C2A878;color:#0B0D10;text-decoration:none;padding:10px 16px;border-radius:3px">باز کردن در پنل ادمین</a></p>'
+    + '</div>';
+
+  const boundary = 'mm-' + rec.id + '-' + Math.random().toString(36).slice(2, 10);
+  const alt = boundary + '-alt';
+  const headers = [
+    'From: "merajmirzaei.com" <' + COLLAB_NOTIFY_FROM + '>',
+    'To: <' + COLLAB_NOTIFY_TO + '>',
+  ];
+  if (rec.email) headers.push('Reply-To: <' + rec.email.replace(/[<>\r\n]/g, '') + '>');
+  headers.push(
+    'Subject: ' + mimeHeaderText(subject),
+    'Date: ' + new Date(rec.ts).toUTCString(),
+    'Message-ID: <' + rec.id + '.' + Date.now().toString(36) + '@merajmirzaei.com>',
+    'MIME-Version: 1.0',
+    'Content-Type: multipart/mixed; boundary="' + boundary + '"',
+  );
+  const parts = [
+    headers.join('\r\n'),
+    '',
+    '--' + boundary,
+    'Content-Type: multipart/alternative; boundary="' + alt + '"',
+    '',
+    '--' + alt,
+    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    mimeLines(base64FromUtf8(text)),
+    '--' + alt,
+    'Content-Type: text/html; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    mimeLines(base64FromUtf8(htmlBody)),
+    '--' + alt + '--',
+  ];
+  attachments.forEach((buf, i) => {
+    const f = rec.files[i];
+    parts.push(
+      '--' + boundary,
+      'Content-Type: ' + f.type.split(';')[0] + '; ' + mimeFileParam('name', f.name),
+      'Content-Disposition: attachment; ' + mimeFileParam('filename', f.name),
+      'Content-Transfer-Encoding: base64',
+      '',
+      mimeLines(bufferToBase64(buf)),
+    );
+  });
+  parts.push('--' + boundary + '--', '');
+  return parts.join('\r\n');
+}
+
+async function sendCollabEmail(env, rec, attachments) {
+  const raw = buildCollabEmail(rec, attachments);
+  await env.SEND_EMAIL.send(new EmailMessage(COLLAB_NOTIFY_FROM, COLLAB_NOTIFY_TO, raw));
+}
+
+async function notifyCollab(env, rec, buffers) {
+  let status;
+  try {
+    if (!env.SEND_EMAIL) throw new Error('The SEND_EMAIL binding is not set up');
+    const total = buffers.reduce((n, b) => n + b.byteLength, 0);
+    const attach = total <= COLLAB_EMAIL_ATTACH_MAX ? buffers : [];
+    try {
+      await sendCollabEmail(env, rec, attach);
+    } catch (err) {
+      if (!attach.length) throw err;
+      // Maybe the attachments were the problem: still get the news out.
+      await sendCollabEmail(env, rec, []);
+    }
+    status = { ok: true, ts: Date.now() };
+  } catch (err) {
+    console.error('collab notification email failed', (err && err.stack) || err);
+    status = { ok: false, ts: Date.now(), error: String((err && err.message) || err).slice(0, 300) };
+  }
+  await env.COMMENTS.put('collab:mailstatus', JSON.stringify(status)).catch(() => {});
+}
+
+// --- admin: Submissions tab -----------------------------------------------
+
+async function handleAdminListSubmissions(env) {
+  if (!env.COMMENTS) return json({ error: 'Storage is not connected yet.', code: 'unavailable' }, 503);
+  const listed = await env.COMMENTS.list({ prefix: 's:', limit: 1000 });
+  const keys = listed.keys
+    .slice()
+    .sort((a, b) => ((b.metadata && b.metadata.ts) || 0) - ((a.metadata && a.metadata.ts) || 0))
+    .slice(0, 300);
+  const [recs, mail] = await Promise.all([
+    Promise.all(keys.map((k) => env.COMMENTS.get(k.name, 'json').catch(() => null))),
+    env.COMMENTS.get('collab:mailstatus', 'json').catch(() => null),
+  ]);
+  return json({
+    submissions: recs.filter(Boolean).sort((a, b) => b.ts - a.ts),
+    mail,
+    emailConfigured: !!env.SEND_EMAIL,
+  });
+}
+
+// The attached file itself (played/viewed/downloaded from the admin tab).
+// Range requests are honoured so the audio player can seek.
+async function handleAdminSubmissionFile(request, env) {
+  if (!env.COMMENTS) return new Response('Not available', { status: 503 });
+  const url = new URL(request.url);
+  const id = url.searchParams.get('id') || '';
+  const n = url.searchParams.get('n') || '';
+  if (!COLLAB_ID_RE.test(id) || !/^[0-9]$/.test(n)) return new Response('Not found', { status: 404 });
+  const { value, metadata } = await env.COMMENTS.getWithMetadata(`sf:${id}:${n}`, 'arrayBuffer');
+  if (!value) return new Response('Not found', { status: 404 });
+  const meta = metadata || {};
+  const type = Object.values(COLLAB_FILE_TYPES).includes(meta.type) ? meta.type : 'application/octet-stream';
+  const name = String(meta.name || 'file');
+  const disposition = (url.searchParams.get('dl') === '1' ? 'attachment' : 'inline')
+    + '; filename="' + name.replace(/[^\x20-\x7e]|"/g, '_') + '"; filename*=UTF-8\'\'' + encodeURIComponent(name);
+  const headers = {
+    'Content-Type': type,
+    'Content-Disposition': disposition,
+    'Accept-Ranges': 'bytes',
+    'Cache-Control': 'private, no-store',
+    'X-Content-Type-Options': 'nosniff',
+    'Content-Security-Policy': 'sandbox',
+    'X-Robots-Tag': 'noindex',
+  };
+  const size = value.byteLength;
+  const range = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get('Range') || '');
+  if (range && (range[1] || range[2])) {
+    let start;
+    let end;
+    if (range[1]) {
+      start = Number(range[1]);
+      end = range[2] ? Math.min(Number(range[2]), size - 1) : size - 1;
+    } else {
+      start = Math.max(0, size - Number(range[2]));
+      end = size - 1;
+    }
+    if (start >= size || start > end) {
+      return new Response(null, { status: 416, headers: { ...headers, 'Content-Range': `bytes */${size}` } });
+    }
+    return new Response(value.slice(start, end + 1), {
+      status: 206,
+      headers: { ...headers, 'Content-Range': `bytes ${start}-${end}/${size}`, 'Content-Length': String(end - start + 1) },
+    });
+  }
+  return new Response(value, { headers: { ...headers, 'Content-Length': String(size) } });
+}
+
+async function handleAdminMarkSubmission(request, env) {
+  if (!env.COMMENTS) return json({ error: 'Storage is not connected yet.' }, 503);
+  const body = await request.json().catch(() => null);
+  const id = body && String(body.id || '');
+  if (!id || !COLLAB_ID_RE.test(id)) return json({ error: 'Invalid submission' }, 400);
+  const rec = await env.COMMENTS.get('s:' + id, 'json');
+  if (!rec) return json({ error: 'That submission is gone — reload the page.' }, 404);
+  rec.read = !!body.read;
+  await env.COMMENTS.put('s:' + id, JSON.stringify(rec), { metadata: collabSummary(rec) });
+  return json({ ok: true });
+}
+
+async function handleAdminDeleteSubmission(request, env) {
+  if (!env.COMMENTS) return json({ error: 'Storage is not connected yet.' }, 503);
+  const body = await request.json().catch(() => null);
+  const id = body && String(body.id || '');
+  if (!id || !COLLAB_ID_RE.test(id)) return json({ error: 'Invalid submission' }, 400);
+  const deletes = [];
+  for (let i = 0; i < COLLAB_MAX_FILES; i++) deletes.push(env.COMMENTS.delete(`sf:${id}:${i}`));
+  await Promise.all(deletes);
+  await env.COMMENTS.delete('s:' + id);
+  return json({ ok: true });
+}
+
+// ---------------------------------------------------------------------
 // crawlable artist index on the credits hub.
 //
 // Until now the only links from the credits hub down to the per-artist
@@ -2204,7 +2653,7 @@ class BeforeElementInjector {
 // ---------------------------------------------------------------------
 
 const STATIC_SITEMAP_SLUGS = [
-  'home', 'about', 'credits', 'releases', 'miragesohi', 'gallery', 'services', 'journal',
+  'home', 'about', 'credits', 'releases', 'miragesohi', 'gallery', 'services', 'collaborate', 'journal',
   'mastering-for-streaming', 'mixing-persian-vocals', 'traditional-instruments',
 ];
 
@@ -2305,6 +2754,18 @@ async function routeAdminRequest(request, env, pathname) {
   if (pathname === '/admin/api/comments/delete' && request.method === 'POST') {
     return handleAdminDeleteComment(request, env);
   }
+  if (pathname === '/admin/api/submissions' && request.method === 'GET') {
+    return handleAdminListSubmissions(env);
+  }
+  if (pathname === '/admin/api/submissions/file' && (request.method === 'GET' || request.method === 'HEAD')) {
+    return handleAdminSubmissionFile(request, env);
+  }
+  if (pathname === '/admin/api/submissions/mark' && request.method === 'POST') {
+    return handleAdminMarkSubmission(request, env);
+  }
+  if (pathname === '/admin/api/submissions/delete' && request.method === 'POST') {
+    return handleAdminDeleteSubmission(request, env);
+  }
   return new Response('Not found', { status: 404 });
 }
 
@@ -2345,6 +2806,20 @@ export default {
       } catch (err) {
         console.error('comments failed', err && err.stack || err);
         return json({ error: 'Something went wrong — please try again.' }, 500);
+      }
+    }
+
+    // Collaboration submissions from the /collaborate page (see
+    // handlePostCollab above).
+    if (pathname === '/api/collab') {
+      if (request.method !== 'POST') {
+        return new Response('Method not allowed', { status: 405, headers: { Allow: 'POST' } });
+      }
+      try {
+        return await handlePostCollab(request, env, ctx);
+      } catch (err) {
+        console.error('collab submission failed', err && err.stack || err);
+        return json({ error: 'Something went wrong — please try again.', code: 'server' }, 500);
       }
     }
 
