@@ -2812,6 +2812,12 @@ export default {
     // Collaboration submissions from the /collaborate page (see
     // handlePostCollab above).
     if (pathname === '/api/collab') {
+      // GET: only whether the notification email works (ok/error/time) —
+      // never any submission content.
+      if (request.method === 'GET') {
+        const mail = env.COMMENTS ? await env.COMMENTS.get('collab:mailstatus', 'json').catch(() => null) : null;
+        return json({ emailBinding: !!env.SEND_EMAIL, lastEmail: mail });
+      }
       if (request.method !== 'POST') {
         return new Response('Method not allowed', { status: 405, headers: { Allow: 'POST' } });
       }
