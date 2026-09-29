@@ -181,6 +181,15 @@
   .nr-progress .track{flex:1;height:6px;background:var(--panel-2);border-radius:3px;overflow:hidden;border:1px solid var(--line)}
   .nr-progress .bar{height:100%;width:0;background:var(--brass);transition:width .2s}
   .nr-progress .pct{font-size:11px;color:var(--brass);min-width:34px;text-align:right}
+
+  /* Gallery tab */
+  .gal-table{min-width:760px;table-layout:auto}
+  .gal-table td{vertical-align:middle}
+  .gal-thumb{height:96px;width:auto;max-width:180px;object-fit:cover;border-radius:3px;border:1px solid var(--line);
+    background:var(--panel-2);display:block}
+  .gal-table td.gal-cap{min-width:240px}
+  .gal-new{font-size:10px;color:var(--brass);margin-top:4px}
+  .gal-status{color:var(--brass);font-size:12px}
 </style>
 </head>
 <body>
@@ -191,6 +200,7 @@
     <button type="button" class="tab-btn" data-tab="releases">Releases</button>
     <button type="button" class="tab-btn" data-tab="homepage">Homepage</button>
     <button type="button" class="tab-btn" data-tab="newrelease">New Release</button>
+    <button type="button" class="tab-btn" data-tab="gallery">Gallery</button>
     <button type="button" class="tab-btn" data-tab="comments">Comments<span id="commentsBadge" class="badge"></span></button>
     <button type="button" class="tab-btn" data-tab="submissions">Submissions<span id="subsBadge" class="badge"></span></button>
   </div>
@@ -220,6 +230,7 @@
     entries: [], entriesSha: null, entriesDirty: false,
     homepage: [], homepageSha: null, homepageDirty: false,
     newReleases: [], newReleasesSha: null, newReleasesDirty: false,
+    gallery: [], gallerySha: null, galleryDirty: false, galUpload: null,
     comments: { pending: [], approved: [], loaded: false, error: null },
     subs: { list: [], loaded: false, error: null, mail: null, emailConfigured: false },
     tab: /^#submissions$/.test(location.hash) ? 'submissions' : 'credits',
@@ -256,7 +267,7 @@
   }
 
   function setDirty(){
-    var v = state.entriesDirty || state.homepageDirty || state.newReleasesDirty;
+    var v = state.entriesDirty || state.homepageDirty || state.newReleasesDirty || state.galleryDirty;
     dirtyFlag.style.display = v ? '' : 'none';
   }
 
@@ -847,6 +858,193 @@
   }
 
   // ---------------------------------------------------------------------
+  // Gallery tab — data/gallery.json: the photos on the site's Gallery page,
+  // top to bottom. Photos are shrunk in the browser before uploading (so a
+  // big phone photo uploads fast and the page stays light), and nothing
+  // reaches the site until Save, which puts the new photos, the list and
+  // the removal of any deleted photos on the site in one go.
+  // ---------------------------------------------------------------------
+
+  var GAL_MAX_EDGE = 1600;       // px, longest side after shrinking
+  var GAL_JPEG_QUALITY = 0.86;
+  var GAL_MAX_SOURCE_BYTES = 40 * 1024 * 1024;
+
+  function galById(id){
+    for(var i=0;i<state.gallery.length;i++){ if(state.gallery[i].id === id) return state.gallery[i]; }
+    return null;
+  }
+
+  function galNewId(){ return 'g-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  function renderGalleryTab(){
+    var q = (filterEl.value||'').trim().toLowerCase();
+    var filtering = !!q;
+    filterNote.style.display = filtering ? '' : 'none';
+
+    var visible = state.gallery.slice().sort(byOrder);
+    if(filtering) visible = visible.filter(function(it){
+      return ((it.caption_en||'') + ' ' + (it.caption_fa||'')).toLowerCase().indexOf(q) !== -1;
+    });
+
+    wrap.innerHTML = '';
+    var intro = document.createElement('p');
+    intro.className = 'nr-intro';
+    intro.textContent = 'These photos show on the Gallery page, in this order. Add photos (you can pick several at once), '
+      + 'write a caption if you want one, then press Save — the page updates about a minute later. '
+      + 'Drag ⠿ to change the order. A caption is optional; if you write it in only one language, both pages show it.';
+    wrap.appendChild(intro);
+
+    var top = document.createElement('div');
+    top.className = 'nr-top';
+    if(state.galUpload){
+      top.innerHTML = '<span class="gal-status">Uploading photo ' + Math.min(state.galUpload.done + 1, state.galUpload.total)
+        + ' of ' + state.galUpload.total + '… keep this page open.</span>';
+    } else {
+      top.innerHTML = '<button type="button" class="primary" data-action="gal-add">+ Add photos</button>'
+        + '<input type="file" class="upload-input" data-gal-files="1" accept="image/*" multiple>'
+        + '<span class="hint">New photos are added at the top.</span>';
+    }
+    wrap.appendChild(top);
+
+    var table = document.createElement('table');
+    table.className = 'gal-table';
+    table.innerHTML = '<thead><tr><th></th><th>#</th><th>Photo</th><th>Caption (EN)</th><th>Caption (FA)</th><th></th></tr></thead>';
+    var tbody = document.createElement('tbody');
+    tbody.id = 'galRows';
+    tbody.className = filtering ? 'drag-disabled' : '';
+    visible.forEach(function(it, k){
+      var id = esc(it.id);
+      var tr = document.createElement('tr');
+      tr.setAttribute('data-gal-row', it.id);
+      tr.innerHTML =
+        '<td class="drag-col"><span class="drag-handle" draggable="true" title="Drag to reorder">⠿</span></td>'
+        + '<td class="nr-num">'+(k+1)+'</td>'
+        + '<td><img class="gal-thumb" src="'+esc(it._preview || it.src)+'" alt="">'
+        + (it._blob ? '<div class="gal-new">New — press Save</div>' : '') + '</td>'
+        + '<td class="gal-cap"><input type="text" value="'+esc(it.caption_en)+'" data-gal="'+id+'" data-field="caption_en" placeholder="optional, e.g. In the studio, London"></td>'
+        + '<td class="gal-cap"><input type="text" dir="rtl" value="'+esc(it.caption_fa)+'" data-gal="'+id+'" data-field="caption_fa" placeholder="اختیاری، مثلاً استودیو، لندن"></td>'
+        + '<td><button type="button" class="small danger" data-gal="'+id+'" data-action="gal-delete">Remove</button></td>';
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    if(!state.gallery.length){
+      var empty = document.createElement('p');
+      empty.className = 'hint';
+      empty.style.padding = '14px 0';
+      empty.textContent = 'No photos yet — the Gallery page is empty until you add some.';
+      wrap.appendChild(empty);
+    }
+
+    if(!filtering) attachFlatDnD(tbody, recomputeGalOrder);
+  }
+
+  function recomputeGalOrder(){
+    var n = 0;
+    document.querySelectorAll('#galRows > tr').forEach(function(tr){
+      var it = galById(tr.getAttribute('data-gal-row'));
+      if(it) it.order = n++;
+    });
+    state.galleryDirty = true;
+    setDirty();
+    render();
+  }
+
+  // Decodes the picked file, shrinks it so its longest side is at most
+  // GAL_MAX_EDGE, and re-encodes it as JPEG. Browsers apply the photo's
+  // own rotation (EXIF) when drawing it, so portrait phone photos stay
+  // upright.
+  function galPrepare(file){
+    return new Promise(function(resolve, reject){
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function(){
+        var w = img.naturalWidth, h = img.naturalHeight;
+        if(!w || !h){ URL.revokeObjectURL(url); reject(new Error('“' + file.name + '” could not be read as a photo.')); return; }
+        var scale = Math.min(1, GAL_MAX_EDGE / Math.max(w, h));
+        var cw = Math.max(1, Math.round(w * scale)), ch = Math.max(1, Math.round(h * scale));
+        var canvas = document.createElement('canvas');
+        canvas.width = cw; canvas.height = ch;
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#0B0D10'; // the site's background, behind any transparent parts
+        ctx.fillRect(0, 0, cw, ch);
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, cw, ch);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(function(blob){
+          if(!blob){ reject(new Error('“' + file.name + '” could not be converted.')); return; }
+          var reader = new FileReader();
+          reader.onload = function(){ resolve({ blob: blob, base64: String(reader.result).split(',')[1] }); };
+          reader.onerror = function(){ reject(new Error('“' + file.name + '” could not be read.')); };
+          reader.readAsDataURL(blob);
+        }, 'image/jpeg', GAL_JPEG_QUALITY);
+      };
+      img.onerror = function(){
+        URL.revokeObjectURL(url);
+        var heic = /\.hei[cf]$/i.test(file.name) || /hei[cf]/i.test(file.type);
+        reject(new Error(heic
+          ? '“' + file.name + '” is an iPhone HEIC photo, which this browser can’t open. Upload it from Safari, or from your iPhone directly (it converts automatically).'
+          : '“' + file.name + '” is not a photo this browser can open. Use JPEG, PNG or WebP.'));
+      };
+      img.src = url;
+    });
+  }
+
+  function galUploadOne(file){
+    return galPrepare(file).then(function(prep){
+      return fetch('/admin/api/gallery/upload', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ filenameHint: file.name.replace(/\.[^.]+$/, ''), mime: 'image/jpeg', contentBase64: prep.base64 })
+      }).then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+        .then(function(res){
+          if(!res.ok || !res.j.ok) throw new Error('“' + file.name + '”: ' + (res.j.error || 'upload failed'));
+          var preview = '';
+          try{ preview = URL.createObjectURL(prep.blob); }catch(e){}
+          return { id: galNewId(), src: res.j.path, caption_en: '', caption_fa: '', order: 0, _blob: res.j.blobSha, _preview: preview };
+        });
+    });
+  }
+
+  // Uploads the picked photos one after another, adding each at the top as
+  // it finishes (so the first picked photo ends up first).
+  function galAddFiles(files){
+    files = Array.prototype.slice.call(files || []);
+    if(!files.length) return;
+    var tooBig = files.filter(function(f){ return f.size > GAL_MAX_SOURCE_BYTES; });
+    if(tooBig.length){ showMsg('“' + tooBig[0].name + '” is over 40 MB — please pick a smaller photo.', 'err'); return; }
+    state.galUpload = { done: 0, total: files.length };
+    filterEl.value = '';
+    showMsg('', '');
+    render();
+    var errors = [];
+    var added = [];
+    var chain = Promise.resolve();
+    files.forEach(function(file){
+      chain = chain.then(function(){
+        return galUploadOne(file).then(function(it){ added.push(it); }, function(err){ errors.push(err.message); });
+      }).then(function(){
+        state.galUpload.done++;
+        if(state.tab === 'gallery') render();
+      });
+    });
+    chain.then(function(){
+      state.galUpload = null;
+      if(added.length){
+        state.gallery = added.concat(state.gallery.slice().sort(byOrder));
+        state.gallery.forEach(function(x, k){ x.order = k; });
+        state.galleryDirty = true; setDirty();
+      }
+      if(errors.length){
+        showMsg((added.length ? added.length + ' photo(s) added, but some failed — ' : 'Upload failed — ') + errors.join(' · '), 'err');
+      } else {
+        showMsg(added.length + (added.length === 1 ? ' photo' : ' photos') + ' added. Press Save to put ' + (added.length === 1 ? 'it' : 'them') + ' on the site.', 'ok');
+      }
+      render();
+    });
+  }
+
+  // ---------------------------------------------------------------------
   // Comments tab — visitors' comments from the homepage New Release player.
   // Nothing appears on the site until it's approved here. Actions apply
   // immediately (no Save needed): they talk straight to the Worker.
@@ -1140,13 +1338,14 @@
     if(state.tab === 'credits') renderCreditsTab();
     else if(state.tab === 'releases') renderReleasesTab();
     else if(state.tab === 'newrelease') renderNewReleaseTab();
+    else if(state.tab === 'gallery') renderGalleryTab();
     else if(state.tab === 'comments') renderCommentsTab();
     else if(state.tab === 'submissions') renderSubmissionsTab();
     else renderHomepageTab();
     Array.prototype.forEach.call(tabsEl.querySelectorAll('.tab-btn'), function(btn){
       btn.classList.toggle('active', btn.getAttribute('data-tab') === state.tab);
     });
-    addRowBtn.style.display = (state.tab === 'homepage' || state.tab === 'newrelease' || state.tab === 'comments' || state.tab === 'submissions') ? 'none' : '';
+    addRowBtn.style.display = (state.tab === 'homepage' || state.tab === 'newrelease' || state.tab === 'gallery' || state.tab === 'comments' || state.tab === 'submissions') ? 'none' : '';
   }
   window.__adminRender = render; // testability hook only; not a security boundary
 
@@ -1171,6 +1370,15 @@
 
   wrap.addEventListener('input', function(e){
     var t = e.target;
+    var galId = t.getAttribute('data-gal');
+    if(galId != null){
+      var g = galById(galId);
+      var gField = t.getAttribute('data-field');
+      if(!g || (gField !== 'caption_en' && gField !== 'caption_fa')) return;
+      g[gField] = t.value;
+      state.galleryDirty = true; setDirty();
+      return;
+    }
     var nrId = t.getAttribute('data-nr');
     if(nrId != null && t.type !== 'file'){
       var nr = nrById(nrId);
@@ -1265,6 +1473,12 @@
       render();
       return;
     }
+    if(t.type === 'file' && t.getAttribute('data-gal-files') != null){
+      var gfiles = t.files;
+      galAddFiles(gfiles);
+      t.value = '';
+      return;
+    }
     if(t.type === 'file' && t.getAttribute('data-nr') != null){
       var nrItem = nrById(t.getAttribute('data-nr'));
       var vfile = t.files[0];
@@ -1342,6 +1556,17 @@
     } else if(action === 's-delete'){
       if(!confirm('Delete this submission and its files for good?')) return;
       subAction('/admin/api/submissions/delete', { id: t.getAttribute('data-id') }, 'Deleted.');
+    } else if(action === 'gal-add'){
+      var ginput = wrap.querySelector('input[type=file][data-gal-files]');
+      if(ginput) ginput.click();
+    } else if(action === 'gal-delete'){
+      var gd = galById(t.getAttribute('data-gal'));
+      if(!gd) return;
+      if(!confirm('Remove this photo from the gallery? This only takes effect once you Save.')) return;
+      state.gallery = state.gallery.filter(function(x){ return x !== gd; });
+      state.gallery.slice().sort(byOrder).forEach(function(x, k){ x.order = k; });
+      state.galleryDirty = true; setDirty();
+      render();
     } else if(action === 'nr-add'){
       nrAdd();
     } else if(action === 'nr-upload'){
@@ -1504,6 +1729,27 @@
         }).then(function(r){ return r.json().then(function(j){ return {kind:'newreleases', ok:r.ok, j:j}; }); })
       );
     }
+    if(state.galleryDirty){
+      if(state.galUpload){ showMsg('Photos are still uploading — Save once they’re done.', 'err'); return; }
+      var galSorted = state.gallery.slice().sort(byOrder);
+      var galPayload = galSorted.map(function(it, k){
+        return {
+          id: it.id,
+          src: it.src,
+          caption_en: (it.caption_en || '').trim(),
+          caption_fa: (it.caption_fa || '').trim(),
+          order: k,
+        };
+      });
+      var galNewFiles = galSorted.filter(function(it){ return it._blob; }).map(function(it){ return { src: it.src, blobSha: it._blob }; });
+      jobs.push(
+        fetch('/admin/api/gallery/save', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ content: galPayload, sha: state.gallerySha, newFiles: galNewFiles })
+        }).then(function(r){ return r.json().then(function(j){ return {kind:'gallery', ok:r.ok, j:j}; }); })
+      );
+    }
     if(!jobs.length){ showMsg('Nothing to save.', 'ok'); return; }
     showMsg('Saving…', 'ok');
     Promise.all(jobs).then(function(results){
@@ -1513,6 +1759,11 @@
         if(r.kind === 'entries'){ state.entriesSha = r.j.sha || state.entriesSha; state.entriesDirty = false; }
         if(r.kind === 'homepage'){ state.homepageSha = r.j.sha || state.homepageSha; state.homepageDirty = false; }
         if(r.kind === 'newreleases'){ state.newReleasesSha = r.j.sha || state.newReleasesSha; state.newReleasesDirty = false; }
+        if(r.kind === 'gallery'){
+          state.gallerySha = r.j.sha || state.gallerySha; state.galleryDirty = false;
+          state.gallery.forEach(function(it){ delete it._blob; });
+          if(state.tab === 'gallery') render();
+        }
       });
       setDirty();
       if(failed.length){
@@ -1526,7 +1777,7 @@
   document.getElementById('saveBtn2').addEventListener('click', save);
 
   window.addEventListener('beforeunload', function(e){
-    if(state.entriesDirty || state.homepageDirty || state.newReleasesDirty || nrUploading()){ e.preventDefault(); e.returnValue = ''; }
+    if(state.entriesDirty || state.homepageDirty || state.newReleasesDirty || state.galleryDirty || state.galUpload || nrUploading()){ e.preventDefault(); e.returnValue = ''; }
   });
 
   // ---------------------------------------------------------------------
@@ -1540,8 +1791,10 @@
     fetch('/admin/api/homepage').then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); }),
     fetch('/admin/api/new-releases').then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
       .catch(function(err){ return {ok:false, j:{error: err.message}}; }),
+    fetch('/admin/api/gallery').then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+      .catch(function(err){ return {ok:false, j:{error: err.message}}; }),
   ]).then(function(results){
-    var creditsRes = results[0], homepageRes = results[1], nrRes = results[2];
+    var creditsRes = results[0], homepageRes = results[1], nrRes = results[2], galRes = results[3];
     if(!creditsRes.ok){ showMsg('Load failed: ' + (creditsRes.j.error||'unknown error'), 'err'); return; }
     state.entries = creditsRes.j.data || [];
     state.entriesSha = creditsRes.j.sha;
@@ -1565,6 +1818,18 @@
     }
     if(creditsRes.ok && homepageRes.ok) showMsg('', '');
     if(!nrRes.ok) showMsg('New Release list failed to load: ' + (nrRes.j.error||'unknown error'), 'err');
+    if(galRes.ok){
+      state.gallery = (galRes.j.data || []).map(function(it, k){
+        return {
+          id: it.id || galNewId(), src: it.src || '',
+          caption_en: it.caption_en || '', caption_fa: it.caption_fa || '',
+          order: typeof it.order === 'number' ? it.order : k,
+        };
+      });
+      state.gallerySha = galRes.j.sha;
+    } else {
+      showMsg('Gallery failed to load: ' + (galRes.j.error||'unknown error'), 'err');
+    }
     render();
     loadComments();
     loadSubmissions();

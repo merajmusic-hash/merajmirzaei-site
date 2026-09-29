@@ -1,0 +1,16 @@
+[
+  {
+    "id": "g-studio",
+    "src": "/images/studio.jpg",
+    "caption_en": "",
+    "caption_fa": "",
+    "order": 0
+  },
+  {
+    "id": "g-portrait",
+    "src": "/images/portrait.jpg",
+    "caption_en": "",
+    "caption_fa": "",
+    "order": 1
+  }
+]
