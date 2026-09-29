@@ -1197,6 +1197,16 @@ async function buildEntityGraph(pathname, env) {
   const pageNode = buildPageNode(slug, lang);
   if (pageNode) nodes.push(pageNode);
 
+  if (slug === 'gallery' && pageNode) {
+    const galleryItems = await readGalleryReadOnly(env);
+    if (galleryItems && galleryItems.length) {
+      const index = buildGalleryPeopleIndex(await readCreditsReadOnly(env));
+      const { images, extraNodes } = buildGalleryImageGraph(galleryItems, lang, index);
+      if (images.length) pageNode.associatedMedia = images;
+      nodes.push(...extraNodes);
+    }
+  }
+
   const breadcrumb = buildBreadcrumb(lang, slug);
   if (breadcrumb) nodes.push(breadcrumb);
 
@@ -1417,7 +1427,8 @@ async function applyEntitySeo(response, env, pathname, ogImageOverride) {
   if (canonicalPath === pathFor('en', 'gallery') || canonicalPath === pathFor('fa', 'gallery')) {
     const galleryItems = await readGalleryReadOnly(env);
     if (galleryItems) {
-      rewriter = rewriter.on('div#gallery', new SetInnerHtml(buildGalleryHtml(galleryItems, lang)));
+      const peopleIndex = buildGalleryPeopleIndex(await readCreditsReadOnly(env));
+      rewriter = rewriter.on('div#gallery', new SetInnerHtml(buildGalleryHtml(galleryItems, lang, peopleIndex)));
     }
   }
 
@@ -1795,11 +1806,14 @@ const GALLERY_UPLOAD_SRC_RE = /^\/images\/gallery\/[a-z0-9][a-z0-9-]{0,100}\.(?:
 const GALLERY_ID_RE = /^[a-z0-9][a-z0-9-]{0,80}$/;
 const GALLERY_MAX_ITEMS = 300;
 const GALLERY_CAPTION_MAX = 300;
+const GALLERY_PEOPLE_MAX = 12;
+const GALLERY_NAME_MAX = 80;
 
 function validateGallery(data) {
   if (!Array.isArray(data)) return 'data must be an array';
   if (data.length > GALLERY_MAX_ITEMS) return `too many photos (max ${GALLERY_MAX_ITEMS})`;
   const ids = new Set();
+  const srcs = new Set();
   for (let i = 0; i < data.length; i++) {
     const e = data[i];
     const label = `Photo ${i + 1}`;
@@ -1808,6 +1822,16 @@ function validateGallery(data) {
     if (ids.has(e.id)) return `${label}: duplicate id`;
     ids.add(e.id);
     if (typeof e.src !== 'string' || !GALLERY_SRC_RE.test(e.src)) return `${label}: invalid photo path`;
+    if (srcs.has(e.src)) return `${label}: the same photo is listed twice`;
+    srcs.add(e.src);
+    if (e.people != null) {
+      if (!Array.isArray(e.people)) return `${label}: people must be a list`;
+      if (e.people.length > GALLERY_PEOPLE_MAX) return `${label}: too many names (max ${GALLERY_PEOPLE_MAX})`;
+      for (const n of e.people) {
+        if (typeof n !== 'string' || !n.trim()) return `${label}: empty name`;
+        if (n.length > GALLERY_NAME_MAX) return `${label}: name is too long`;
+      }
+    }
     for (const f of ['caption_en', 'caption_fa']) {
       if (e[f] != null && typeof e[f] !== 'string') return `${label}: ${f} must be text`;
       if (e[f] && e[f].length > GALLERY_CAPTION_MAX) return `${label}: caption is too long (max ${GALLERY_CAPTION_MAX} characters)`;
@@ -1854,6 +1878,23 @@ async function gitBlobSha(text) {
   all.set(bytes, header.length);
   const digest = await crypto.subtle.digest('SHA-1', all);
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// The file name a gallery photo should have: the names of the people in it
+// (e.g. "kamyar-meraj-mirzaei-<id>.jpg" — Google reads image file names),
+// else its English caption, else whatever it's called now. The short
+// unique ending of the current name is kept, so a rename never collides.
+function galleryFileNameFor(entry, currentName, taken) {
+  const m = /^(.*?)(?:-([a-z0-9]+))?\.(jpg|png|webp)$/.exec(currentName);
+  if (!m) return currentName;
+  const [, base, suffix, ext] = m;
+  const people = Array.isArray(entry.people) ? entry.people : [];
+  const trimSlug = (t) => slugifyName(t).slice(0, 70).replace(/-+$/, '');
+  const desired = trimSlug(people.join(' ')) || trimSlug(entry.caption_en || '');
+  if (!desired || desired === base) return currentName;
+  let candidate = `${desired}-${suffix || Math.random().toString(36).slice(2, 8)}.${ext}`;
+  while (taken.has(candidate)) candidate = `${desired}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  return candidate;
 }
 
 async function handleGetGallery(env) {
@@ -1907,7 +1948,6 @@ async function handleSaveGallery(request, env) {
     if (used.has(f.src)) adds.set(f.src, f.blobSha);
   }
 
-  const text = JSON.stringify(content, null, 2) + '\n';
   try {
     // Same "someone else saved first" check as every other tab's save.
     const current = await ghGetFile(env, GALLERY_PATH);
@@ -1923,12 +1963,31 @@ async function handleSaveGallery(request, env) {
       }
     }
 
+    // Give each uploaded photo its name-based file name (see
+    // galleryFileNameFor); a renamed photo is written at its new path and
+    // its old file is removed below like any other unused file.
+    const existingByName = new Map(existing.map((f) => [f.name, f]));
+    const taken = new Set(existing.map((f) => f.name));
+    const writes = new Map(); // final src -> blob sha
+    const finalContent = content.map((e) => {
+      if (!GALLERY_UPLOAD_SRC_RE.test(e.src)) return e;
+      const name = e.src.split('/').pop();
+      const target = galleryFileNameFor(e, name, taken);
+      taken.add(target);
+      const src = '/images/gallery/' + target;
+      if (adds.has(e.src)) writes.set(src, adds.get(e.src));
+      else if (target !== name) writes.set(src, existingByName.get(name).sha);
+      return target === name ? e : { ...e, src };
+    });
+    const finalUsed = new Set(finalContent.map((e) => e.src));
+    const text = JSON.stringify(finalContent, null, 2) + '\n';
+
     const tree = [];
-    for (const [src, blobSha] of adds) {
+    for (const [src, blobSha] of writes) {
       tree.push({ path: ASSETS_DIR + src, mode: '100644', type: 'blob', sha: blobSha });
     }
     for (const f of existing) {
-      if (!used.has('/images/gallery/' + f.name)) {
+      if (!finalUsed.has('/images/gallery/' + f.name)) {
         tree.push({ path: f.path, mode: '100644', type: 'blob', sha: null }); // delete
       }
     }
@@ -1950,7 +2009,7 @@ async function handleSaveGallery(request, env) {
       });
       try {
         await ghApi(env, 'PATCH', `/git/refs/heads/${GITHUB_BRANCH}`, { sha: commit.sha, force: false });
-        return json({ ok: true, sha: await gitBlobSha(text) });
+        return json({ ok: true, sha: await gitBlobSha(text), content: finalContent });
       } catch (e) {
         lastErr = e;
         if (e.status !== 422) throw e; // 422 = not a fast-forward any more
@@ -1976,23 +2035,108 @@ async function readGalleryReadOnly(env) {
   }
 }
 
-function buildGalleryHtml(items, lang) {
-  const fallbackAlt = lang === 'fa' ? 'معراج میرزایی — گالری' : 'Meraj Mirzaei — gallery';
-  const list = items
+// Who a tagged name is on this site: a credited artist links to their
+// artist page (and is the same MusicGroup entity as there), Meraj himself
+// to the About page, Miragesohi to its page; any other name is shown
+// without a link.
+function buildGalleryPeopleIndex(creditsData) {
+  const byKey = new Map();
+  const add = (key, v) => { if (key && !byKey.has(key.trim().toLowerCase())) byKey.set(key.trim().toLowerCase(), v); };
+  const me = { kind: 'person', en: 'Meraj Mirzaei', fa: 'معراج میرزایی', slug: 'about' };
+  const mirage = { kind: 'mirage', en: 'Miragesohi', fa: 'Miragesohi', slug: 'miragesohi' };
+  add('Meraj Mirzaei', me); add('معراج میرزایی', me);
+  add('Miragesohi', mirage); add('MIRAGE', mirage);
+  for (const e of titledEntriesFor(creditsData || [], 'credits')) {
+    if (!e.artist_en || e.artist_en === 'Miragesohi') continue;
+    const artistSlug = slugifyName(e.artist_en);
+    const v = { kind: 'artist', en: e.artist_en, fa: e.artist_fa || e.artist_en, slug: 'credits/artist/' + artistSlug, artistSlug };
+    add(e.artist_en, v);
+    add(e.artist_fa, v);
+  }
+  return byKey;
+}
+
+function resolveGalleryPerson(name, lang, index) {
+  const hit = index.get(String(name).trim().toLowerCase());
+  if (!hit) return { label: String(name).trim(), href: null, hit: null };
+  return { label: lang === 'fa' ? hit.fa : hit.en, href: pathFor(lang, hit.slug), hit };
+}
+
+function sortedGalleryItems(items) {
+  return items
     .filter((e) => e && typeof e.src === 'string' && GALLERY_SRC_RE.test(e.src))
     .slice()
     .sort((a, b) => (a.order || 0) - (b.order || 0));
-  return list.map((e, i) => {
-    // Each page shows its own language's caption; if only one was
-    // written, both pages show that one.
-    const own = lang === 'fa' ? e.caption_fa : e.caption_en;
-    const other = lang === 'fa' ? e.caption_en : e.caption_fa;
-    const cap = String(own || other || '').trim();
-    return '\n    <figure><img src="' + escapeHtmlAttr(e.src) + '" alt="' + escapeHtmlAttr(cap || fallbackAlt) + '"'
+}
+
+// Each page shows its own language's caption; if only one was written,
+// both pages show that one.
+function galleryCaption(e, lang) {
+  const own = lang === 'fa' ? e.caption_fa : e.caption_en;
+  const other = lang === 'fa' ? e.caption_en : e.caption_fa;
+  return String(own || other || '').trim();
+}
+
+// The photo's text for Google and screen readers: who is in it, then the
+// caption — e.g. "Kamyar, Meraj Mirzaei — In the studio, London".
+function galleryAltText(e, lang, index) {
+  const people = (Array.isArray(e.people) ? e.people : []).map((n) => resolveGalleryPerson(n, lang, index).label);
+  const cap = galleryCaption(e, lang);
+  const who = people.join(lang === 'fa' ? '، ' : ', ');
+  return [who, cap].filter(Boolean).join(' — ') || (lang === 'fa' ? 'معراج میرزایی — گالری' : 'Meraj Mirzaei — gallery');
+}
+
+function buildGalleryHtml(items, lang, index) {
+  return sortedGalleryItems(items).map((e, i) => {
+    const cap = galleryCaption(e, lang);
+    const people = (Array.isArray(e.people) ? e.people : []).map((n) => resolveGalleryPerson(n, lang, index));
+    const peopleHtml = people.length
+      ? '<span class="people">' + people.map((p) => (p.href
+        ? '<a href="' + escapeHtmlAttr(p.href) + '">' + escapeHtmlAttr(p.label) + '</a>'
+        : '<span>' + escapeHtmlAttr(p.label) + '</span>')).join(' · ') + '</span>'
+      : '';
+    return '\n    <figure><img src="' + escapeHtmlAttr(e.src) + '" alt="' + escapeHtmlAttr(galleryAltText(e, lang, index)) + '"'
       + (i < 3 ? '' : ' loading="lazy"') + ' decoding="async">'
-      + (cap ? '<figcaption>' + escapeHtmlAttr(cap) + '</figcaption>' : '')
+      + (cap || peopleHtml ? '<figcaption>' + escapeHtmlAttr(cap) + peopleHtml + '</figcaption>' : '')
       + '</figure>';
   }).join('') + '\n  ';
+}
+
+// Structured data for the gallery page: every photo as an ImageObject that
+// names who is in it, pointing at the same entities the rest of the site
+// uses (the Person, Miragesohi, and each artist's MusicGroup).
+function buildGalleryImageGraph(items, lang, index) {
+  const extraNodes = new Map();
+  const images = sortedGalleryItems(items).map((e) => {
+    const node = {
+      '@type': 'ImageObject',
+      contentUrl: SITE_ORIGIN + e.src,
+      url: SITE_ORIGIN + e.src,
+      name: galleryAltText(e, lang, index),
+    };
+    const cap = galleryCaption(e, lang);
+    if (cap) node.caption = cap;
+    const about = [];
+    for (const n of Array.isArray(e.people) ? e.people : []) {
+      const p = resolveGalleryPerson(n, lang, index);
+      if (p.hit && p.hit.kind === 'person') about.push({ '@id': PERSON_ID });
+      else if (p.hit && p.hit.kind === 'mirage') about.push({ '@id': MIRAGE_ID });
+      else if (p.hit) {
+        const id = SITE_ORIGIN + '/credits#artist-' + p.hit.artistSlug;
+        if (!extraNodes.has(id)) {
+          const g = { '@type': 'MusicGroup', '@id': id, name: p.hit.en, url: SITE_ORIGIN + pathFor(lang, p.hit.slug) };
+          if (p.hit.fa && p.hit.fa !== p.hit.en) g.alternateName = p.hit.fa;
+          extraNodes.set(id, g);
+        }
+        about.push({ '@id': id });
+      } else {
+        about.push({ '@type': 'Person', name: p.label });
+      }
+    }
+    if (about.length) node.about = about;
+    return node;
+  });
+  return { images, extraNodes: [...extraNodes.values()] };
 }
 
 // ---------------------------------------------------------------------
@@ -2942,8 +3086,19 @@ async function buildSitemapXml(env) {
     }
   }
 
-  const body = urls.map((u) => `  <url><loc>${escapeHtmlAttr(u.loc)}</loc><priority>${u.priority}</priority></url>`).join('\n');
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`;
+  // The gallery photos are listed as images of the two gallery pages
+  // (Google's image sitemap extension), so they're found and indexed.
+  const galleryItems = await readGalleryReadOnly(env);
+  const galleryImages = galleryItems ? sortedGalleryItems(galleryItems).map((e) => SITE_ORIGIN + e.src) : [];
+  const galleryLocs = new Set([SITE_ORIGIN + pathFor('en', 'gallery'), SITE_ORIGIN + pathFor('fa', 'gallery')]);
+
+  const body = urls.map((u) => {
+    const images = galleryLocs.has(u.loc)
+      ? galleryImages.map((img) => `<image:image><image:loc>${escapeHtmlAttr(img)}</image:loc></image:image>`).join('')
+      : '';
+    return `  <url><loc>${escapeHtmlAttr(u.loc)}</loc><priority>${u.priority}</priority>${images}</url>`;
+  }).join('\n');
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${body}\n</urlset>\n`;
 }
 
 // ---------------------------------------------------------------------
