@@ -2833,6 +2833,11 @@ export default {
         return json({
           hasAdminPassword: !!env.ADMIN_PASSWORD,
           hasGithubToken: !!env.GITHUB_TOKEN,
+          hasSendEmail: !!env.SEND_EMAIL,
+          // How the last collaboration notification email went (ok/error
+          // text/time only — no submission content).
+          lastCollabEmail: env.COMMENTS ? await env.COMMENTS.get('collab:mailstatus', 'json').catch(() => null) : null,
+          collabSubmissions: env.COMMENTS ? (await env.COMMENTS.list({ prefix: 's:', limit: 1000 })).keys.length : null,
         });
       }
       if (pathname === '/admin/login' && request.method === 'POST') {
