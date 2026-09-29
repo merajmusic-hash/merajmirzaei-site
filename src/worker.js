@@ -424,7 +424,7 @@ function buildPageNode(slug, lang) {
         '@type': 'ProfilePage',
         '@id': SITE_ORIGIN + pathFor(lang, 'home') + '#webpage',
         url: SITE_ORIGIN + pathFor(lang, 'home'),
-        name: lang === 'fa' ? 'معراج میرزایی — مهندس میکس و مسترینگ، لندن' : 'Meraj Mirzaei — Mix & Mastering Engineer, London',
+        name: lang === 'fa' ? 'معراج میرزایی (Meraj Mirzaei) — مهندس میکس و مسترینگ، لندن · Miragesohi' : 'Meraj Mirzaei (معراج میرزایی) — Mix & Mastering Engineer, London · Miragesohi',
         inLanguage: lang,
         mainEntity: { '@id': PERSON_ID },
       };
