@@ -190,6 +190,12 @@
   .gal-table td.gal-cap{min-width:240px}
   .gal-new{font-size:10px;color:var(--brass);margin-top:4px}
   .gal-status{color:var(--brass);font-size:12px}
+  .gal-table td.gal-people{min-width:260px}
+  .gal-chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px}
+  .gal-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 4px 2px 8px;border-radius:10px;
+    border:1px solid var(--brass);color:var(--brass);font-size:12px;white-space:nowrap}
+  .gal-chip.nolink{border-style:dashed;border-color:var(--muted);color:var(--text)}
+  .gal-chip button{border:0;background:transparent;color:inherit;padding:0 4px;font-size:13px;line-height:1}
 </style>
 </head>
 <body>
@@ -876,6 +882,70 @@
 
   function galNewId(){ return 'g-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
+  // Names offered when tagging who is in a photo: Meraj himself, Miragesohi,
+  // and every artist credited on the site (a tagged artist links to their
+  // artist page on the Gallery page). Any other name can be typed too; it
+  // is shown without a link.
+  function galKnownPeople(){
+    var seen = {}, list = [
+      { en: 'Meraj Mirzaei', fa: 'معراج میرزایی' },
+      { en: 'Miragesohi', fa: '' },
+    ];
+    list.forEach(function(p){ seen[p.en.toLowerCase()] = 1; });
+    state.entries.forEach(function(e){
+      if(!e.artist_en || !(e.title_en || e.title_fa) || !hasPage(e, 'credits')) return;
+      var k = e.artist_en.trim().toLowerCase();
+      if(seen[k]) return;
+      seen[k] = 1;
+      list.push({ en: e.artist_en.trim(), fa: (e.artist_fa || '').trim() });
+    });
+    return list;
+  }
+
+  // Typed text -> the site's own spelling of that name (English or Farsi
+  // spelling both match), or the text as typed if it's someone new.
+  function galCanonicalName(text){
+    var t = String(text || '').trim();
+    if(!t) return '';
+    var k = t.toLowerCase();
+    var known = galKnownPeople();
+    for(var i=0;i<known.length;i++){
+      if(known[i].en.toLowerCase() === k || (known[i].fa && known[i].fa.toLowerCase() === k)) return known[i].en;
+    }
+    return t;
+  }
+
+  function galIsKnown(name){
+    var k = String(name).toLowerCase();
+    return galKnownPeople().some(function(p){ return p.en.toLowerCase() === k; });
+  }
+
+  function galPeopleCell(it){
+    var id = esc(it.id);
+    var chips = (it.people || []).map(function(n, i){
+      var known = galIsKnown(n);
+      return '<span class="gal-chip'+(known ? '' : ' nolink')+'" title="'+(known ? 'Links to their page on the site' : 'Not on the site — shown without a link')+'">'
+        + esc(n) + '<button type="button" data-action="gal-person-remove" data-gal="'+id+'" data-i="'+i+'" title="Remove">×</button></span>';
+    }).join('');
+    return (chips ? '<div class="gal-chips">'+chips+'</div>' : '')
+      + '<input type="text" list="galPeopleList" data-gal-person="'+id+'" placeholder="+ add a name (pick or type)" style="width:100%">';
+  }
+
+  function galAddPerson(id, text){
+    var it = galById(id);
+    var name = galCanonicalName(text);
+    if(!it || !name) return false;
+    it.people = it.people || [];
+    if(it.people.some(function(n){ return n.toLowerCase() === name.toLowerCase(); })) return false;
+    if(it.people.length >= 12){ showMsg('A photo can have at most 12 names.', 'err'); return false; }
+    it.people.push(name);
+    state.galleryDirty = true; setDirty();
+    render();
+    var again = wrap.querySelector('input[data-gal-person="'+id+'"]');
+    if(again) again.focus();
+    return true;
+  }
+
   function renderGalleryTab(){
     var q = (filterEl.value||'').trim().toLowerCase();
     var filtering = !!q;
@@ -883,15 +953,17 @@
 
     var visible = state.gallery.slice().sort(byOrder);
     if(filtering) visible = visible.filter(function(it){
-      return ((it.caption_en||'') + ' ' + (it.caption_fa||'')).toLowerCase().indexOf(q) !== -1;
+      return ((it.caption_en||'') + ' ' + (it.caption_fa||'') + ' ' + (it.people||[]).join(' ')).toLowerCase().indexOf(q) !== -1;
     });
 
     wrap.innerHTML = '';
     var intro = document.createElement('p');
     intro.className = 'nr-intro';
     intro.textContent = 'These photos show on the Gallery page, in this order. Add photos (you can pick several at once), '
-      + 'write a caption if you want one, then press Save — the page updates about a minute later. '
-      + 'Drag ⠿ to change the order. A caption is optional; if you write it in only one language, both pages show it.';
+      + 'add who is in each photo and a caption if you want one, then press Save — the page updates about a minute later. '
+      + 'Drag ⠿ to change the order. Names are shown under the photo, link to that artist’s page, and go into the photo’s '
+      + 'file name and description for Google, so the photo can come up when someone searches those names. '
+      + 'A caption is optional; if you write it in only one language, both pages show it.';
     wrap.appendChild(intro);
 
     var top = document.createElement('div');
@@ -908,7 +980,7 @@
 
     var table = document.createElement('table');
     table.className = 'gal-table';
-    table.innerHTML = '<thead><tr><th></th><th>#</th><th>Photo</th><th>Caption (EN)</th><th>Caption (FA)</th><th></th></tr></thead>';
+    table.innerHTML = '<thead><tr><th></th><th>#</th><th>Photo</th><th>Who is in it</th><th>Caption (EN)</th><th>Caption (FA)</th><th></th></tr></thead>';
     var tbody = document.createElement('tbody');
     tbody.id = 'galRows';
     tbody.className = filtering ? 'drag-disabled' : '';
@@ -921,6 +993,7 @@
         + '<td class="nr-num">'+(k+1)+'</td>'
         + '<td><img class="gal-thumb" src="'+esc(it._preview || it.src)+'" alt="">'
         + (it._blob ? '<div class="gal-new">New — press Save</div>' : '') + '</td>'
+        + '<td class="gal-people">'+galPeopleCell(it)+'</td>'
         + '<td class="gal-cap"><input type="text" value="'+esc(it.caption_en)+'" data-gal="'+id+'" data-field="caption_en" placeholder="optional, e.g. In the studio, London"></td>'
         + '<td class="gal-cap"><input type="text" dir="rtl" value="'+esc(it.caption_fa)+'" data-gal="'+id+'" data-field="caption_fa" placeholder="اختیاری، مثلاً استودیو، لندن"></td>'
         + '<td><button type="button" class="small danger" data-gal="'+id+'" data-action="gal-delete">Remove</button></td>';
@@ -928,6 +1001,12 @@
     });
     table.appendChild(tbody);
     wrap.appendChild(table);
+    var dl = document.createElement('datalist');
+    dl.id = 'galPeopleList';
+    dl.innerHTML = galKnownPeople().map(function(p){
+      return '<option value="'+esc(p.en)+'"'+(p.fa ? ' label="'+esc(p.fa)+'"' : '')+'></option>';
+    }).join('');
+    wrap.appendChild(dl);
     if(!state.gallery.length){
       var empty = document.createElement('p');
       empty.className = 'hint';
@@ -1001,7 +1080,7 @@
           if(!res.ok || !res.j.ok) throw new Error('“' + file.name + '”: ' + (res.j.error || 'upload failed'));
           var preview = '';
           try{ preview = URL.createObjectURL(prep.blob); }catch(e){}
-          return { id: galNewId(), src: res.j.path, caption_en: '', caption_fa: '', order: 0, _blob: res.j.blobSha, _preview: preview };
+          return { id: galNewId(), src: res.j.path, people: [], caption_en: '', caption_fa: '', order: 0, _blob: res.j.blobSha, _preview: preview };
         });
     });
   }
@@ -1429,6 +1508,14 @@
   // renamed track sitting in its old artist's block indefinitely would be
   // confusing, so the group boundary is refreshed the moment the field is
   // no longer being actively typed into.
+  wrap.addEventListener('keydown', function(e){
+    var t = e.target;
+    if(e.key === 'Enter' && t.getAttribute && t.getAttribute('data-gal-person') != null){
+      e.preventDefault();
+      galAddPerson(t.getAttribute('data-gal-person'), t.value);
+    }
+  });
+
   wrap.addEventListener('focusout', function(e){
     var t = e.target;
     if(state.tab === 'newrelease' && t.getAttribute && t.getAttribute('data-field') === 'youtube_url'){
@@ -1471,6 +1558,10 @@
       }
       state.newReleasesDirty = true; setDirty();
       render();
+      return;
+    }
+    if(t.getAttribute('data-gal-person') != null){
+      galAddPerson(t.getAttribute('data-gal-person'), t.value);
       return;
     }
     if(t.type === 'file' && t.getAttribute('data-gal-files') != null){
@@ -1559,6 +1650,12 @@
     } else if(action === 'gal-add'){
       var ginput = wrap.querySelector('input[type=file][data-gal-files]');
       if(ginput) ginput.click();
+    } else if(action === 'gal-person-remove'){
+      var gp = galById(t.getAttribute('data-gal'));
+      if(!gp || !gp.people) return;
+      gp.people.splice(Number(t.getAttribute('data-i')), 1);
+      state.galleryDirty = true; setDirty();
+      render();
     } else if(action === 'gal-delete'){
       var gd = galById(t.getAttribute('data-gal'));
       if(!gd) return;
@@ -1736,6 +1833,7 @@
         return {
           id: it.id,
           src: it.src,
+          people: (it.people || []).map(function(n){ return String(n).trim(); }).filter(Boolean),
           caption_en: (it.caption_en || '').trim(),
           caption_fa: (it.caption_fa || '').trim(),
           order: k,
@@ -1762,6 +1860,14 @@
         if(r.kind === 'gallery'){
           state.gallerySha = r.j.sha || state.gallerySha; state.galleryDirty = false;
           state.gallery.forEach(function(it){ delete it._blob; });
+          // The server may have renamed photo files after the names in them.
+          (r.j.content || []).forEach(function(saved){
+            var it = galById(saved.id);
+            if(it && saved.src && saved.src !== it.src){
+              if(!it._preview) it._preview = it.src; // new path isn't live until the rebuild
+              it.src = saved.src;
+            }
+          });
           if(state.tab === 'gallery') render();
         }
       });
@@ -1822,6 +1928,7 @@
       state.gallery = (galRes.j.data || []).map(function(it, k){
         return {
           id: it.id || galNewId(), src: it.src || '',
+          people: Array.isArray(it.people) ? it.people.slice() : [],
           caption_en: it.caption_en || '', caption_fa: it.caption_fa || '',
           order: typeof it.order === 'number' ? it.order : k,
         };
