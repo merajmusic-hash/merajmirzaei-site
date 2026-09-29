@@ -140,6 +140,29 @@
   .c-actions{white-space:nowrap}
   .c-actions button{margin-right:4px}
 
+  /* Submissions tab */
+  .s-mail{font-size:12px;margin:0 0 12px;max-width:860px;line-height:1.5}
+  .s-mail.ok{color:var(--good)}
+  .s-mail.warn{color:var(--bad);border:1px solid rgba(224,133,133,.3);background:rgba(224,133,133,.08);border-radius:4px;padding:8px 10px}
+  .s-card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px;margin:0 0 12px;max-width:860px}
+  .s-card.unread{border-color:var(--brass)}
+  .s-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:10px}
+  .s-role{font-size:11px;font-weight:700;padding:2px 8px;border-radius:3px;border:1px solid var(--brass);color:var(--brass);white-space:nowrap}
+  .s-name{font-weight:700;font-size:14px}
+  .s-when{color:var(--muted);font-size:11px;white-space:nowrap}
+  .s-new{background:var(--brass);color:var(--ink);font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px}
+  .s-actions{margin-left:auto;display:flex;gap:6px}
+  .s-contact{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px}
+  .s-contact a,.s-link a{color:var(--brass);word-break:break-all}
+  .s-label{color:var(--muted);font-size:11px;margin:12px 0 4px}
+  .s-text{white-space:pre-wrap;font-size:14px;line-height:1.8;background:var(--panel-2);border-radius:4px;padding:8px 11px;max-height:340px;overflow:auto}
+  .s-files{display:flex;flex-direction:column;gap:10px}
+  .s-file{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;font-size:12px}
+  .s-file .fname{word-break:break-all}
+  .s-file .fsize{color:var(--muted)}
+  .s-file audio{height:36px;width:420px;max-width:100%}
+  .s-file img{max-width:240px;max-height:240px;border-radius:4px;border:1px solid var(--line);display:block}
+
   /* New Release tab */
   .nr-intro{color:var(--muted);font-size:12px;margin:0 0 12px;max-width:760px;line-height:1.5}
   .nr-top{display:flex;gap:10px;align-items:center;margin:0 0 12px}
@@ -169,6 +192,7 @@
     <button type="button" class="tab-btn" data-tab="homepage">Homepage</button>
     <button type="button" class="tab-btn" data-tab="newrelease">New Release</button>
     <button type="button" class="tab-btn" data-tab="comments">Comments<span id="commentsBadge" class="badge"></span></button>
+    <button type="button" class="tab-btn" data-tab="submissions">Submissions<span id="subsBadge" class="badge"></span></button>
   </div>
   <input type="search" id="filter" placeholder="Filter by artist or title…" style="width:220px">
   <span class="spacer"></span>
@@ -197,7 +221,8 @@
     homepage: [], homepageSha: null, homepageDirty: false,
     newReleases: [], newReleasesSha: null, newReleasesDirty: false,
     comments: { pending: [], approved: [], loaded: false, error: null },
-    tab: 'credits',
+    subs: { list: [], loaded: false, error: null, mail: null, emailConfigured: false },
+    tab: /^#submissions$/.test(location.hash) ? 'submissions' : 'credits',
   };
   window.__adminState = state; // testability hook only; not a security boundary
 
@@ -907,6 +932,109 @@
   }
 
   // ---------------------------------------------------------------------
+  // Submissions tab — what poets, composers and mix/master clients send
+  // from the /collaborate page. Private: stored in Workers KV, never in the
+  // repo. Mark read / Delete apply immediately (no Save needed).
+  // ---------------------------------------------------------------------
+
+  var subsBadge = document.getElementById('subsBadge');
+  var SUB_ROLES = { poet: 'Poet · شاعر', composer: 'Composer · آهنگساز', mix: 'Mix & master · میکس و مستر' };
+  var SUB_SERVICES = { mix: 'Mixing', master: 'Mastering', mixmaster: 'Mix & master' };
+
+  function loadSubmissions(){
+    return fetch('/admin/api/submissions').then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+      .then(function(res){
+        var S = state.subs;
+        if(!res.ok){ S.error = res.j.error || 'Could not load submissions'; }
+        else { S.list = res.j.submissions || []; S.mail = res.j.mail || null; S.emailConfigured = !!res.j.emailConfigured; S.error = null; }
+        S.loaded = true;
+        var unread = S.list.filter(function(x){ return !x.read; }).length;
+        subsBadge.textContent = unread ? String(unread) : '';
+        if(state.tab === 'submissions') render();
+      })
+      .catch(function(err){ state.subs.error = err.message; state.subs.loaded = true; if(state.tab === 'submissions') render(); });
+  }
+
+  function fmtSize(b){
+    return b >= 1000*1000 ? (b/1000/1000).toFixed(1) + ' MB' : Math.max(1, Math.round(b/1000)) + ' KB';
+  }
+
+  function subFileHtml(s, f, n){
+    var src = '/admin/api/submissions/file?id=' + encodeURIComponent(s.id) + '&n=' + n;
+    var type = String(f.type || '');
+    var media = '';
+    if(type.indexOf('audio/') === 0) media = '<audio controls preload="none" src="'+esc(src)+'"></audio>';
+    else if(/^image\/(jpeg|png|webp|gif)$/.test(type)) media = '<a href="'+esc(src)+'" target="_blank" rel="noopener"><img loading="lazy" src="'+esc(src)+'" alt=""></a>';
+    return '<div class="s-file">' + media
+      + '<span class="fname" dir="auto">'+esc(f.name)+'</span><span class="fsize">'+esc(fmtSize(f.size||0))+'</span>'
+      + '<a class="hdr-link" href="'+esc(src)+'&dl=1">Download</a>'
+      + (media ? '' : '<a class="hdr-link" href="'+esc(src)+'" target="_blank" rel="noopener">Open</a>')
+      + '</div>';
+  }
+
+  function subCardHtml(s){
+    var role = SUB_ROLES[s.role] || s.role;
+    if(s.role === 'mix' && s.service) role += ' — ' + (SUB_SERVICES[s.service] || s.service);
+    var contact = [];
+    if(s.email) contact.push('<a href="mailto:'+esc(s.email)+'">'+esc(s.email)+'</a>');
+    if(s.phone) contact.push('<span dir="auto">'+esc(s.phone)+'</span>');
+    var h = '<div class="s-card'+(s.read ? '' : ' unread')+'">'
+      + '<div class="s-head">'
+      + (s.read ? '' : '<span class="s-new">NEW</span>')
+      + '<span class="s-role">'+esc(role)+'</span>'
+      + '<span class="s-name" dir="auto">'+esc(s.name)+'</span>'
+      + '<span class="s-when">'+esc(fmtWhen(s.ts))+'</span>'
+      + '<span class="s-actions">'
+      + '<button type="button" class="small" data-action="s-read" data-id="'+esc(s.id)+'" data-read="'+(s.read ? '0' : '1')+'">'+(s.read ? 'Mark unread' : 'Mark read')+'</button>'
+      + '<button type="button" class="small danger" data-action="s-delete" data-id="'+esc(s.id)+'">Delete</button>'
+      + '</span></div>'
+      + '<div class="s-contact">'+contact.join('')+'</div>';
+    if(s.link) h += '<div class="s-label">Link</div><div class="s-link"><a href="'+esc(s.link)+'" target="_blank" rel="noopener noreferrer" dir="ltr">'+esc(s.link)+'</a></div>';
+    if(s.viaTelegram) h += '<div class="s-label">Telegram</div><div>Sending the project on Telegram (@Merajmusic)</div>';
+    if(s.files && s.files.length) h += '<div class="s-label">Files</div><div class="s-files">' + s.files.map(function(f, n){ return subFileHtml(s, f, n); }).join('') + '</div>';
+    if(s.lyrics) h += '<div class="s-label">Lyrics · متن شعر</div><div class="s-text" dir="auto">'+esc(s.lyrics)+'</div>';
+    if(s.description) h += '<div class="s-label">Description · توضیحات</div><div class="s-text" dir="auto">'+esc(s.description)+'</div>';
+    return h + '</div>';
+  }
+
+  function renderSubmissionsTab(){
+    filterNote.style.display = 'none';
+    var S = state.subs;
+    var q = (filterEl.value||'').trim().toLowerCase();
+    var match = function(s){
+      return !q || [s.name, s.email, s.phone, s.lyrics, s.description, s.link, SUB_ROLES[s.role]].join(' ').toLowerCase().indexOf(q) !== -1;
+    };
+    var html = '<p class="nr-intro">What poets, composers and mix/master clients send from the Collaborate page (merajmirzaei.com/collaborate). '
+      + 'Only you can see these. Mark read and Delete take effect straight away (no Save needed).</p>';
+    if(S.loaded && !S.error){
+      if(!S.emailConfigured) html += '<div class="s-mail warn">Email notifications are not connected (the SEND_EMAIL binding is missing).</div>';
+      else if(S.mail && !S.mail.ok) html += '<div class="s-mail warn">The last notification email could not be sent ('+esc(fmtWhen(S.mail.ts))+'): '+esc(S.mail.error||'unknown error')
+        + '<br>To fix it: Cloudflare dashboard → merajmirzaei.com → Email → Email Routing — turn it on, and add merajmusic2@gmail.com under Destination addresses, then click the link in the verification email. Submissions are saved here either way.</div>';
+      else if(S.mail && S.mail.ok) html += '<div class="s-mail ok">Email notifications to merajmusic2@gmail.com are working (last sent '+esc(fmtWhen(S.mail.ts))+').</div>';
+      else html += '<div class="s-mail">Email notifications go to merajmusic2@gmail.com — nothing has been sent yet.</div>';
+    }
+    if(!S.loaded) html += '<p class="hint">Loading…</p>';
+    else if(S.error) html += '<div class="msg err" style="margin:0">'+esc(S.error)+'</div>';
+    else {
+      var shown = S.list.filter(match);
+      html += shown.length ? shown.map(subCardHtml).join('') : '<p class="hint">'+(S.list.length ? 'Nothing matches the filter.' : 'Nothing has been sent yet.')+'</p>';
+    }
+    wrap.innerHTML = html;
+  }
+
+  function subAction(url, payload, okMsg){
+    showMsg('Working…', 'ok');
+    fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+      .then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+      .then(function(res){
+        if(!res.ok) showMsg('Failed: ' + (res.j.error || 'unknown error'), 'err');
+        else showMsg(okMsg, 'ok');
+        return loadSubmissions();
+      })
+      .catch(function(err){ showMsg('Failed: ' + err.message, 'err'); });
+  }
+
+  // ---------------------------------------------------------------------
   // drag & drop — a dragged element's real DOM node is repositioned live
   // on dragover (the classic vanilla "sortable list" trick), so by drop
   // time the DOM already reflects the new order and in-progress input
@@ -1013,11 +1141,12 @@
     else if(state.tab === 'releases') renderReleasesTab();
     else if(state.tab === 'newrelease') renderNewReleaseTab();
     else if(state.tab === 'comments') renderCommentsTab();
+    else if(state.tab === 'submissions') renderSubmissionsTab();
     else renderHomepageTab();
     Array.prototype.forEach.call(tabsEl.querySelectorAll('.tab-btn'), function(btn){
       btn.classList.toggle('active', btn.getAttribute('data-tab') === state.tab);
     });
-    addRowBtn.style.display = (state.tab === 'homepage' || state.tab === 'newrelease' || state.tab === 'comments') ? 'none' : '';
+    addRowBtn.style.display = (state.tab === 'homepage' || state.tab === 'newrelease' || state.tab === 'comments' || state.tab === 'submissions') ? 'none' : '';
   }
   window.__adminRender = render; // testability hook only; not a security boundary
 
@@ -1028,6 +1157,8 @@
     filterEl.value = '';
     render();
     if(state.tab === 'comments') loadComments();
+    if(state.tab === 'submissions') loadSubmissions();
+    try{ history.replaceState(null, '', state.tab === 'submissions' ? '#submissions' : location.pathname); }catch(err){}
   });
 
   filterEl.addEventListener('input', render);
@@ -1206,6 +1337,11 @@
       commentAction('/admin/api/comments/approve', { id: t.getAttribute('data-id') }, 'Approved — it will show on the site within a minute.');
     } else if(action === 'c-delete'){
       commentAction('/admin/api/comments/delete', { key: t.getAttribute('data-key') }, 'Deleted.');
+    } else if(action === 's-read'){
+      subAction('/admin/api/submissions/mark', { id: t.getAttribute('data-id'), read: t.getAttribute('data-read') === '1' }, 'Updated.');
+    } else if(action === 's-delete'){
+      if(!confirm('Delete this submission and its files for good?')) return;
+      subAction('/admin/api/submissions/delete', { id: t.getAttribute('data-id') }, 'Deleted.');
     } else if(action === 'nr-add'){
       nrAdd();
     } else if(action === 'nr-upload'){
@@ -1431,6 +1567,7 @@
     if(!nrRes.ok) showMsg('New Release list failed to load: ' + (nrRes.j.error||'unknown error'), 'err');
     render();
     loadComments();
+    loadSubmissions();
   }).catch(function(err){ showMsg('Load failed: ' + err.message, 'err'); });
 })();
 </script>
