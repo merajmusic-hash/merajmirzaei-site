@@ -36,6 +36,13 @@ const NEW_RELEASES_PATH = 'merajmirzaei-site (4)/data/new-releases.json';
 // one GitHub release with this tag, and served to visitors through
 // /media/<asset id>/<file name> by this Worker (see serveMedia below).
 const MEDIA_RELEASE_TAG = 'site-media';
+// The /gallery page's photos: an ordered list of {id, src, caption_en,
+// caption_fa}, edited on the admin panel's "Gallery" tab and rendered into
+// the page by applyEntitySeo (see buildGalleryHtml). Photos uploaded there
+// live in GALLERY_DIR, which belongs to the gallery alone: saving the
+// gallery removes any file in it that the saved list no longer uses.
+const GALLERY_PATH = 'merajmirzaei-site (4)/data/gallery.json';
+const GALLERY_DIR = 'merajmirzaei-site (4)/images/gallery';
 const GITHUB_API = 'https://api.github.com';
 
 const SESSION_COOKIE = 'mm_admin_session';
@@ -1314,6 +1321,15 @@ class ReplaceScriptBody {
   }
 }
 
+class SetInnerHtml {
+  constructor(html) {
+    this.html = html;
+  }
+  element(element) {
+    element.setInnerContent(this.html, { html: true });
+  }
+}
+
 class ReplaceElement {
   constructor(html) {
     this.html = html;
@@ -1394,6 +1410,15 @@ async function applyEntitySeo(response, env, pathname, ogImageOverride) {
 
   if (artistIndexHtml) {
     rewriter = rewriter.on('div#creditsRoot', new BeforeElementInjector(artistIndexHtml));
+  }
+
+  // The gallery page's photos come from data/gallery.json (edited on the
+  // admin "Gallery" tab), not from the page's own markup.
+  if (canonicalPath === pathFor('en', 'gallery') || canonicalPath === pathFor('fa', 'gallery')) {
+    const galleryItems = await readGalleryReadOnly(env);
+    if (galleryItems) {
+      rewriter = rewriter.on('div#gallery', new SetInnerHtml(buildGalleryHtml(galleryItems, lang)));
+    }
   }
 
   return rewriter.transform(response);
@@ -1749,6 +1774,225 @@ async function handleUploadImage(request, env) {
   } catch (e) {
     return json({ error: e.message || 'GitHub upload failed' }, 502);
   }
+}
+
+// ---------------------------------------------------------------------
+// Gallery — data/gallery.json plus the photos in GALLERY_DIR.
+//
+// Unlike a cover upload, uploading a gallery photo commits nothing: the
+// file is only stored as a git blob. Save then writes the new photos,
+// gallery.json and the removal of any photo taken off the list as ONE
+// commit, so the site rebuilds once per Save, never lists a photo that
+// isn't deployed yet, and removed photos don't pile up in the repo.
+// ---------------------------------------------------------------------
+
+const ASSETS_DIR = 'merajmirzaei-site (4)';
+// Any site image may be listed (the two original gallery photos are the
+// site-wide /images/studio.jpg and /images/portrait.jpg); only files in
+// images/gallery/ are ever added or removed by a gallery save.
+const GALLERY_SRC_RE = /^\/images\/(?:gallery\/)?[a-z0-9][a-z0-9-]{0,100}\.(?:jpg|png|webp)$/;
+const GALLERY_UPLOAD_SRC_RE = /^\/images\/gallery\/[a-z0-9][a-z0-9-]{0,100}\.(?:jpg|png|webp)$/;
+const GALLERY_ID_RE = /^[a-z0-9][a-z0-9-]{0,80}$/;
+const GALLERY_MAX_ITEMS = 300;
+const GALLERY_CAPTION_MAX = 300;
+
+function validateGallery(data) {
+  if (!Array.isArray(data)) return 'data must be an array';
+  if (data.length > GALLERY_MAX_ITEMS) return `too many photos (max ${GALLERY_MAX_ITEMS})`;
+  const ids = new Set();
+  for (let i = 0; i < data.length; i++) {
+    const e = data[i];
+    const label = `Photo ${i + 1}`;
+    if (!e || typeof e !== 'object') return `${label} is not an object`;
+    if (typeof e.id !== 'string' || !GALLERY_ID_RE.test(e.id)) return `${label}: invalid id`;
+    if (ids.has(e.id)) return `${label}: duplicate id`;
+    ids.add(e.id);
+    if (typeof e.src !== 'string' || !GALLERY_SRC_RE.test(e.src)) return `${label}: invalid photo path`;
+    for (const f of ['caption_en', 'caption_fa']) {
+      if (e[f] != null && typeof e[f] !== 'string') return `${label}: ${f} must be text`;
+      if (e[f] && e[f].length > GALLERY_CAPTION_MAX) return `${label}: caption is too long (max ${GALLERY_CAPTION_MAX} characters)`;
+    }
+    if (e.order != null && typeof e.order !== 'number') return `${label}: order must be a number`;
+  }
+  return null;
+}
+
+// Plain GitHub REST call against this repo; throws with .status on failure.
+async function ghApi(env, method, apiPath, body) {
+  const res = await fetch(`${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}${apiPath}`, {
+    method,
+    headers: body ? { ...ghHeaders(env), 'Content-Type': 'application/json' } : ghHeaders(env),
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(j.message || `GitHub ${method} ${apiPath} failed: ${res.status}`);
+    err.status = res.status;
+    throw err;
+  }
+  return j;
+}
+
+// Files currently in a repo directory ([] if it doesn't exist yet).
+async function ghListDir(env, dirPath) {
+  const url = `${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(dirPath).replace(/%2F/g, '/')}?ref=${GITHUB_BRANCH}`;
+  const res = await fetch(url, { headers: ghHeaders(env) });
+  if (res.status === 404) return [];
+  if (!res.ok) throw new Error(`GitHub GET ${dirPath} failed: ${res.status}`);
+  const list = await res.json();
+  return Array.isArray(list) ? list.filter((f) => f && f.type === 'file') : [];
+}
+
+// The git blob id of a text file — what the Contents API reports as the
+// file's "sha" — so a save can hand the admin panel gallery.json's new sha
+// without a follow-up read that may still see the old file.
+async function gitBlobSha(text) {
+  const bytes = new TextEncoder().encode(text);
+  const header = new TextEncoder().encode(`blob ${bytes.length}\0`);
+  const all = new Uint8Array(header.length + bytes.length);
+  all.set(header, 0);
+  all.set(bytes, header.length);
+  const digest = await crypto.subtle.digest('SHA-1', all);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function handleGetGallery(env) {
+  const file = await ghGetFile(env, GALLERY_PATH);
+  if (!file) return json({ data: [], sha: null });
+  const content = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
+  let data;
+  try {
+    data = JSON.parse(content);
+  } catch (e) {
+    return json({ error: 'data/gallery.json is not valid JSON: ' + e.message }, 500);
+  }
+  return json({ data, sha: file.sha });
+}
+
+async function handleUploadGalleryImage(request, env) {
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== 'object') return json({ error: 'Invalid request body' }, 400);
+  const { filenameHint, mime, contentBase64 } = body;
+  const ext = ALLOWED_IMAGE_TYPES[mime];
+  if (!ext) return json({ error: 'Unsupported image type. Use JPEG, PNG, or WebP.' }, 400);
+  if (!contentBase64 || typeof contentBase64 !== 'string') return json({ error: 'Missing image data' }, 400);
+  if (contentBase64.length * 0.75 > MAX_IMAGE_BYTES) return json({ error: 'Image too large (max 8MB).' }, 400);
+
+  const slug = safeSlug(filenameHint || 'photo');
+  const name = `${slug}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}.${ext}`;
+  try {
+    const blob = await ghApi(env, 'POST', '/git/blobs', { content: contentBase64, encoding: 'base64' });
+    return json({ ok: true, blobSha: blob.sha, path: '/images/gallery/' + name });
+  } catch (e) {
+    return json({ error: e.message || 'GitHub upload failed' }, 502);
+  }
+}
+
+async function handleSaveGallery(request, env) {
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== 'object') return json({ error: 'Invalid request body' }, 400);
+  const { content, sha, newFiles } = body;
+  const invalid = validateGallery(content);
+  if (invalid) return json({ error: invalid }, 400);
+  if (newFiles != null && !Array.isArray(newFiles)) return json({ error: 'Invalid request body' }, 400);
+
+  const used = new Set(content.map((e) => e.src));
+  const adds = new Map(); // src -> blob sha
+  for (const f of newFiles || []) {
+    if (!f || typeof f.src !== 'string' || !GALLERY_UPLOAD_SRC_RE.test(f.src)
+        || typeof f.blobSha !== 'string' || !/^[0-9a-f]{40}$/.test(f.blobSha)) {
+      return json({ error: 'Invalid uploaded photo' }, 400);
+    }
+    // A photo uploaded and then removed again before saving is just dropped.
+    if (used.has(f.src)) adds.set(f.src, f.blobSha);
+  }
+
+  const text = JSON.stringify(content, null, 2) + '\n';
+  try {
+    // Same "someone else saved first" check as every other tab's save.
+    const current = await ghGetFile(env, GALLERY_PATH);
+    if ((current ? current.sha : null) !== (sha || null)) {
+      return json({ error: 'Someone else saved changes since you loaded this page. Reload and try again.' }, 409);
+    }
+
+    const existing = await ghListDir(env, GALLERY_DIR);
+    const existingSrcs = new Set(existing.map((f) => '/images/gallery/' + f.name));
+    for (const src of used) {
+      if (GALLERY_UPLOAD_SRC_RE.test(src) && !existingSrcs.has(src) && !adds.has(src)) {
+        return json({ error: `A photo on the list is missing (${src.split('/').pop()}). Remove it and upload it again.` }, 400);
+      }
+    }
+
+    const tree = [];
+    for (const [src, blobSha] of adds) {
+      tree.push({ path: ASSETS_DIR + src, mode: '100644', type: 'blob', sha: blobSha });
+    }
+    for (const f of existing) {
+      if (!used.has('/images/gallery/' + f.name)) {
+        tree.push({ path: f.path, mode: '100644', type: 'blob', sha: null }); // delete
+      }
+    }
+    tree.push({ path: GALLERY_PATH, mode: '100644', type: 'blob', content: text });
+
+    // Build the commit on top of the current branch head. If something
+    // else (e.g. the artwork bot) moves the branch in between, rebuild on
+    // the new head and try again rather than overwrite it.
+    let lastErr = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const ref = await ghApi(env, 'GET', `/git/ref/heads/${GITHUB_BRANCH}`);
+      const headSha = ref.object.sha;
+      const headCommit = await ghApi(env, 'GET', `/git/commits/${headSha}`);
+      const newTree = await ghApi(env, 'POST', '/git/trees', { base_tree: headCommit.tree.sha, tree });
+      const commit = await ghApi(env, 'POST', '/git/commits', {
+        message: 'Update gallery via /admin',
+        tree: newTree.sha,
+        parents: [headSha],
+      });
+      try {
+        await ghApi(env, 'PATCH', `/git/refs/heads/${GITHUB_BRANCH}`, { sha: commit.sha, force: false });
+        return json({ ok: true, sha: await gitBlobSha(text) });
+      } catch (e) {
+        lastErr = e;
+        if (e.status !== 422) throw e; // 422 = not a fast-forward any more
+      }
+    }
+    throw lastErr;
+  } catch (e) {
+    return json({ error: e.message || 'GitHub save failed' }, 502);
+  }
+}
+
+// Public side: the gallery page's photos, rendered into its <div
+// id="gallery"> server-side (see applyEntitySeo) from the deployed
+// data/gallery.json.
+async function readGalleryReadOnly(env) {
+  try {
+    const res = await env.ASSETS.fetch(new Request('https://internal/data/gallery.json'));
+    if (!res.ok) return null;
+    const data = await res.json();
+    return Array.isArray(data) ? data : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function buildGalleryHtml(items, lang) {
+  const fallbackAlt = lang === 'fa' ? 'معراج میرزایی — گالری' : 'Meraj Mirzaei — gallery';
+  const list = items
+    .filter((e) => e && typeof e.src === 'string' && GALLERY_SRC_RE.test(e.src))
+    .slice()
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+  return list.map((e, i) => {
+    // Each page shows its own language's caption; if only one was
+    // written, both pages show that one.
+    const own = lang === 'fa' ? e.caption_fa : e.caption_en;
+    const other = lang === 'fa' ? e.caption_en : e.caption_fa;
+    const cap = String(own || other || '').trim();
+    return '\n    <figure><img src="' + escapeHtmlAttr(e.src) + '" alt="' + escapeHtmlAttr(cap || fallbackAlt) + '"'
+      + (i < 3 ? '' : ' loading="lazy"') + ' decoding="async">'
+      + (cap ? '<figcaption>' + escapeHtmlAttr(cap) + '</figcaption>' : '')
+      + '</figure>';
+  }).join('') + '\n  ';
 }
 
 // ---------------------------------------------------------------------
@@ -2732,6 +2976,18 @@ async function routeAdminRequest(request, env, pathname) {
   if (pathname === '/admin/api/upload-image' && request.method === 'POST') {
     if (!env.GITHUB_TOKEN) return json({ error: 'Admin not fully configured (missing GITHUB_TOKEN)' }, 503);
     return handleUploadImage(request, env);
+  }
+  if (pathname === '/admin/api/gallery' && request.method === 'GET') {
+    if (!env.GITHUB_TOKEN) return json({ error: 'Admin not fully configured (missing GITHUB_TOKEN)' }, 503);
+    return handleGetGallery(env);
+  }
+  if (pathname === '/admin/api/gallery/upload' && request.method === 'POST') {
+    if (!env.GITHUB_TOKEN) return json({ error: 'Admin not fully configured (missing GITHUB_TOKEN)' }, 503);
+    return handleUploadGalleryImage(request, env);
+  }
+  if (pathname === '/admin/api/gallery/save' && request.method === 'POST') {
+    if (!env.GITHUB_TOKEN) return json({ error: 'Admin not fully configured (missing GITHUB_TOKEN)' }, 503);
+    return handleSaveGallery(request, env);
   }
   if (pathname === '/admin/api/new-releases' && request.method === 'GET') {
     if (!env.GITHUB_TOKEN) return json({ error: 'Admin not fully configured (missing GITHUB_TOKEN)' }, 503);
