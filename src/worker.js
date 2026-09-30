@@ -301,12 +301,12 @@ const MIRAGE_SAME_AS = [
 // rather than a fresh, unverified translation.
 const PERSON_LOCALIZED = {
   en: {
-    jobTitle: 'Mix and Mastering Engineer',
-    description: 'Mix and Mastering engineer, music producer and sound designer based in London, with over 20 years of work across Persian, electronic and international music.',
+    jobTitle: 'Music Producer and Mix & Mastering Engineer',
+    description: 'Music producer, mix and mastering engineer and sound designer based in London, with over 20 years of work across Persian, electronic and international music.',
   },
   fa: {
-    jobTitle: 'مهندس میکس و مسترینگ',
-    description: 'معراج میرزایی (Miragesohi) — مهندس میکس و مسترینگ، تهیه‌کننده و ساند دیزاینر در لندن. بیش از ۲۰ سال کار در موسیقی ایرانی، الکترونیک و بین‌المللی.',
+    jobTitle: 'پرودیوسر و مهندس میکس و مستر',
+    description: 'معراج میرزایی (Miragesohi) — پرودیوسر، مهندس میکس و مستر و ساند دیزاینر در لندن. بیش از ۲۰ سال کار در موسیقی ایرانی، الکترونیک و بین‌المللی.',
   },
 };
 
@@ -431,7 +431,7 @@ function buildPageNode(slug, lang) {
         '@type': 'ProfilePage',
         '@id': SITE_ORIGIN + pathFor(lang, 'home') + '#webpage',
         url: SITE_ORIGIN + pathFor(lang, 'home'),
-        name: lang === 'fa' ? 'معراج میرزایی (Meraj Mirzaei) — مهندس میکس و مسترینگ، لندن · Miragesohi' : 'Meraj Mirzaei (معراج میرزایی) — Mix & Mastering Engineer, London · Miragesohi',
+        name: lang === 'fa' ? 'معراج میرزایی (Meraj Mirzaei) — پرودیوسر و مهندس میکس و مستر، لندن · Miragesohi' : 'Meraj Mirzaei (معراج میرزایی) — Producer & Mix/Mastering Engineer, London · Miragesohi',
         inLanguage: lang,
         mainEntity: { '@id': PERSON_ID },
       };
@@ -440,7 +440,7 @@ function buildPageNode(slug, lang) {
         '@type': 'AboutPage',
         '@id': SITE_ORIGIN + pathFor(lang, 'about') + '#webpage',
         url: SITE_ORIGIN + pathFor(lang, 'about'),
-        name: lang === 'fa' ? 'درباره من — معراج میرزایی، لندن' : 'About — Meraj Mirzaei, Mix & Mastering Engineer, London',
+        name: lang === 'fa' ? 'درباره من — معراج میرزایی، لندن' : 'About — Meraj Mirzaei, Producer & Mix/Mastering Engineer, London',
         inLanguage: lang,
         mainEntity: { '@id': PERSON_ID },
       };
@@ -449,7 +449,7 @@ function buildPageNode(slug, lang) {
         '@type': 'CollectionPage',
         '@id': SITE_ORIGIN + pathFor(lang, 'credits') + '#webpage',
         url: SITE_ORIGIN + pathFor(lang, 'credits'),
-        name: lang === 'fa' ? 'کارنامه — معراج میرزایی | مهندس میکس و مسترینگ' : 'Credits — Meraj Mirzaei | Mix & Mastering Engineer',
+        name: lang === 'fa' ? 'کارنامه — معراج میرزایی | پرودیوسر و مهندس میکس و مستر' : 'Credits — Meraj Mirzaei | Producer & Mix/Mastering Engineer',
         inLanguage: lang,
         about: { '@id': PERSON_ID },
       };
@@ -849,11 +849,11 @@ function buildRecordingDescriptionText(entry, lang) {
   if (lang === 'fa') {
     return roleName
       ? `«${title}» از ${artist}${yearPart} — نقش معراج میرزایی: ${roleName}.`
-      : `«${title}» از ${artist}${yearPart} — از کارنامه معراج میرزایی، مهندس میکس و مسترینگ.`;
+      : `«${title}» از ${artist}${yearPart} — از کارنامه معراج میرزایی، پرودیوسر و مهندس میکس و مستر.`;
   }
   return roleName
     ? `"${title}" by ${artist}${yearPart} — Meraj Mirzaei's credit: ${roleName}.`
-    : `"${title}" by ${artist}${yearPart} — from Meraj Mirzaei's Mix & Mastering credits.`;
+    : `"${title}" by ${artist}${yearPart} — from the credits of Meraj Mirzaei, producer and mix & mastering engineer.`;
 }
 
 // Escapes `text`, but wraps any occurrence of `foreignName` in <bdi>
