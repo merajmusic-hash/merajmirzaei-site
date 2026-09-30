@@ -1157,6 +1157,40 @@ async function buildEntityGraph(pathname, env) {
     return { lang, slug, nodes, ...base };
   }
 
+  const photoMatch = /^gallery\/([a-z0-9][a-z0-9-]*)$/.exec(slug);
+  if (photoMatch) {
+    const items = await readGalleryReadOnly(env);
+    const found = items ? findGalleryPhoto(items, photoMatch[1]) : null;
+    if (found && found.exact) {
+      const { list, i } = found;
+      const index = buildGalleryPeopleIndex(await readCreditsReadOnly(env));
+      const { images, extraNodes } = buildGalleryImageGraph([list[i]], lang, index);
+      const pageUrl = SITE_ORIGIN + base.canonicalPath;
+      const image = { ...images[0], '@id': pageUrl + '#image' };
+      const { heading, title } = galleryPhotoTexts(list[i], i, list.length, lang, index);
+      nodes.push(...extraNodes);
+      nodes.push(image);
+      nodes.push({
+        '@type': 'ItemPage',
+        '@id': pageUrl + '#webpage',
+        url: pageUrl,
+        name: title,
+        inLanguage: lang,
+        primaryImageOfPage: { '@id': image['@id'] },
+        about: image.about || { '@id': PERSON_ID },
+      });
+      nodes.push({
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: NAV_LABELS.home[lang], item: SITE_ORIGIN + pathFor(lang, 'home') },
+          { '@type': 'ListItem', position: 2, name: NAV_LABELS.gallery[lang], item: SITE_ORIGIN + pathFor(lang, 'gallery') },
+          { '@type': 'ListItem', position: 3, name: heading, item: pageUrl },
+        ],
+      });
+    }
+    return { lang, slug, nodes, ...base };
+  }
+
   const recSlug = parseRecordingSlug(slug);
   if (recSlug) {
     const creditsData = await readCreditsReadOnly(env);
@@ -1428,7 +1462,9 @@ async function applyEntitySeo(response, env, pathname, ogImageOverride) {
     const galleryItems = await readGalleryReadOnly(env);
     if (galleryItems) {
       const peopleIndex = buildGalleryPeopleIndex(await readCreditsReadOnly(env));
-      rewriter = rewriter.on('div#gallery', new SetInnerHtml(buildGalleryHtml(galleryItems, lang, peopleIndex)));
+      rewriter = rewriter
+        .on('div#gallery', new SetInnerHtml(buildGalleryHtml(galleryItems, lang, peopleIndex)))
+        .on('body', new HeadInjector(buildGalleryViewerJson(galleryItems, lang, peopleIndex)));
     }
   }
 
@@ -1492,6 +1528,41 @@ async function tryServeRecordingPage(env, pathname) {
 }
 
 const STORY_PATH_RE = /^\/(fa\/)?(credits|releases)\/([a-z0-9-]+)\/about\/?$/;
+
+// A gallery photo's own page (/gallery/<slug>, /fa/gallery/<slug>): the
+// gallery page itself as the shell, with <main> replaced by that one photo
+// large, its names and caption, and previous/next links — so every photo
+// has an address of its own, titled with the names of who is in it.
+const GALLERY_PHOTO_PATH_RE = /^\/(fa\/)?gallery\/([a-z0-9][a-z0-9-]{0,160})\/?$/;
+
+async function tryServeGalleryPhotoPage(env, pathname) {
+  const m = GALLERY_PHOTO_PATH_RE.exec(pathname);
+  if (!m) return null;
+  const lang = m[1] ? 'fa' : 'en';
+  const items = await readGalleryReadOnly(env);
+  if (!items) return null;
+  const found = findGalleryPhoto(items, m[2]);
+  if (!found) return null;
+  const { list, i } = found;
+  const canonical = pathFor(lang, 'gallery/' + galleryPhotoSlug(list[i]));
+  if (!found.exact || pathname !== canonical) return Response.redirect(SITE_ORIGIN + canonical, 301);
+
+  const shellRes = await env.ASSETS.fetch(new Request('https://internal' + (lang === 'fa' ? '/fa/' : '/') + 'gallery.html'));
+  if (!shellRes.ok) return null;
+  const index = buildGalleryPeopleIndex(await readCreditsReadOnly(env));
+  const { title, description } = galleryPhotoTexts(list[i], i, list.length, lang, index);
+
+  const stage1 = new HTMLRewriter()
+    .on('title', new ReplaceText(title))
+    .on('meta[name="description"]', new SetAttribute('content', description))
+    .on('meta[property="og:title"]', new SetAttribute('content', title))
+    .on('meta[property="og:description"]', new SetAttribute('content', description))
+    .on('meta[property="og:type"]', new SetAttribute('content', 'article'))
+    .on('main', new ReplaceElement(renderGalleryPhotoContent(list, i, lang, index)))
+    .on('body', new HeadInjector(buildGalleryViewerJson(items, lang, index)))
+    .transform(shellRes);
+  return applyEntitySeo(stage1, env, pathname, SITE_ORIGIN + list[i].src);
+}
 
 async function tryServeStoryPage(env, pathname) {
   const m = STORY_PATH_RE.exec(pathname);
@@ -2086,6 +2157,12 @@ function galleryAltText(e, lang, index) {
   return [who, cap].filter(Boolean).join(' — ') || (lang === 'fa' ? 'معراج میرزایی — گالری' : 'Meraj Mirzaei — gallery');
 }
 
+// Each photo's own page: /gallery/<file name without extension>, e.g.
+// /gallery/kamyar-meraj-mirzaei-mun4r1rxmbn (see tryServeGalleryPhotoPage).
+function galleryPhotoSlug(e) {
+  return e.src.split('/').pop().replace(/\.(?:jpg|png|webp)$/, '');
+}
+
 function buildGalleryHtml(items, lang, index) {
   return sortedGalleryItems(items).map((e, i) => {
     const cap = galleryCaption(e, lang);
@@ -2095,11 +2172,107 @@ function buildGalleryHtml(items, lang, index) {
         ? '<a href="' + escapeHtmlAttr(p.href) + '">' + escapeHtmlAttr(p.label) + '</a>'
         : '<span>' + escapeHtmlAttr(p.label) + '</span>')).join(' · ') + '</span>'
       : '';
-    return '\n    <figure><img src="' + escapeHtmlAttr(e.src) + '" alt="' + escapeHtmlAttr(galleryAltText(e, lang, index)) + '"'
-      + (i < 3 ? '' : ' loading="lazy"') + ' decoding="async">'
+    const href = pathFor(lang, 'gallery/' + galleryPhotoSlug(e));
+    return '\n    <figure><a class="gal-open" href="' + escapeHtmlAttr(href) + '" data-i="' + i + '">'
+      + '<img src="' + escapeHtmlAttr(e.src) + '" alt="' + escapeHtmlAttr(galleryAltText(e, lang, index)) + '"'
+      + (i < 3 ? '' : ' loading="lazy"') + ' decoding="async"></a>'
       + (cap || peopleHtml ? '<figcaption>' + escapeHtmlAttr(cap) + peopleHtml + '</figcaption>' : '')
       + '</figure>';
   }).join('') + '\n  ';
+}
+
+// What the enlarge-and-zoom viewer (/gallery.js) needs, embedded in the
+// page as JSON: every photo's image, its own page, caption and names.
+function buildGalleryViewerJson(items, lang, index) {
+  const data = {
+    lang,
+    items: sortedGalleryItems(items).map((e) => ({
+      href: pathFor(lang, 'gallery/' + galleryPhotoSlug(e)),
+      src: e.src,
+      alt: galleryAltText(e, lang, index),
+      caption: galleryCaption(e, lang),
+      people: (Array.isArray(e.people) ? e.people : []).map((n) => {
+        const p = resolveGalleryPerson(n, lang, index);
+        return { label: p.label, href: p.href };
+      }),
+    })),
+  };
+  return '<script type="application/json" id="galleryData">'
+    + JSON.stringify(data).replace(/</g, '\\u003c') + '</script>\n';
+}
+
+const GALLERY_PHOTO_LABELS = {
+  en: { gallery: 'Gallery', photo: 'Photo', prev: 'Previous', next: 'Next', featuring: 'Featuring', from: 'A photo from the Meraj Mirzaei gallery' },
+  fa: { gallery: 'گالری', photo: 'عکس', prev: 'قبلی', next: 'بعدی', featuring: 'در این عکس', from: 'عکسی از گالری معراج میرزایی' },
+};
+
+function faDigits(n) {
+  return String(n).replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[d]);
+}
+
+// Finds a photo by its page slug. A photo whose file was renamed (its
+// names changed) is still found by the unique ending of its old name, so
+// the caller can redirect old links to the new address.
+function findGalleryPhoto(items, slug) {
+  const list = sortedGalleryItems(items);
+  let i = list.findIndex((e) => galleryPhotoSlug(e) === slug);
+  if (i >= 0) return { list, i, exact: true };
+  const suffix = slug.includes('-') ? slug.split('-').pop() : '';
+  if (suffix.length >= 8) {
+    i = list.findIndex((e) => {
+      const own = galleryPhotoSlug(e);
+      return own.includes('-') && own.split('-').pop() === suffix;
+    });
+    if (i >= 0) return { list, i, exact: false };
+  }
+  return null;
+}
+
+function galleryPhotoTexts(e, i, total, lang, index) {
+  const L = GALLERY_PHOTO_LABELS[lang];
+  const people = (Array.isArray(e.people) ? e.people : []).map((n) => resolveGalleryPerson(n, lang, index).label);
+  const who = people.join(lang === 'fa' ? '، ' : ', ');
+  const cap = galleryCaption(e, lang);
+  const num = L.photo + ' ' + (lang === 'fa' ? faDigits(i + 1) : String(i + 1));
+  const heading = [who, cap].filter(Boolean).join(' — ') || num;
+  const title = (heading === num ? num : heading + ' — ' + num) + ' | ' + L.gallery + (who ? '' : ' — ' + (lang === 'fa' ? 'معراج میرزایی' : 'Meraj Mirzaei'));
+  const description = L.from + (who ? ' — ' + L.featuring + ': ' + who : '') + (cap ? ' — ' + cap : '') + '.';
+  return { heading, title, description, num };
+}
+
+function renderGalleryPhotoContent(list, i, lang, index) {
+  const L = GALLERY_PHOTO_LABELS[lang];
+  const e = list[i];
+  const { heading } = galleryPhotoTexts(e, i, list.length, lang, index);
+  const cap = galleryCaption(e, lang);
+  const people = (Array.isArray(e.people) ? e.people : []).map((n) => resolveGalleryPerson(n, lang, index));
+  const peopleHtml = people.length
+    ? '<span class="people">' + people.map((p) => (p.href
+      ? '<a href="' + escapeHtmlAttr(p.href) + '">' + escapeHtmlAttr(p.label) + '</a>'
+      : '<span>' + escapeHtmlAttr(p.label) + '</span>')).join(' · ') + '</span>'
+    : '';
+  const self = pathFor(lang, 'gallery/' + galleryPhotoSlug(e));
+  const prev = list[(i - 1 + list.length) % list.length];
+  const next = list[(i + 1) % list.length];
+  const count = lang === 'fa' ? faDigits(i + 1) + ' / ' + faDigits(list.length) : (i + 1) + ' / ' + list.length;
+  const nav = list.length > 1
+    ? '<nav class="gp-nav">'
+      + '<a rel="prev" href="' + escapeHtmlAttr(pathFor(lang, 'gallery/' + galleryPhotoSlug(prev))) + '">' + (lang === 'fa' ? '› ' : '‹ ') + escapeHtmlAttr(L.prev) + '</a>'
+      + '<span class="gp-count">' + count + '</span>'
+      + '<a rel="next" href="' + escapeHtmlAttr(pathFor(lang, 'gallery/' + galleryPhotoSlug(next))) + '">' + escapeHtmlAttr(L.next) + (lang === 'fa' ? ' ‹' : ' ›') + '</a>'
+      + '</nav>'
+    : '';
+  return `<main class="wrap">
+<section class="gphoto">
+  <div class="rail"><p class="eyebrow"><a href="${escapeHtmlAttr(pathFor(lang, 'gallery'))}">${lang === 'fa' ? '› ' : '‹ '}${escapeHtmlAttr(L.gallery)}</a></p><div class="ticks"></div><div class="peak"></div></div>
+  <h1 class="gp-h">${escapeHtmlAttr(heading)}</h1>
+  <figure class="gp-fig">
+    <a class="gal-open" href="${escapeHtmlAttr(self)}" data-i="${i}"><img src="${escapeHtmlAttr(e.src)}" alt="${escapeHtmlAttr(galleryAltText(e, lang, index))}" decoding="async"></a>
+    ${cap || peopleHtml ? '<figcaption>' + escapeHtmlAttr(cap) + peopleHtml + '</figcaption>' : ''}
+  </figure>
+  ${nav}
+</section>
+</main>`;
 }
 
 // Structured data for the gallery page: every photo as an ImageObject that
@@ -3089,13 +3262,22 @@ async function buildSitemapXml(env) {
   // The gallery photos are listed as images of the two gallery pages
   // (Google's image sitemap extension), so they're found and indexed.
   const galleryItems = await readGalleryReadOnly(env);
-  const galleryImages = galleryItems ? sortedGalleryItems(galleryItems).map((e) => SITE_ORIGIN + e.src) : [];
+  const gallerySorted = galleryItems ? sortedGalleryItems(galleryItems) : [];
+  const galleryImages = gallerySorted.map((e) => SITE_ORIGIN + e.src);
   const galleryLocs = new Set([SITE_ORIGIN + pathFor('en', 'gallery'), SITE_ORIGIN + pathFor('fa', 'gallery')]);
+  // ...and each photo's own page, with just that photo.
+  const photoPageImage = new Map();
+  for (const e of gallerySorted) {
+    for (const lang of ['en', 'fa']) {
+      const loc = SITE_ORIGIN + pathFor(lang, 'gallery/' + galleryPhotoSlug(e));
+      urls.push({ loc, priority: '0.4' });
+      photoPageImage.set(loc, SITE_ORIGIN + e.src);
+    }
+  }
 
   const body = urls.map((u) => {
-    const images = galleryLocs.has(u.loc)
-      ? galleryImages.map((img) => `<image:image><image:loc>${escapeHtmlAttr(img)}</image:loc></image:image>`).join('')
-      : '';
+    const imgs = galleryLocs.has(u.loc) ? galleryImages : (photoPageImage.has(u.loc) ? [photoPageImage.get(u.loc)] : []);
+    const images = imgs.map((img) => `<image:image><image:loc>${escapeHtmlAttr(img)}</image:loc></image:image>`).join('');
     return `  <url><loc>${escapeHtmlAttr(u.loc)}</loc><priority>${u.priority}</priority>${images}</url>`;
   }).join('\n');
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${body}\n</urlset>\n`;
@@ -3313,6 +3495,14 @@ export default {
       if (storyResponse) return storyResponse;
     } catch (err) {
       console.error('tryServeStoryPage failed', err && err.stack || err);
+    }
+
+    // A gallery photo's own page (/gallery/<slug>) — same pattern.
+    try {
+      const photoResponse = await tryServeGalleryPhotoPage(env, pathname);
+      if (photoResponse) return photoResponse;
+    } catch (err) {
+      console.error('tryServeGalleryPhotoPage failed', err && err.stack || err);
     }
 
     // Everything else: the public static site, with entity/structured-data

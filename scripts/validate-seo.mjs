@@ -245,6 +245,25 @@ for (const artistSlug of artistSlugs) {
 }
 ok(`checked ${artistSlugs.size} artist page requests x 2 languages`);
 
+// Gallery photo pages: one per photo in data/gallery.json, both languages.
+const galleryData = await (await fetch(BASE + '/data/gallery.json')).json().catch(() => []);
+let photoPageCount = 0;
+for (const e of Array.isArray(galleryData) ? galleryData : []) {
+  if (!e || typeof e.src !== 'string') continue;
+  const slug = e.src.split('/').pop().replace(/\.(?:jpg|png|webp)$/, '');
+  for (const lang of ['en', 'fa']) {
+    const path = (lang === 'fa' ? '/fa/' : '/') + 'gallery/' + slug;
+    const result = await checkPage(path);
+    if (result) {
+      const ip = result.graph.filter((n) => n['@type'] === 'ItemPage');
+      if (ip.length !== 1) fail(`${path}: expected exactly 1 ItemPage node, found ${ip.length}`);
+    }
+    expectedSitemapUrls.add('https://merajmirzaei.com' + path);
+    photoPageCount++;
+  }
+}
+ok(`checked ${photoPageCount} gallery photo page requests`);
+
 // An untitled ("Pending") entry must not get a fabricated page.
 const untitled = creditsData.find((e) => !(e.title_en || e.title_fa));
 if (untitled) {
