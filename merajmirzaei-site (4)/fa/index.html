@@ -66,7 +66,7 @@ img{max-width:100%}
   text-transform:uppercase;color:var(--brass);margin:0;white-space:nowrap}
 
 /* hero */
-.hero{padding:44px 0 40px;border-bottom:1px solid var(--line)}
+.hero{padding:44px var(--pad) 40px;border-bottom:1px solid var(--line)}
 .herogrid{display:grid;grid-template-columns:1fr;gap:30px;align-items:center}
 .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.22em;
   text-transform:uppercase;color:var(--brass);margin:0 0 18px}
@@ -83,6 +83,9 @@ body.fa .hero h1{font-family:var(--fa);font-weight:800;letter-spacing:0;
 body:not(.fa) .altname{text-align:left}
 body.fa .altname{text-align:right}
 .hr{width:64px;height:1px;background:var(--brass);margin:0 0 20px}
+/* the name as a logo image (Persian calligraphy + gold Miragesohi signature) */
+.hero h1.logo-h1{margin:0 0 22px;line-height:0}
+.logo-h1 img{display:block;width:100%;max-width:520px;height:auto}
 .role{font-size:clamp(16px,4.2vw,18px);line-height:1.75;max-width:46ch;
   margin:0 0 26px;color:#B9B5AE}
 .role b{color:var(--text);font-weight:600}
@@ -340,7 +343,7 @@ footer a:hover{color:var(--brass)}
   .masthead .wrap{display:flex;align-items:center;gap:28px;height:66px}
   .bar{padding:0;gap:20px}
   .nav{padding:0;overflow-x:auto;min-width:0;margin-inline-start:auto}
-  .hero{padding:76px 0 60px}
+  .hero{padding:76px var(--pad) 60px}
   .herogrid{grid-template-columns:1.15fr .85fr;gap:56px}
   section{padding:66px 0}
   .grid{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
@@ -415,8 +418,7 @@ footer a:hover{color:var(--brass)}
   <div class="herogrid">
     <div>
       <p class="kicker">مهندس میکس و مسترینگ — لندن</p>
-      <h1>معراج<br>میرزایی</h1>
-      <p class="altname" dir="ltr">Miragesohi</p>
+      <h1 class="logo-h1"><img src="/images/brand/logo-fa-1200.webp" srcset="/images/brand/logo-fa-700.webp 700w, /images/brand/logo-fa-1200.webp 1200w" sizes="(min-width:700px) 520px, 88vw" width="1200" height="664" alt="معراج میرزایی — Miragesohi" fetchpriority="high" decoding="async"></h1>
       <div class="hr"></div>
       <p class="role">بیست سال میکس و مسترینگ — <b>ایرانی، الکترونیک و بین‌المللی</b> — از استودیوی خودم در لندن.</p>
       <div class="linkrow"><a class="btn" href="credits.html">دیدن کارنامه</a></div>

@@ -80,7 +80,7 @@ img{max-width:100%}
   text-transform:uppercase;color:var(--brass);margin:0;white-space:nowrap}
 
 /* hero */
-.hero{padding:44px 0 40px;border-bottom:1px solid var(--line)}
+.hero{padding:44px var(--pad) 40px;border-bottom:1px solid var(--line)}
 .herogrid{display:grid;grid-template-columns:1fr;gap:30px;align-items:center}
 .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.22em;
   text-transform:uppercase;color:var(--brass);margin:0 0 18px}
@@ -97,6 +97,9 @@ body.fa .hero h1{font-family:var(--fa);font-weight:800;letter-spacing:0;
 body:not(.fa) .altname{text-align:left}
 body.fa .altname{text-align:right}
 .hr{width:64px;height:1px;background:var(--brass);margin:0 0 20px}
+/* the artist name as the gold signature from the logo */
+.altlogo{line-height:0}
+.altlogo img{display:block;width:100%;max-width:300px;height:auto}
 .role{font-size:clamp(16px,4.2vw,18px);line-height:1.75;max-width:46ch;
   margin:0 0 26px;color:#B9B5AE}
 .role b{color:var(--text);font-weight:600}
@@ -354,7 +357,7 @@ footer a:hover{color:var(--brass)}
   .masthead .wrap{display:flex;align-items:center;gap:28px;height:66px}
   .bar{padding:0;gap:20px}
   .nav{padding:0;overflow-x:auto;min-width:0;margin-inline-start:auto}
-  .hero{padding:76px 0 60px}
+  .hero{padding:76px var(--pad) 60px}
   .herogrid{grid-template-columns:1.15fr .85fr;gap:56px}
   section{padding:66px 0}
   .grid{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
@@ -430,7 +433,7 @@ footer a:hover{color:var(--brass)}
     <div>
       <p class="kicker">Mix &amp; Mastering Engineer — London</p>
       <h1>Meraj<br>Mirzaei</h1>
-      <p class="altname" dir="ltr">Miragesohi</p>
+      <p class="altname altlogo"><img src="/images/brand/miragesohi-1000.webp" srcset="/images/brand/miragesohi-600.webp 600w, /images/brand/miragesohi-1000.webp 1000w" sizes="(min-width:700px) 300px, 64vw" width="1000" height="277" alt="Miragesohi" decoding="async"></p>
       <div class="hr"></div>
       <p class="role">Twenty years mixing and mastering records — <b>Persian, electronic and international</b> — from my studio in London.</p>
       <div class="linkrow"><a class="btn" href="credits.html">See the credit sheet</a></div>
