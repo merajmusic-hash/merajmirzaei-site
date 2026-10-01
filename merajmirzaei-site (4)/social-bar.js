@@ -22,7 +22,7 @@
       svg: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.5 3.5 2.6 10.8c-.9.35-.9 1.6.02 1.93l4.53 1.62 1.74 5.6c.22.7 1.1.9 1.6.36l2.5-2.7 4.9 3.6c.66.48 1.6.12 1.77-.68l3.2-15.1c.2-.9-.7-1.6-1.4-1.35Zm-3.2 3.4-8.4 7.6-.3 3.1-1.3-4.2 9.6-7.2c.2-.15.45.1.4.35Z"/></svg>' },
     { name: 'YouTube', url: 'https://youtube.com/@miragesohi',
       svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10.3 9.1v5.8l5.1-2.9Z" fill="currentColor" stroke="none"/></svg>' },
-    { name: 'Spotify', url: 'https://open.spotify.com/artist/3wHa2wASrgywhttuHleFl1',
+    { name: 'Spotify', url: 'https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9',
       svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M7 10.2c3.2-.9 6.8-.6 9.6 1" stroke-linecap="round"/><path d="M7.6 13c2.7-.7 5.7-.4 8 .9" stroke-linecap="round"/><path d="M8.2 15.6c2.1-.5 4.5-.3 6.3.7" stroke-linecap="round"/></svg>' },
   ];
 
