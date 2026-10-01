@@ -43,6 +43,12 @@ const MEDIA_RELEASE_TAG = 'site-media';
 // gallery removes any file in it that the saved list no longer uses.
 const GALLERY_PATH = 'merajmirzaei-site (4)/data/gallery.json';
 const GALLERY_DIR = 'merajmirzaei-site (4)/images/gallery';
+// The song lyrics ("متن ترانه"): one pasted text per song, edited on the
+// admin panel's "Lyrics" tab and published as that song's own /lyrics page
+// (see tryServeLyricsPage). A list of {id, lyrics}, where id is the song's id
+// in credits.json. Deliberately a file of its own: credits.json is downloaded
+// by every visitor of the credits pages, and the lyrics would multiply its size.
+const LYRICS_PATH = 'merajmirzaei-site (4)/data/lyrics.json';
 const GITHUB_API = 'https://api.github.com';
 
 const SESSION_COOKIE = 'mm_admin_session';
@@ -232,6 +238,24 @@ function validateEntries(data) {
         if (l.url && !/^https?:\/\//i.test(l.url)) return `entry ${i}: link url must be http(s)`;
       }
     }
+  }
+  return null;
+}
+
+const LYRICS_MAX_CHARS = 30000;
+
+function validateLyrics(data) {
+  if (!Array.isArray(data)) return 'data must be an array';
+  if (data.length > 2000) return 'too many entries';
+  const seen = new Set();
+  for (let i = 0; i < data.length; i++) {
+    const e = data[i];
+    if (!e || typeof e !== 'object') return `entry ${i} is not an object`;
+    if (typeof e.id !== 'string' || !e.id.trim() || e.id.length > 200) return `entry ${i}: id must be a non-empty string`;
+    if (seen.has(e.id)) return `entry ${i}: duplicate id "${e.id}"`;
+    seen.add(e.id);
+    if (typeof e.lyrics !== 'string') return `entry ${i}: lyrics must be a string`;
+    if (e.lyrics.length > LYRICS_MAX_CHARS) return `entry ${i}: lyrics too long (max ${LYRICS_MAX_CHARS} characters)`;
   }
   return null;
 }
@@ -702,6 +726,92 @@ function findStoryForEntry(stories, entry) {
   return null;
 }
 
+// ---------------------------------------------------------------------
+// lyrics — data/lyrics.json, a list of {id, lyrics} keyed by the song's id
+// in credits.json (see LYRICS_PATH). A song with lyrics gets its own page at
+// /credits/<id>/lyrics (or /releases/<id>/lyrics, and the /fa/ twins), a
+// "Lyrics" button on its main page, a link on its artist's page and a
+// sitemap entry. A song without lyrics gets none of these — no empty,
+// thin pages.
+// ---------------------------------------------------------------------
+
+// Tidies what was pasted into the admin box, for display only (the stored
+// text stays exactly as pasted): one newline style, no BOM / zero-width
+// space, no trailing spaces, at most one blank line between stanzas, and the
+// Arabic forms of ك / ي turned into the Persian ک / ی — the keyboard
+// layouts and websites lyrics get copied from mix them up, and a Persian
+// search for the title would otherwise miss the page. (ZWNJ is kept: it is
+// part of Persian spelling.)
+function cleanLyricsText(s) {
+  return String(s == null ? '' : s)
+    .replace(/\r\n?/g, '\n')
+    .replace(/[﻿​]/g, '')
+    .replace(/ك/g, 'ک')
+    .replace(/ي/g, 'ی')
+    .split('\n').map((line) => line.replace(/^[ \t ]+|[ \t ]+$/g, '')).join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+// song id (slugified, like every recording URL) -> cleaned lyrics text.
+// Empty map when the file is missing or unreadable, so a problem here can
+// only ever remove the lyrics features, never break a page.
+async function readLyricsReadOnly(env) {
+  const map = new Map();
+  try {
+    const res = await env.ASSETS.fetch(new Request('https://internal/data/lyrics.json'));
+    if (!res.ok) return map;
+    const data = await res.json();
+    if (!Array.isArray(data)) return map;
+    for (const row of data) {
+      if (!row || typeof row.id !== 'string' || typeof row.lyrics !== 'string') continue;
+      const text = cleanLyricsText(row.lyrics);
+      if (text) map.set(slugifyName(row.id), text);
+    }
+  } catch (e) {
+    // fall through with whatever was read
+  }
+  return map;
+}
+
+function lyricsFor(lyricsMap, entry) {
+  return (lyricsMap && lyricsMap.get(slugifyName(entry.id))) || null;
+}
+
+// Stanzas are separated by a blank line; lines within one by a line break.
+function lyricsStanzas(text) {
+  return String(text).split(/\n{2,}/)
+    .map((block) => block.split('\n').map((l) => l.trim()).filter(Boolean))
+    .filter((lines) => lines.length);
+}
+
+// Each stanza is its own <p dir="auto"> (so a line that starts in Persian
+// reads right-to-left even on an English page, and a stray English line
+// inside Persian lyrics does not flip the stanza).
+function renderLyricsHtml(text) {
+  return lyricsStanzas(text)
+    .map((lines) => '<p dir="auto">' + lines.map((l) => escapeHtmlAttr(l)).join('<br>') + '</p>')
+    .join('');
+}
+
+// 'fa' when most of the letters are Arabic-script (Persian), else 'en'.
+function lyricsLang(text) {
+  const arabic = (String(text).match(/[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/g) || []).length;
+  const latin = (String(text).match(/[A-Za-z]/g) || []).length;
+  return arabic > latin ? 'fa' : 'en';
+}
+
+function lyricsFirstLine(text, max) {
+  const first = String(text).split('\n').map((l) => l.trim()).find(Boolean) || '';
+  return first.length > max ? first.slice(0, max - 1).trimEnd() + '…' : first;
+}
+
+// The hub a song's own pages live under: credits if it is on the credits
+// page, otherwise releases (an entry may be on either or both).
+function primaryHubFor(entry) {
+  return Array.isArray(entry.pages) && entry.pages.includes('credits') ? 'credits' : 'releases';
+}
+
 // Builds one MusicRecording/MusicAlbum node, reusing a stable per-artist
 // @id (and the single canonical MIRAGE node) instead of a fresh anonymous
 // artist object every time. Shared by the hub pages' full recordings
@@ -812,6 +922,11 @@ function parseStorySlug(slug) {
   return m ? { hub: m[1], recordingSlug: m[2] } : null;
 }
 
+function parseLyricsSlug(slug) {
+  const m = /^(credits|releases)\/([a-z0-9-]+)\/lyrics$/.exec(slug);
+  return m ? { hub: m[1], recordingSlug: m[2] } : null;
+}
+
 // Every titled credits-page entry for one artist, in hub order — the
 // source both the per-artist page and the artist's @id in the
 // entity-SEO graph are built from.
@@ -831,8 +946,8 @@ const RELEASE_TYPE_LABELS = {
 };
 
 const RECORDING_LABELS = {
-  en: { listenSpotify: 'Listen on Spotify', watchYoutube: 'Watch on YouTube', partOf: 'From the release', year: 'Year', home: 'Studio home', artistSpotify: 'Artist on Spotify', aboutTrack: 'About this track', backToTrack: 'Back to track' },
-  fa: { listenSpotify: 'شنیدن در اسپاتیفای', watchYoutube: 'تماشا در یوتیوب', partOf: 'بخشی از', year: 'سال', home: 'صفحه اصلی استودیو', artistSpotify: 'صفحه هنرمند در اسپاتیفای', aboutTrack: 'درباره این قطعه', backToTrack: 'بازگشت به قطعه' },
+  en: { listenSpotify: 'Listen on Spotify', watchYoutube: 'Watch on YouTube', partOf: 'From the release', year: 'Year', home: 'Studio home', artistSpotify: 'Artist on Spotify', aboutTrack: 'About this track', backToTrack: 'Back to track', lyrics: 'Lyrics' },
+  fa: { listenSpotify: 'شنیدن در اسپاتیفای', watchYoutube: 'تماشا در یوتیوب', partOf: 'بخشی از', year: 'سال', home: 'صفحه اصلی استودیو', artistSpotify: 'صفحه هنرمند در اسپاتیفای', aboutTrack: 'درباره این قطعه', backToTrack: 'بازگشت به قطعه', lyrics: 'متن ترانه' },
 };
 
 function buildRecordingTitleText(entry, lang) {
@@ -878,7 +993,25 @@ function escapeWithBdiIsolation(text, foreignName) {
 // (.article/.atitle/.stand/.hr/.linkrow/.btn) — no new visual component,
 // only plain inline layout glue where two of those existing pieces sit
 // side by side.
-function renderRecordingDetailContent(entry, lang, hub, story) {
+// The always-visible Spotify / YouTube players of a recording — shared by
+// the recording's own page and its lyrics page (read the words while it
+// plays). Only a verified, playable link ever becomes an embed.
+function recordingEmbeds(entry, title) {
+  const sp = verifiedSameAs(entry) ? findLink(entry.links, RE_SPOTIFY_PLAYABLE) : null;
+  const spMatch = sp ? sp.url.match(RE_SPOTIFY_PLAYABLE) : null;
+  const spotifyEmbed = spMatch
+    ? `<div class="player" style="margin-bottom:18px"><iframe src="https://open.spotify.com/embed/${spMatch[1].toLowerCase()}/${spMatch[2]}?utm_source=generator&theme=0" width="100%" height="152" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture" loading="lazy" title="${escapeHtmlAttr(title)}"></iframe></div>`
+    : '';
+
+  const ytLink = findLink(entry.links, RE_YOUTUBE_WATCH);
+  const ytMatch = ytLink ? ytLink.url.match(RE_YOUTUBE_WATCH) : null;
+  const youtubeEmbed = ytMatch
+    ? `<div class="ytwrap" style="margin-bottom:18px"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}?rel=0" title="${escapeHtmlAttr(title)}" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`
+    : '';
+  return { sp, ytLink, spotifyEmbed, youtubeEmbed };
+}
+
+function renderRecordingDetailContent(entry, lang, hub, story, hasLyrics) {
   const L = RECORDING_LABELS[lang];
   const title = lang === 'fa' ? (entry.title_fa || entry.title_en) : (entry.title_en || entry.title_fa);
   const titleAlt = lang === 'fa' ? entry.title_en : entry.title_fa;
@@ -916,17 +1049,7 @@ function renderRecordingDetailContent(entry, lang, hub, story) {
     ? `<div class="tc-cover" style="width:180px;height:180px;flex:none"><img class="tc-img" src="${escapeHtmlAttr(entry.cover_url)}" alt="" loading="lazy"></div>`
     : '';
 
-  const sp = verifiedSameAs(entry) ? findLink(entry.links, RE_SPOTIFY_PLAYABLE) : null;
-  const spMatch = sp ? sp.url.match(RE_SPOTIFY_PLAYABLE) : null;
-  const spotifyEmbed = spMatch
-    ? `<div class="player" style="margin-bottom:18px"><iframe src="https://open.spotify.com/embed/${spMatch[1].toLowerCase()}/${spMatch[2]}?utm_source=generator&theme=0" width="100%" height="152" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture" loading="lazy" title="${escapeHtmlAttr(title)}"></iframe></div>`
-    : '';
-
-  const ytLink = findLink(entry.links, RE_YOUTUBE_WATCH);
-  const ytMatch = ytLink ? ytLink.url.match(RE_YOUTUBE_WATCH) : null;
-  const youtubeEmbed = ytMatch
-    ? `<div class="ytwrap" style="margin-bottom:18px"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}?rel=0" title="${escapeHtmlAttr(title)}" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`
-    : '';
+  const { sp, ytLink, spotifyEmbed, youtubeEmbed } = recordingEmbeds(entry, title);
 
   // "About this track" now lives on its own page (/credits/<slug>/about)
   // rather than inline here — this button is the only trace of it on the
@@ -942,6 +1065,10 @@ function renderRecordingDetailContent(entry, lang, hub, story) {
   if (artistLink) linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(artistLink.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(L.artistSpotify)}</a>`);
   for (const l of extraLinksFor(entry)) {
     linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(l.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(extraLinkLabel(l, lang))}</a>`);
+  }
+  if (hasLyrics) {
+    const lyricsHref = pathFor(lang, hub + '/' + slugifyName(entry.id) + '/lyrics');
+    linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(lyricsHref)}">${escapeHtmlAttr(L.lyrics)}</a>`);
   }
   if (aboutHref) linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(aboutHref)}">${escapeHtmlAttr(L.aboutTrack)}</a>`);
   linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(pathFor(lang, hub))}">${escapeHtmlAttr((lang === 'fa' ? 'بازگشت به ' : 'Back to ') + NAV_LABELS[hub][lang])}</a>`);
@@ -1011,6 +1138,208 @@ function buildStoryPageContent(entry, lang, hub, storyText) {
 }
 
 // ---------------------------------------------------------------------
+// the lyrics page — /credits/<slug>/lyrics (and /fa/, /releases/
+// equivalents). One page, one job: the full lyrics of one song, written to
+// be found by the searches people actually make ("متن آهنگ <title>",
+// "<title> lyrics", "<artist> <title>"): the title, the artist and both
+// spellings of each (Persian and English) appear in the <title>, the
+// description, the headings and the text, once each, plus the song's
+// player, links back to the song / artist / credits pages, and links to the
+// same artist's other lyrics.
+// ---------------------------------------------------------------------
+
+const LYRICS_PAGE_LABELS = {
+  en: {
+    moreBy: 'More lyrics by',
+    moreByArtist: 'More by',
+    note: 'The lyrics are shown for reference. All rights belong to the lyricist and the rights holders.',
+    moreLyricsSuffix: ' lyrics',
+  },
+  fa: {
+    moreBy: 'ترانه‌های دیگر از',
+    moreByArtist: 'آثار دیگر',
+    note: 'این ترانه برای مرجع نمایش داده می‌شود. همهٔ حقوق آن متعلق به ترانه‌سرا و صاحبان اثر است.',
+    moreLyricsSuffix: '',
+  },
+};
+
+const LYRICS_ROLE_NOUNS = {
+  en: { role_arrangement: 'arrangement', role_production: 'production', role_mix: 'mixing', role_mastering: 'mastering' },
+  fa: { role_arrangement: 'تنظیم', role_production: 'پروداکشن', role_mix: 'میکس', role_mastering: 'مسترینگ' },
+};
+
+// "a", "a and b", "a, b and c" — and the Persian "a، b و c".
+function joinNatural(list, lang) {
+  const and = lang === 'fa' ? ' و ' : ' and ';
+  const comma = lang === 'fa' ? '، ' : ', ';
+  if (list.length <= 1) return list.join('');
+  return list.slice(0, -1).join(comma) + and + list[list.length - 1];
+}
+
+function lyricsNames(entry, lang) {
+  const title = lang === 'fa' ? (entry.title_fa || entry.title_en) : (entry.title_en || entry.title_fa);
+  const titleAlt = lang === 'fa' ? entry.title_en : entry.title_fa;
+  const artist = lang === 'fa' ? (entry.artist_fa || entry.artist_en) : (entry.artist_en || entry.artist_fa);
+  const artistAlt = lang === 'fa' ? entry.artist_en : entry.artist_fa;
+  return { title, titleAlt: titleAlt && titleAlt !== title ? titleAlt : '', artist, artistAlt: artistAlt && artistAlt !== artist ? artistAlt : '' };
+}
+
+// "Mixing and mastering by Meraj Mirzaei." / «میکس و مسترینگ این اثر کار معراج میرزایی است.»
+function lyricsRoleSentence(entry, lang, withBdi) {
+  const nouns = ROLE_ORDER.filter((f) => entry[f]).map((f) => LYRICS_ROLE_NOUNS[lang][f]);
+  const miragesohiTag = entry.artist_en === 'Miragesohi' ? '' : ' (Miragesohi)';
+  const nameHtml = withBdi
+    ? '<bdi>' + (lang === 'fa' ? 'معراج میرزایی' : 'Meraj Mirzaei') + '</bdi>' + (miragesohiTag ? ' (<bdi>Miragesohi</bdi>)' : '')
+    : (lang === 'fa' ? 'معراج میرزایی' : 'Meraj Mirzaei') + miragesohiTag;
+  if (!nouns.length) {
+    return lang === 'fa'
+      ? `از کارنامهٔ ${nameHtml}، پرودیوسر و مهندس میکس و مستر.`
+      : `From the credits of ${nameHtml}, producer and mix & mastering engineer.`;
+  }
+  const list = joinNatural(nouns, lang);
+  if (lang === 'fa') return `${list} این اثر کار ${nameHtml} است.`;
+  return `${list.charAt(0).toUpperCase() + list.slice(1)} by ${nameHtml}.`;
+}
+
+function buildLyricsTitleText(entry, lang) {
+  const { title, artist } = lyricsNames(entry, lang);
+  return lang === 'fa'
+    ? `متن آهنگ ${title} از ${artist} | معراج میرزایی`
+    : `${title} Lyrics — ${artist} | Meraj Mirzaei`;
+}
+
+function buildLyricsDescriptionText(entry, lang, text) {
+  const { title, artist } = lyricsNames(entry, lang);
+  const first = lyricsFirstLine(text, 70);
+  const yearPart = entry.year ? ` (${entry.year})` : '';
+  const roleText = lyricsRoleSentence(entry, lang, false);
+  return lang === 'fa'
+    ? `متن کامل ترانهٔ «${title}» با صدای ${artist}${yearPart}: «${first}» — ${roleText}`
+    : `Full lyrics of "${title}" by ${artist}${yearPart}: "${first}" — ${roleText}`;
+}
+
+// Other songs with lyrics by the same artist (never the song itself), in
+// credits order — the internal links that carry a visitor (and a crawler)
+// from one lyrics page to the next.
+function otherLyricsByArtist(creditsData, lyricsMap, entry) {
+  if (!entry.artist_en) return [];
+  return creditsData
+    .filter((e) => e !== entry
+      && e.id !== entry.id
+      && e.artist_en === entry.artist_en
+      && Array.isArray(e.pages)
+      && (e.title_en || e.title_fa)
+      && lyricsFor(lyricsMap, e))
+    .sort((a, b) => (a.order || 0) - (b.order || 0))
+    .slice(0, 12);
+}
+
+const LYRICS_PAGE_CSS = '<style>'
+  + '.lyr-h2{font-family:var(--display);font-weight:800;font-size:22px;line-height:1.5;margin:40px 0 14px;color:var(--text)}'
+  + 'body.fa .lyr-h2{font-family:var(--fa)}'
+  + '.lyr-text{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:24px 26px}'
+  + '.lyr-text p{font-size:18.5px;line-height:2.1;color:var(--text);margin:0 0 26px;max-width:none}'
+  + '.lyr-text p:last-child{margin-bottom:0}'
+  + '.lyr-text[lang="fa"]{direction:rtl}'
+  + '.lyr-text[lang="fa"] p{font-family:var(--fa)}'
+  + '.lyr-note{font-size:13px;color:var(--muted);margin:14px 0 0}'
+  + '@media(max-width:760px){.article{padding-left:var(--pad);padding-right:var(--pad)}}'
+  + '@media(max-width:520px){.lyr-text{padding:18px 16px}.lyr-text p{font-size:17px;line-height:2}}'
+  + '</style>\n';
+
+function buildLyricsPageContent(entry, lang, hub, text, opts) {
+  const { creditsData, lyricsMap, hasStory } = opts;
+  const L = RECORDING_LABELS[lang];
+  const P = LYRICS_PAGE_LABELS[lang];
+  const { title, titleAlt, artist, artistAlt } = lyricsNames(entry, lang);
+  const releaseTypeLabel = entry.release_type ? RELEASE_TYPE_LABELS[lang][entry.release_type] : '';
+  const textLang = lyricsLang(text);
+
+  const trackHref = pathFor(lang, hub + '/' + slugifyName(entry.id));
+  const artistPageHref = hub === 'credits' && entry.artist_en && entry.artist_en !== 'Miragesohi'
+    ? pathFor(lang, 'credits/artist/' + slugifyName(entry.artist_en))
+    : null;
+  const bdi = (s) => '<bdi>' + escapeHtmlAttr(s) + '</bdi>';
+
+  const eyebrowParts = [artist, entry.year, releaseTypeLabel].filter(Boolean);
+  const eyebrow = escapeHtmlAttr(eyebrowParts.join(' · '));
+
+  const h1 = lang === 'fa' ? `متن آهنگ «${title}»` : `${title} — Lyrics`;
+  // The other language's spelling of the same names, as the subtitle: a
+  // Persian page also answers the English search and the other way round.
+  let standText = '';
+  if (titleAlt || artistAlt) {
+    const altTitle = titleAlt || title;
+    const altArtist = artistAlt || artist;
+    // One isolated run in the other language's direction, so the phrase
+    // keeps its own word order inside a page of the opposite direction.
+    standText = lang === 'fa'
+      ? `<bdi dir="ltr">${escapeHtmlAttr(altTitle)} lyrics — ${escapeHtmlAttr(altArtist)}</bdi>`
+      : `<bdi dir="rtl">متن آهنگ ${escapeHtmlAttr(altTitle)} — ${escapeHtmlAttr(altArtist)}</bdi>`;
+  }
+
+  // The intro names the song and artist in both languages, once, in a real
+  // sentence (not a keyword list), with the year and the credit.
+  const titleBoth = bdi(title) + (titleAlt ? ' (' + bdi(titleAlt) + ')' : '');
+  const artistBoth = bdi(artist) + (artistAlt ? ' (' + bdi(artistAlt) + ')' : '');
+  const yearPart = entry.year ? ' (' + escapeHtmlAttr(String(entry.year)) + ')' : '';
+  const intro = lang === 'fa'
+    ? `متن کامل ترانهٔ «${titleBoth}» با صدای ${artistBoth}${yearPart}. ${lyricsRoleSentence(entry, lang, true)}`
+    : `Full lyrics of “${titleBoth}” by ${artistBoth}${yearPart}. ${lyricsRoleSentence(entry, lang, true)}`;
+
+  const coverBlock = isLikelyImageUrl(entry.cover_url)
+    ? `<div class="tc-cover" style="width:120px;height:120px;flex:none"><img class="tc-img" src="${escapeHtmlAttr(entry.cover_url)}" alt="${escapeHtmlAttr(title + ' — ' + artist)}" loading="lazy"></div>`
+    : '';
+
+  const { sp, ytLink, spotifyEmbed, youtubeEmbed } = recordingEmbeds(entry, title);
+
+  const linkButtons = [];
+  linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(trackHref)}">${escapeHtmlAttr(L.backToTrack)}</a>`);
+  if (artistPageHref) {
+    linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(artistPageHref)}">${escapeHtmlAttr(P.moreByArtist + ' ' + artist)}</a>`);
+  } else if (entry.artist_en === 'Miragesohi') {
+    linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(pathFor(lang, 'miragesohi'))}">${escapeHtmlAttr(NAV_LABELS.miragesohi[lang])}</a>`);
+  }
+  if (hasStory) {
+    linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(pathFor(lang, hub + '/' + slugifyName(entry.id) + '/about'))}">${escapeHtmlAttr(L.aboutTrack)}</a>`);
+  }
+  if (sp) linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(sp.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(L.listenSpotify)}</a>`);
+  if (ytLink) linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(ytLink.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(L.watchYoutube)}</a>`);
+  linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(pathFor(lang, hub))}">${escapeHtmlAttr((lang === 'fa' ? 'بازگشت به ' : 'Back to ') + NAV_LABELS[hub][lang])}</a>`);
+  linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(pathFor(lang, 'home'))}">${escapeHtmlAttr(L.home)}</a>`);
+
+  const others = otherLyricsByArtist(creditsData, lyricsMap, entry);
+  const moreBlock = others.length
+    ? `<h2 class="lyr-h2">${escapeHtmlAttr(P.moreBy + ' ' + artist)}</h2>`
+      + `<nav class="roster" aria-label="${escapeHtmlAttr(P.moreBy + ' ' + artist)}">`
+      + others.map((o) => {
+        const oTitle = lang === 'fa' ? (o.title_fa || o.title_en) : (o.title_en || o.title_fa);
+        const label = lang === 'fa' ? `متن آهنگ ${oTitle}` : `${oTitle}${P.moreLyricsSuffix}`;
+        return `<a href="${escapeHtmlAttr(pathFor(lang, primaryHubFor(o) + '/' + slugifyName(o.id) + '/lyrics'))}">${escapeHtmlAttr(label)}</a>`;
+      }).join('')
+      + '</nav>'
+    : '';
+
+  return '<main class="wrap article">'
+    + `<p class="eyebrow" style="margin-bottom:14px"><a href="${escapeHtmlAttr(trackHref)}">${escapeHtmlAttr(title)}</a> · ${eyebrow}</p>`
+    + `<h1 class="atitle">${escapeHtmlAttr(h1)}</h1>`
+    + (standText ? `<p class="stand">${standText}</p>` : '')
+    + '<div class="hr"></div>'
+    + `<div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;margin:0 0 28px">`
+    + coverBlock
+    + `<div style="flex:1;min-width:240px"><p>${intro}</p></div>`
+    + '</div>'
+    + spotifyEmbed
+    + youtubeEmbed
+    + `<h2 class="lyr-h2" style="margin-top:12px">${escapeHtmlAttr(L.lyrics + ' — ' + title)}</h2>`
+    + `<div class="lyr-text" lang="${textLang}" dir="${textLang === 'fa' ? 'rtl' : 'ltr'}">${renderLyricsHtml(text)}</div>`
+    + `<p class="lyr-note">${escapeHtmlAttr(P.note)}</p>`
+    + `<div class="linkrow" style="margin-top:28px">${linkButtons.join('')}</div>`
+    + moreBlock
+    + '</main>';
+}
+
+// ---------------------------------------------------------------------
 // per-artist pages — /credits/artist/<slug> (and /fa/ equivalent),
 // listing every titled recording credited to Meraj Mirzaei for one
 // artist. Same shell-reuse approach as an individual recording page:
@@ -1032,7 +1361,7 @@ function buildArtistDescriptionText(entries, lang) {
     : `${n} recording${n === 1 ? '' : 's'} with ${primary} credited to Meraj Mirzaei — mix, mastering, arrangement or production.`;
 }
 
-function buildArtistPageContent(entries, lang, artistSlug) {
+function buildArtistPageContent(entries, lang, artistSlug, lyricsMap) {
   const first = entries[0];
   const primary = lang === 'fa' ? (first.artist_fa || first.artist_en) : (first.artist_en || first.artist_fa);
   const alt = lang === 'fa' ? first.artist_en : first.artist_fa;
@@ -1063,13 +1392,22 @@ function buildArtistPageContent(entries, lang, artistSlug) {
       .map((f) => `<span class="tc-role">${escapeHtmlAttr(ROLE_NAME_LABELS[lang][f])}</span>`)
       .join('');
     const rolesBlock = roleBadges ? `<span class="tc-roles">${roleBadges}</span>` : '';
+    // A small button under the card when the song has lyrics — the same
+    // look as the "Full page" button on the credits cards.
+    const lyricsLink = lyricsFor(lyricsMap, entry)
+      ? '<a class="tc-permalink" href="' + escapeHtmlAttr(pathFor(lang, 'credits/' + slugifyName(entry.id) + '/lyrics')) + '" '
+        + 'style="display:block;margin-top:8px;text-align:center;font-family:var(--mono);font-size:10px;'
+        + 'letter-spacing:.1em;text-transform:uppercase;text-decoration:none;color:var(--brass);'
+        + 'border:1px solid var(--brass);border-radius:2px;padding:7px 10px">'
+        + escapeHtmlAttr(RECORDING_LABELS[lang].lyrics) + '</a>'
+      : '';
     return '<div class="trackcard-wrap"><a class="trackcard" href="' + escapeHtmlAttr(href) + '">'
       + cover
       + '<div class="tc-body">'
       + `<span class="tc-title">${escapeHtmlAttr(title)}</span>`
       + (titleAlt ? `<span class="tc-title-alt">${escapeHtmlAttr(titleAlt)}</span>` : '')
       + rolesBlock
-      + '</div></a></div>';
+      + '</div></a>' + lyricsLink + '</div>';
   }).join('');
 
   const linkButtons = [];
@@ -1116,6 +1454,65 @@ async function buildEntityGraph(pathname, env) {
           { '@type': 'ListItem', position: 2, name: NAV_LABELS[storySlug.hub][lang], item: SITE_ORIGIN + pathFor(lang, storySlug.hub) },
           { '@type': 'ListItem', position: 3, name: title, item: trackUrl },
           { '@type': 'ListItem', position: 4, name: RECORDING_LABELS[lang].aboutTrack, item: pageUrl },
+        ],
+      });
+    }
+    return { lang, slug, nodes, ...base };
+  }
+
+  const lyricsSlug = parseLyricsSlug(slug);
+  if (lyricsSlug) {
+    const creditsData = await readCreditsReadOnly(env);
+    const entry = creditsData ? findEntryBySlug(creditsData, lyricsSlug.hub, lyricsSlug.recordingSlug) : null;
+    const text = entry ? lyricsFor(await readLyricsReadOnly(env), entry) : null;
+    if (entry && text) {
+      const title = lang === 'fa' ? (entry.title_fa || entry.title_en) : (entry.title_en || entry.title_fa);
+      const trackUrl = SITE_ORIGIN + pathFor(lang, lyricsSlug.hub + '/' + lyricsSlug.recordingSlug);
+      const pageUrl = SITE_ORIGIN + base.canonicalPath;
+      const recordingId = trackUrl + '#recording';
+      const compositionId = pageUrl + '#composition';
+      const textLang = lyricsLang(text);
+
+      // The recording the lyrics belong to, so the reference below resolves
+      // inside this page's own graph.
+      const rec = buildOneRecordingNode(entry, lang);
+      if (rec) {
+        rec.node['@id'] = recordingId;
+        rec.node.url = trackUrl;
+        if (rec.artistNode) nodes.push(rec.artistNode);
+        if (rec.usesMirage) nodes.push(buildMirageNode());
+        nodes.push(rec.node);
+      }
+
+      const composition = {
+        '@type': 'MusicComposition',
+        '@id': compositionId,
+        name: title,
+        inLanguage: textLang,
+        lyrics: { '@type': 'CreativeWork', inLanguage: textLang, text },
+      };
+      const altTitle = lang === 'fa' ? entry.title_en : entry.title_fa;
+      if (altTitle && altTitle !== title) composition.alternateName = altTitle;
+      if (rec) composition.recordedAs = { '@id': recordingId };
+      nodes.push(composition);
+
+      nodes.push({
+        '@type': 'WebPage',
+        '@id': pageUrl + '#webpage',
+        url: pageUrl,
+        name: buildLyricsTitleText(entry, lang),
+        inLanguage: lang,
+        about: { '@id': compositionId },
+        mainEntity: { '@id': compositionId },
+        isPartOf: { '@id': trackUrl + '#webpage' },
+      });
+      nodes.push({
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: NAV_LABELS.home[lang], item: SITE_ORIGIN + pathFor(lang, 'home') },
+          { '@type': 'ListItem', position: 2, name: NAV_LABELS[lyricsSlug.hub][lang], item: SITE_ORIGIN + pathFor(lang, lyricsSlug.hub) },
+          { '@type': 'ListItem', position: 3, name: title, item: trackUrl },
+          { '@type': 'ListItem', position: 4, name: RECORDING_LABELS[lang].lyrics, item: pageUrl },
         ],
       });
     }
@@ -1504,10 +1901,11 @@ async function tryServeRecordingPage(env, pathname) {
 
   const storiesData = await readStoriesReadOnly(env);
   const story = storiesData ? findStoryForEntry(storiesData, entry) : null;
+  const hasLyrics = !!lyricsFor(await readLyricsReadOnly(env), entry);
 
   const titleText = buildRecordingTitleText(entry, lang);
   const descText = buildRecordingDescriptionText(entry, lang);
-  const mainHtml = renderRecordingDetailContent(entry, lang, hub, story);
+  const mainHtml = renderRecordingDetailContent(entry, lang, hub, story, hasLyrics);
   const ogImage = isLikelyImageUrl(entry.cover_url) ? absoluteCoverUrl(entry.cover_url) : PORTRAIT_URL;
 
   const detailRewriter = new HTMLRewriter()
@@ -1606,6 +2004,59 @@ async function tryServeStoryPage(env, pathname) {
   return applyEntitySeo(stage1, env, pathname);
 }
 
+const LYRICS_PATH_RE = /^\/(fa\/)?(credits|releases)\/([a-z0-9-]+)\/lyrics\/?$/;
+
+// A song's lyrics page. Exists only for a titled song that has lyrics in
+// data/lyrics.json — anything else falls through to a normal 404, so there
+// is never an empty or made-up page.
+async function tryServeLyricsPage(env, pathname) {
+  const m = LYRICS_PATH_RE.exec(pathname);
+  if (!m) return null;
+  const lang = m[1] ? 'fa' : 'en';
+  const hub = m[2];
+  const recordingSlug = m[3];
+
+  const creditsData = await readCreditsReadOnly(env);
+  if (!creditsData) return null;
+  const entry = findEntryBySlug(creditsData, hub, recordingSlug);
+  if (!entry) return null;
+
+  const lyricsMap = await readLyricsReadOnly(env);
+  const text = lyricsFor(lyricsMap, entry);
+  if (!text) return null;
+
+  const shellPath = (lang === 'fa' ? '/fa/' : '/') + hub + '.html';
+  const shellRes = await env.ASSETS.fetch(new Request('https://internal' + shellPath));
+  if (!shellRes.ok) return null;
+
+  const storiesData = await readStoriesReadOnly(env);
+  const story = storiesData ? findStoryForEntry(storiesData, entry) : null;
+  const storyText = story ? (lang === 'fa' ? story.story_fa : story.story_en) : null;
+  const hasStory = !!(storyText && String(storyText).trim());
+
+  const titleText = buildLyricsTitleText(entry, lang);
+  const descText = buildLyricsDescriptionText(entry, lang, text);
+  const mainHtml = buildLyricsPageContent(entry, lang, hub, text, { creditsData, lyricsMap, hasStory });
+  const ogImage = isLikelyImageUrl(entry.cover_url) ? absoluteCoverUrl(entry.cover_url) : PORTRAIT_URL;
+
+  const detailRewriter = new HTMLRewriter()
+    .on('title', new ReplaceText(titleText))
+    .on('meta[name="description"]', new SetAttribute('content', descText))
+    .on('meta[property="og:title"]', new SetAttribute('content', titleText))
+    .on('meta[property="og:description"]', new SetAttribute('content', descText))
+    .on('meta[property="og:type"]', new SetAttribute('content', 'article'))
+    .on('head', new HeadInjector(LYRICS_PAGE_CSS))
+    .on('main', new ReplaceElement(mainHtml))
+    .on('#creditsConfig', new RemoveElement())
+    .on('#playbackController', new RemoveElement())
+    .on('script[src="/credits-render.js"]', new RemoveElement())
+    .on('script[src="https://open.spotify.com/embed/iframe-api/v1"]', new RemoveElement())
+    .on('script[src="https://www.youtube.com/iframe_api"]', new RemoveElement());
+
+  const stage1 = detailRewriter.transform(shellRes);
+  return applyEntitySeo(stage1, env, pathname, ogImage);
+}
+
 const ARTIST_PATH_RE = /^\/(fa\/)?credits\/artist\/([a-z0-9-]+)\/?$/;
 
 async function tryServeArtistPage(env, pathname) {
@@ -1625,7 +2076,7 @@ async function tryServeArtistPage(env, pathname) {
 
   const titleText = buildArtistTitleText(entries, lang);
   const descText = buildArtistDescriptionText(entries, lang);
-  const mainHtml = buildArtistPageContent(entries, lang, artistSlug);
+  const mainHtml = buildArtistPageContent(entries, lang, artistSlug, await readLyricsReadOnly(env));
   const photo = entries.map((e) => e.artist_image).find(Boolean) || entries.map((e) => e.cover_url).find(Boolean);
   const ogImage = isLikelyImageUrl(photo) ? absoluteCoverUrl(photo) : PORTRAIT_URL;
 
@@ -1813,6 +2264,74 @@ async function handleSaveHomepage(request, env) {
       base64FromUtf8(text),
       sha || undefined,
       `Update homepage artist list via /admin`
+    );
+    return json({ ok: true, sha: result.content && result.content.sha });
+  } catch (e) {
+    if (e.status === 409) {
+      return json({ error: 'Someone else saved changes since you loaded this page. Reload and try again.' }, 409);
+    }
+    return json({ error: e.message || 'GitHub save failed' }, 502);
+  }
+}
+
+// ---------------------------------------------------------------------
+// Lyrics — data/lyrics.json (see LYRICS_PATH). Loaded and saved whole by
+// the admin panel's "Lyrics" tab, the same way as the homepage list.
+// ---------------------------------------------------------------------
+
+function utf8FromBase64(b64) {
+  const bin = atob(String(b64).replace(/\s/g, ''));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+// The Contents API only inlines files up to 1 MB; past that it answers with
+// empty content, and the raw media type is the way to get the text.
+async function ghGetFileText(env, file, path) {
+  if (file.content && file.encoding === 'base64') return utf8FromBase64(file.content);
+  const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}?ref=${GITHUB_BRANCH}`;
+  const res = await fetch(url, { headers: { ...ghHeaders(env), Accept: 'application/vnd.github.raw+json' } });
+  if (!res.ok) throw new Error(`GitHub GET ${path} failed: ${res.status}`);
+  return res.text();
+}
+
+async function handleGetLyrics(env) {
+  const file = await ghGetFile(env, LYRICS_PATH);
+  if (!file) return json({ data: [], sha: null });
+  let data;
+  try {
+    data = JSON.parse(await ghGetFileText(env, file, LYRICS_PATH));
+  } catch (e) {
+    return json({ error: 'data/lyrics.json could not be read: ' + e.message }, 500);
+  }
+  if (!Array.isArray(data)) return json({ error: 'data/lyrics.json is not a list' }, 500);
+  return json({ data, sha: file.sha });
+}
+
+async function handleSaveLyrics(request, env) {
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== 'object') return json({ error: 'Invalid request body' }, 400);
+  const { content, sha } = body;
+  const invalid = validateLyrics(content);
+  if (invalid) return json({ error: invalid }, 400);
+
+  // Only songs that actually have lyrics are stored; the text itself is
+  // kept as pasted (only the line endings are unified and the ends trimmed).
+  const rows = [];
+  for (const row of content) {
+    const lyrics = row.lyrics.replace(/\r\n?/g, '\n').trim();
+    if (lyrics) rows.push({ id: row.id, lyrics });
+  }
+
+  const text = JSON.stringify(rows, null, 2) + '\n';
+  try {
+    const result = await ghPutFile(
+      env,
+      LYRICS_PATH,
+      base64FromUtf8(text),
+      sha || undefined,
+      `Update song lyrics via /admin`
     );
     return json({ ok: true, sha: result.content && result.content.sha });
   } catch (e) {
@@ -3227,6 +3746,7 @@ async function buildSitemapXml(env) {
 
   const creditsData = await readCreditsReadOnly(env);
   const storiesData = creditsData ? await readStoriesReadOnly(env) : null;
+  const lyricsMap = creditsData ? await readLyricsReadOnly(env) : new Map();
   if (creditsData) {
     const artistSlugs = new Set();
     for (const hub of ['credits', 'releases']) {
@@ -3245,6 +3765,11 @@ async function buildSitemapXml(env) {
           if (story.story_fa && String(story.story_fa).trim()) {
             urls.push({ loc: SITE_ORIGIN + pathFor('fa', aboutSlug), priority: '0.5' });
           }
+        }
+
+        if (lyricsFor(lyricsMap, entry)) {
+          urls.push({ loc: SITE_ORIGIN + pathFor('en', slug + '/lyrics'), priority: '0.6' });
+          urls.push({ loc: SITE_ORIGIN + pathFor('fa', slug + '/lyrics'), priority: '0.6' });
         }
 
         if (hub === 'credits' && entry.artist_en && entry.artist_en !== 'Miragesohi') {
@@ -3309,6 +3834,14 @@ async function routeAdminRequest(request, env, pathname) {
   if (pathname === '/admin/api/save-homepage' && request.method === 'POST') {
     if (!env.GITHUB_TOKEN) return json({ error: 'Admin not fully configured (missing GITHUB_TOKEN)' }, 503);
     return handleSaveHomepage(request, env);
+  }
+  if (pathname === '/admin/api/lyrics' && request.method === 'GET') {
+    if (!env.GITHUB_TOKEN) return json({ error: 'Admin not fully configured (missing GITHUB_TOKEN)' }, 503);
+    return handleGetLyrics(env);
+  }
+  if (pathname === '/admin/api/save-lyrics' && request.method === 'POST') {
+    if (!env.GITHUB_TOKEN) return json({ error: 'Admin not fully configured (missing GITHUB_TOKEN)' }, 503);
+    return handleSaveLyrics(request, env);
   }
   if (pathname === '/admin/api/upload-image' && request.method === 'POST') {
     if (!env.GITHUB_TOKEN) return json({ error: 'Admin not fully configured (missing GITHUB_TOKEN)' }, 503);
@@ -3495,6 +4028,14 @@ export default {
       if (storyResponse) return storyResponse;
     } catch (err) {
       console.error('tryServeStoryPage failed', err && err.stack || err);
+    }
+
+    // A song's lyrics page (/credits/<slug>/lyrics) — same pattern.
+    try {
+      const lyricsResponse = await tryServeLyricsPage(env, pathname);
+      if (lyricsResponse) return lyricsResponse;
+    } catch (err) {
+      console.error('tryServeLyricsPage failed', err && err.stack || err);
     }
 
     // A gallery photo's own page (/gallery/<slug>) — same pattern.

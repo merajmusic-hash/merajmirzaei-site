@@ -14,6 +14,9 @@
 //   - hreflang en/fa/x-default are present and internally consistent
 //   - no duplicate @id values within a single page's @graph
 //   - no duplicate recording slugs in data/credits.json
+//   - a song with lyrics in data/lyrics.json has a lyrics page (both
+//     languages, one MusicComposition, linked from the song's own page);
+//     a song without lyrics has none (404)
 //   - an untitled ("Pending") entry's slug 404s rather than serving a
 //     fabricated page
 //   - sitemap.xml contains exactly the same canonical URL set (static
@@ -198,6 +201,16 @@ const artistSlugs = new Set();
 const storiesData = await (await fetch(BASE + '/data/song-stories.json')).json().catch(() => null);
 let storyPageCount = 0;
 
+// Songs that have lyrics in data/lyrics.json (keyed by the song's id).
+const lyricsData = await (await fetch(BASE + '/data/lyrics.json')).json().catch(() => []);
+const lyricSlugs = new Set(
+  (Array.isArray(lyricsData) ? lyricsData : [])
+    .filter((r) => r && typeof r.id === 'string' && typeof r.lyrics === 'string' && r.lyrics.trim())
+    .map((r) => slugify(r.id))
+);
+let lyricsPageCount = 0;
+let lyricsAbsentChecked = false;
+
 for (const hub of ['credits', 'releases']) {
   const entries = creditsData.filter((e) => Array.isArray(e.pages) && e.pages.includes(hub) && (e.title_en || e.title_fa));
   const slugs = entries.map((e) => slugify(e.id));
@@ -215,6 +228,32 @@ for (const hub of ['credits', 'releases']) {
 
     if (hub === 'credits' && entry.artist_en && entry.artist_en !== 'Miragesohi') {
       artistSlugs.add(slugify(entry.artist_en));
+    }
+
+    // Lyrics page: exists only for a song with lyrics, in both languages,
+    // with exactly one MusicComposition carrying the lyrics, and the song's
+    // own page links to it. A song without lyrics must 404 there.
+    for (const lang of ['en', 'fa']) {
+      const lyricsPath = (lang === 'fa' ? '/fa/' : '/') + hub + '/' + slug + '/lyrics';
+      if (lyricSlugs.has(slug)) {
+        const result = await checkPage(lyricsPath);
+        if (result) {
+          const comps = result.graph.filter((n) => n['@type'] === 'MusicComposition');
+          if (comps.length !== 1) fail(`${lyricsPath}: expected exactly 1 MusicComposition node, found ${comps.length}`);
+          else if (!comps[0].lyrics || !String(comps[0].lyrics.text || '').trim()) fail(`${lyricsPath}: MusicComposition has no lyrics text`);
+          const crumbs = result.graph.filter((n) => n['@type'] === 'BreadcrumbList');
+          if (crumbs.length !== 1 || crumbs[0].itemListElement.length !== 4) fail(`${lyricsPath}: expected a 4-level BreadcrumbList`);
+        }
+        const trackHtml = await (await fetch(BASE + (lang === 'fa' ? '/fa/' : '/') + hub + '/' + slug)).text();
+        if (!trackHtml.includes('href="' + lyricsPath + '"')) fail(`${lyricsPath}: the song's own page has no link to it`);
+        expectedSitemapUrls.add('https://merajmirzaei.com' + lyricsPath);
+        lyricsPageCount++;
+      } else if (!lyricsAbsentChecked) {
+        const res = await fetch(BASE + lyricsPath);
+        if (res.status !== 404) fail(`${lyricsPath}: song without lyrics should 404, got ${res.status}`);
+        else ok(`${lyricsPath}: song without lyrics correctly 404s (no empty page)`);
+        lyricsAbsentChecked = true;
+      }
     }
 
     const story = Array.isArray(storiesData) ? findStoryForEntry(storiesData, entry) : null;
@@ -235,6 +274,7 @@ for (const hub of ['credits', 'releases']) {
 }
 ok(`checked ${recordingPageCount} recording page requests (${recordingPageCount / 2} titled entries x 2 languages)`);
 ok(`checked ${storyPageCount} "about this track" story page requests`);
+ok(`checked ${lyricsPageCount} lyrics page requests`);
 
 for (const artistSlug of artistSlugs) {
   for (const lang of ['en', 'fa']) {
