@@ -1891,6 +1891,15 @@ async function applyEntitySeo(response, env, pathname, ogImageOverride) {
     rewriter = rewriter.on('div#creditsRoot', new BeforeElementInjector(artistIndexHtml));
   }
 
+  if (canonicalPath === pathFor('en', 'releases') || canonicalPath === pathFor('fa', 'releases')) {
+    const creditsData = await readCreditsReadOnly(env);
+    if (creditsData) {
+      rewriter = rewriter
+        .on('div#releasesRoot', new SetInnerHtml(buildReleaseCardsHtml(creditsData, lang)))
+        .on('div#releasesRoot', new SetAttribute('data-server-rendered', 'true'));
+    }
+  }
+
   // The gallery page's photos come from data/gallery.json (edited on the
   // admin "Gallery" tab), not from the page's own markup.
   if (canonicalPath === pathFor('en', 'gallery') || canonicalPath === pathFor('fa', 'gallery')) {
@@ -3764,6 +3773,29 @@ const ARTIST_INDEX_LABELS = {
   en: { heading: 'Artists', intro: 'Every artist with a credit on this sheet — each name opens that artist\u2019s own page.' },
   fa: { heading: 'آرتیست‌ها', intro: 'همهٔ آرتیست‌هایی که در این کارنامه کردیتی دارند — هر نام، صفحهٔ همان آرتیست را باز می‌کند.' },
 };
+
+// Initial release links work before the existing player script starts.
+function buildReleaseCardsHtml(creditsData, lang) {
+  return titledEntriesFor(creditsData, 'releases').map((entry) => {
+    const title = lang === 'fa' ? (entry.title_fa || entry.title_en) : (entry.title_en || entry.title_fa);
+    const alt = lang === 'fa' ? entry.title_en : entry.title_fa;
+    const artist = lang === 'fa' ? (entry.artist_fa || entry.artist_en) : (entry.artist_en || entry.artist_fa);
+    const href = pathFor(lang, 'releases/' + slugifyName(entry.id));
+    const cover = isLikelyImageUrl(entry.cover_url)
+      ? `<div class="tc-cover"><img class="tc-img" src="${escapeHtmlAttr(entry.cover_url)}" alt="" loading="lazy" width="120" height="120"></div>`
+      : '';
+    const roles = ROLE_ORDER.filter((f) => entry[f])
+      .map((f) => `<span class="tc-role">${escapeHtmlAttr(ROLE_NAME_LABELS[lang][f])}</span>`).join('');
+    return '<div class="trackcard-wrap">'
+      + `<a class="trackcard" href="${escapeHtmlAttr(href)}" style="text-decoration:none;color:inherit">`
+      + cover + '<div class="tc-body">'
+      + `<span class="tc-artist">${escapeHtmlAttr(artist || '')}</span>`
+      + `<span class="tc-title">${escapeHtmlAttr(title)}</span>`
+      + (alt && alt !== title ? `<span class="tc-title-alt">${escapeHtmlAttr(alt)}</span>` : '')
+      + `<span class="tc-roles">${roles}</span></div>`
+      + '<span class="tc-play-spacer" aria-hidden="true"></span></a></div>';
+  }).join('');
+}
 
 async function buildArtistIndexHtml(env, lang) {
   const creditsData = await readCreditsReadOnly(env);

@@ -20,7 +20,7 @@ function worker(fetchImpl = () => { throw new Error('Unexpected fetch'); }, extr
     .replace('export default {', 'const worker = {') + `
     globalThis.api = { worker, handleSave, handleGetCredits, handleSaveGallery, handleLoginPost,
       handleAdminListSubmissions, handleAdminListComments, serveMedia, buildEntityGraph, buildSitemapXml,
-      LEGACY_CREDITS_REVISION, LEGACY_CREDITS_REF, signSession };`, context);
+      LEGACY_CREDITS_REVISION, LEGACY_CREDITS_REF, signSession, buildReleaseCardsHtml };`, context);
   return context.api;
 }
 
@@ -279,4 +279,34 @@ test('uncached full video GET reuses its body for the cache', async () => {
     {waitUntil:(p) => waits.push(p)},['','123','video','mp4']);
   assert.equal(await res.text(),'video'); await Promise.all(waits);
   assert.equal(calls,2); assert.equal(cached,'video');
+});
+
+
+test('release cards expose localized song links without private fields', () => {
+  const api = worker();
+  const data = [
+    {id:'my-song', pages:['releases'], title_en:'My song', title_fa:'آهنگ من', artist_en:'Miragesohi', artist_fa:'میراژسهی', notes:'PRIVATE NOTE', role_production:true},
+    {id:'other-song', pages:['credits'], title_en:'Other song'},
+    {id:'untitled', pages:['releases'], title_en:''},
+  ];
+  const html = api.buildReleaseCardsHtml(data, 'fa');
+  assert.match(html, /href="\/fa\/releases\/my-song"/);
+  assert.match(html, /آهنگ من/);
+  assert.match(html, /میراژسهی/);
+  assert.doesNotMatch(html, /PRIVATE NOTE|other-song|untitled/);
+});
+
+test('release cards escape stored names and survive a failed client fetch', async () => {
+  const api = worker();
+  const html = api.buildReleaseCardsHtml([{id:'test', pages:['releases'], title_en:'<script>alert(1)</script>', artist_en:'A & B'}], 'en');
+  assert.doesNotMatch(html, /<script>/);
+  assert.match(html, /&lt;script&gt;/);
+  assert.match(html, /A &amp; B/);
+  const renderer = fs.readFileSync(new URL('../merajmirzaei-site (4)/credits-render.js', import.meta.url), 'utf8');
+  const preserved = {getAttribute:() => 'true', innerHTML:'server links'};
+  const context = vm.createContext({window:{__CREDITS_CONFIG__:{lang:'en',page:'releases',mount:'#releasesRoot'}},
+    document:{querySelector:() => preserved}, fetch:() => Promise.reject(new Error('offline'))});
+  vm.runInContext(renderer, context);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(preserved.innerHTML, 'server links');
 });

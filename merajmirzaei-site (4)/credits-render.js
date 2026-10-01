@@ -453,7 +453,9 @@
       document.dispatchEvent(new CustomEvent('credits-rendered'));
     })
     .catch(function(err){
-      mount.innerHTML = '<p style="color:var(--muted)">Could not load data right now.</p>';
+      if(mount.getAttribute('data-server-rendered') !== 'true'){
+        mount.innerHTML = '<p style="color:var(--muted)">Could not load data right now.</p>';
+      }
       if (window.console) console.error('credits-render:', err);
     });
 })();
