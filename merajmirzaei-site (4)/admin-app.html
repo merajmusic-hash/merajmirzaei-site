@@ -182,6 +182,26 @@
   .nr-progress .bar{height:100%;width:0;background:var(--brass);transition:width .2s}
   .nr-progress .pct{font-size:11px;color:var(--brass);min-width:34px;text-align:right}
 
+  /* Lyrics tab */
+  .lyr-top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;margin:0 0 12px;font-size:12px}
+  .lyr-top label{display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+  .lyr-table{min-width:760px;table-layout:auto;width:100%;max-width:1100px}
+  .lyr-table td{vertical-align:top}
+  .lyr-song{min-width:190px;width:240px}
+  .lyr-title{font-weight:700;font-size:13px;line-height:1.4}
+  .lyr-sub{color:var(--muted);font-size:11px;line-height:1.5;margin-top:2px}
+  .lyr-badge{display:inline-block;font-size:10px;padding:0 5px;border:1px solid var(--line);border-radius:3px;margin-inline-start:6px;color:var(--muted)}
+  .lyr-status{margin-top:8px;font-size:11px;color:var(--muted)}
+  .lyr-status.has{color:var(--good)}
+  .lyr-links{margin-top:6px;font-size:11px;display:flex;gap:10px}
+  .lyr-links a{color:var(--brass)}
+  td.lyr-box{width:100%}
+  td.lyr-box textarea.lyr-text{display:block;width:100%;min-height:46px;height:46px;resize:vertical;font-size:14px;line-height:1.8;
+    background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:4px;padding:6px 9px}
+  td.lyr-box textarea.lyr-text:focus{height:340px;border-color:var(--brass);outline:none}
+  td.lyr-box textarea.lyr-text.filled{border-color:rgba(127,191,127,.45)}
+  .col-lyrics{white-space:nowrap}
+
   /* Gallery tab */
   .gal-table{min-width:760px;table-layout:auto}
   .gal-table td{vertical-align:middle}
@@ -204,6 +224,7 @@
   <div class="tabs" id="tabs">
     <button type="button" class="tab-btn" data-tab="credits">Credits</button>
     <button type="button" class="tab-btn" data-tab="releases">Releases</button>
+    <button type="button" class="tab-btn" data-tab="lyrics">Lyrics</button>
     <button type="button" class="tab-btn" data-tab="homepage">Homepage</button>
     <button type="button" class="tab-btn" data-tab="newrelease">New Release</button>
     <button type="button" class="tab-btn" data-tab="gallery">Gallery</button>
@@ -237,6 +258,8 @@
     homepage: [], homepageSha: null, homepageDirty: false,
     newReleases: [], newReleasesSha: null, newReleasesDirty: false,
     gallery: [], gallerySha: null, galleryDirty: false, galUpload: null,
+    lyrics: {}, lyricsSaved: {}, lyricsSha: null, lyricsDirty: false, lyricsLoaded: false, lyricsError: null,
+    lyricsOnlyEmpty: false, lyricsFocus: null,
     comments: { pending: [], approved: [], loaded: false, error: null },
     subs: { list: [], loaded: false, error: null, mail: null, emailConfigured: false },
     tab: /^#submissions$/.test(location.hash) ? 'submissions' : 'credits',
@@ -273,7 +296,7 @@
   }
 
   function setDirty(){
-    var v = state.entriesDirty || state.homepageDirty || state.newReleasesDirty || state.galleryDirty;
+    var v = state.entriesDirty || state.homepageDirty || state.newReleasesDirty || state.galleryDirty || state.lyricsDirty;
     dirtyFlag.style.display = v ? '' : 'none';
   }
 
@@ -402,6 +425,7 @@
       + '<td><select data-id="'+esc(entry.id)+'" data-field="status_genius">'
         + STATUS_VALUES.map(function(v){ return opt(v, entry.status_genius); }).join('') + '</select></td>'
       + '<td><textarea data-id="'+esc(entry.id)+'" data-field="notes">'+esc(entry.notes)+'</textarea></td>'
+      + '<td class="col-lyrics">'+lyricsCellHtml(entry)+'</td>'
       + '<td><button type="button" class="small danger" data-id="'+esc(entry.id)+'" data-action="delete-row">Delete</button></td>';
     return tr;
   }
@@ -415,7 +439,7 @@
     22,  140, 56,  120, 120, 120, 120, 110, 120, 64, 100,
     40,  40,  40,  46,
     260, 64,  150,
-    120, 120, 120, 170, 80,
+    120, 120, 120, 170, 96, 80,
   ];
 
   function entryColgroup(){
@@ -429,7 +453,7 @@
       + '<th class="col-narrow">Year</th><th>Label</th>'
       + '<th class="col-check">Arr.</th><th class="col-check">Prod.</th><th class="col-check">Mix</th><th class="col-check">Master</th>'
       + '<th>Links</th><th class="col-narrow">Start (s)</th><th>Cover</th>'
-      + '<th>MusicBrainz</th><th>Discogs</th><th>Genius</th><th>Notes</th><th></th>';
+      + '<th>MusicBrainz</th><th>Discogs</th><th>Genius</th><th>Notes</th><th>Lyrics</th><th></th>';
   }
 
   function matchesFilter(entry, q){
@@ -645,6 +669,109 @@
 
   var homepageOidCounter = 0;
   function homepageOid(){ return 'h' + (++homepageOidCounter); }
+
+  // ---------------------------------------------------------------------
+  // Lyrics tab — data/lyrics.json: one pasted text per song. A song that has
+  // lyrics gets its own public Lyrics page (and a "Lyrics" button on its
+  // page); a song left empty gets nothing. Keyed by the song's id, kept in
+  // its own file and saved with the same Save button as everything else.
+  // ---------------------------------------------------------------------
+
+  function lyricsHas(id){ return !!String(state.lyrics[id] || '').trim(); }
+
+  function lyricsLineCount(id){
+    return String(state.lyrics[id] || '').split(/\r?\n/).filter(function(l){ return l.trim(); }).length;
+  }
+
+  function slugifyId(id){
+    return String(id || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
+
+  function lyricsSongs(){
+    return state.entries.filter(function(e){
+      return (e.title_en || e.title_fa) && (hasPage(e, 'credits') || hasPage(e, 'releases'));
+    }).sort(function(a, b){
+      var A = (a.artist_en || '').toLowerCase(), B = (b.artist_en || '').toLowerCase();
+      return A < B ? -1 : A > B ? 1 : byOrder(a, b);
+    });
+  }
+
+  // The small button at the end of every Credits / Releases row: jumps to
+  // that song's box in the Lyrics tab.
+  function lyricsCellHtml(entry){
+    if(!(entry.title_en || entry.title_fa)) return '<span class="hint">add a title first</span>';
+    var has = lyricsHas(entry.id);
+    return '<button type="button" class="small'+(has ? ' primary' : '')+'" data-action="goto-lyrics" data-id="'+esc(entry.id)+'">'
+      + (has ? '✓ Lyrics' : '+ Lyrics') + '</button>';
+  }
+
+  function lyricsStatusHtml(id){
+    return lyricsHas(id) ? '✓ ' + lyricsLineCount(id) + ' lines' : 'No lyrics yet';
+  }
+
+  function updateLyricsCount(){
+    var el = document.getElementById('lyrCount');
+    if(!el) return;
+    var songs = lyricsSongs();
+    var done = songs.filter(function(e){ return lyricsHas(e.id); }).length;
+    el.textContent = done + ' of ' + songs.length + ' songs have lyrics';
+  }
+
+  function lyricsRowHtml(e){
+    var hub = hasPage(e, 'credits') ? 'credits' : 'releases';
+    var slug = slugifyId(e.id);
+    var saved = !!state.lyricsSaved[e.id];
+    var title = e.title_en || e.title_fa;
+    var titleAlt = e.title_en && e.title_fa ? e.title_fa : '';
+    var artist = [e.artist_en, e.artist_fa && e.artist_fa !== e.artist_en ? e.artist_fa : ''].filter(Boolean).join(' · ');
+    return '<tr>'
+      + '<td class="lyr-song">'
+      + '<div class="lyr-title" dir="auto">'+esc(title)+'<span class="lyr-badge">'+(hub === 'credits' ? 'Credits' : 'Releases')+'</span></div>'
+      + (titleAlt ? '<div class="lyr-sub" dir="auto">'+esc(titleAlt)+'</div>' : '')
+      + '<div class="lyr-sub" dir="auto">'+esc(artist)+'</div>'
+      + '<div class="lyr-status'+(lyricsHas(e.id) ? ' has' : '')+'">'+esc(lyricsStatusHtml(e.id))+'</div>'
+      + (saved ? '<div class="lyr-links">Open page: <a href="/fa/'+hub+'/'+esc(slug)+'/lyrics" target="_blank" rel="noopener noreferrer">FA</a>'
+        + '<a href="/'+hub+'/'+esc(slug)+'/lyrics" target="_blank" rel="noopener noreferrer">EN</a></div>' : '')
+      + '</td>'
+      + '<td class="lyr-box"><textarea class="lyr-text'+(lyricsHas(e.id) ? ' filled' : '')+'" data-lyr="'+esc(e.id)+'" dir="auto" spellcheck="false" '
+      + 'placeholder="Paste the lyrics here · ترانه را اینجا پیست کن">'+esc(state.lyrics[e.id] || '')+'</textarea></td>'
+      + '</tr>';
+  }
+
+  function renderLyricsTab(){
+    filterNote.style.display = 'none';
+    if(!state.lyricsLoaded){
+      wrap.innerHTML = '<div class="msg err" style="margin:0">Lyrics could not be loaded ('+esc(state.lyricsError || 'unknown error')+'). '
+        + 'Reload the page. Nothing can be saved here until they load, so existing lyrics are never overwritten.</div>';
+      return;
+    }
+    var q = (filterEl.value || '').trim().toLowerCase();
+    var songs = lyricsSongs().filter(function(e){ return matchesFilter(e, q); });
+    if(state.lyricsOnlyEmpty) songs = songs.filter(function(e){ return !lyricsHas(e.id); });
+
+    var html = '<p class="nr-intro">Paste each song’s lyrics into its box. A blank line starts a new stanza. '
+      + 'Every song with lyrics gets its own public Lyrics page (and a “Lyrics” button on the song’s page); '
+      + 'a song left empty gets no page. Press Save to publish — the pages are live about a minute later.</p>'
+      + '<p class="nr-intro" dir="rtl" style="font-family:system-ui,sans-serif">برای هر آهنگ، ترانه را کپی و پیست کن. '
+      + 'یک خط خالی یعنی بند جدید. بعد از Save، حدود یک دقیقه بعد صفحهٔ ترانه ساخته می‌شود.</p>'
+      + '<div class="lyr-top"><span id="lyrCount"></span>'
+      + '<label><input type="checkbox" id="lyrOnlyEmpty"'+(state.lyricsOnlyEmpty ? ' checked' : '')+'> Only songs without lyrics</label></div>';
+    if(!songs.length){
+      html += '<p class="hint">'+(q || state.lyricsOnlyEmpty ? 'No songs match.' : 'No titled songs yet — add a title in the Credits or Releases tab first.')+'</p>';
+    } else {
+      html += '<table class="lyr-table"><tbody>' + songs.map(lyricsRowHtml).join('') + '</tbody></table>';
+    }
+    wrap.innerHTML = html;
+    updateLyricsCount();
+
+    if(state.lyricsFocus){
+      var focusId = state.lyricsFocus;
+      state.lyricsFocus = null;
+      Array.prototype.forEach.call(wrap.querySelectorAll('textarea[data-lyr]'), function(ta){
+        if(ta.getAttribute('data-lyr') === focusId){ ta.scrollIntoView({block: 'center'}); ta.focus(); }
+      });
+    }
+  }
 
   // ---------------------------------------------------------------------
   // New Release tab — data/new-releases.json: the homepage video player's
@@ -1416,6 +1543,7 @@
   function render(){
     if(state.tab === 'credits') renderCreditsTab();
     else if(state.tab === 'releases') renderReleasesTab();
+    else if(state.tab === 'lyrics') renderLyricsTab();
     else if(state.tab === 'newrelease') renderNewReleaseTab();
     else if(state.tab === 'gallery') renderGalleryTab();
     else if(state.tab === 'comments') renderCommentsTab();
@@ -1424,7 +1552,7 @@
     Array.prototype.forEach.call(tabsEl.querySelectorAll('.tab-btn'), function(btn){
       btn.classList.toggle('active', btn.getAttribute('data-tab') === state.tab);
     });
-    addRowBtn.style.display = (state.tab === 'homepage' || state.tab === 'newrelease' || state.tab === 'gallery' || state.tab === 'comments' || state.tab === 'submissions') ? 'none' : '';
+    addRowBtn.style.display = (state.tab === 'homepage' || state.tab === 'newrelease' || state.tab === 'gallery' || state.tab === 'lyrics' || state.tab === 'comments' || state.tab === 'submissions') ? 'none' : '';
   }
   window.__adminRender = render; // testability hook only; not a security boundary
 
@@ -1449,6 +1577,18 @@
 
   wrap.addEventListener('input', function(e){
     var t = e.target;
+    var lyrId = t.getAttribute('data-lyr');
+    if(lyrId != null){
+      state.lyrics[lyrId] = t.value;
+      state.lyricsDirty = true; setDirty();
+      // Update just this row (a full re-render would take the focus away).
+      var lrow = t.closest('tr');
+      var lstatus = lrow && lrow.querySelector('.lyr-status');
+      if(lstatus){ lstatus.textContent = lyricsStatusHtml(lyrId); lstatus.classList.toggle('has', lyricsHas(lyrId)); }
+      t.classList.toggle('filled', lyricsHas(lyrId));
+      updateLyricsCount();
+      return;
+    }
     var galId = t.getAttribute('data-gal');
     if(galId != null){
       var g = galById(galId);
@@ -1533,6 +1673,11 @@
 
   wrap.addEventListener('change', function(e){
     var t = e.target;
+    if(t.id === 'lyrOnlyEmpty'){
+      state.lyricsOnlyEmpty = t.checked;
+      render();
+      return;
+    }
     var id = t.getAttribute('data-id');
     var field = t.getAttribute('data-field');
     if(id != null && field){
@@ -1638,6 +1783,12 @@
     } else if(action === 'upload-cover'){
       var input = t.parentElement.querySelector('.upload-input');
       if(input) input.click();
+    } else if(action === 'goto-lyrics'){
+      state.tab = 'lyrics';
+      state.lyricsFocus = t.getAttribute('data-id');
+      state.lyricsOnlyEmpty = false;
+      filterEl.value = '';
+      render();
     } else if(action === 'c-approve'){
       commentAction('/admin/api/comments/approve', { id: t.getAttribute('data-id') }, 'Approved — it will show on the site within a minute.');
     } else if(action === 'c-delete'){
@@ -1848,6 +1999,19 @@
         }).then(function(r){ return r.json().then(function(j){ return {kind:'gallery', ok:r.ok, j:j}; }); })
       );
     }
+    if(state.lyricsDirty){
+      if(!state.lyricsLoaded){ showMsg('The lyrics did not load, so they cannot be saved. Reload the page.', 'err'); return; }
+      var lyrOrder = state.entries.map(function(e){ return e.id; });
+      Object.keys(state.lyrics).forEach(function(id){ if(lyrOrder.indexOf(id) === -1) lyrOrder.push(id); });
+      var lyrPayload = lyrOrder.filter(lyricsHas).map(function(id){ return { id: id, lyrics: String(state.lyrics[id]) }; });
+      jobs.push(
+        fetch('/admin/api/save-lyrics', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ content: lyrPayload, sha: state.lyricsSha })
+        }).then(function(r){ return r.json().then(function(j){ return {kind:'lyrics', ok:r.ok, j:j, sent:lyrPayload}; }); })
+      );
+    }
     if(!jobs.length){ showMsg('Nothing to save.', 'ok'); return; }
     showMsg('Saving…', 'ok');
     Promise.all(jobs).then(function(results){
@@ -1857,6 +2021,12 @@
         if(r.kind === 'entries'){ state.entriesSha = r.j.sha || state.entriesSha; state.entriesDirty = false; }
         if(r.kind === 'homepage'){ state.homepageSha = r.j.sha || state.homepageSha; state.homepageDirty = false; }
         if(r.kind === 'newreleases'){ state.newReleasesSha = r.j.sha || state.newReleasesSha; state.newReleasesDirty = false; }
+        if(r.kind === 'lyrics'){
+          state.lyricsSha = r.j.sha || state.lyricsSha; state.lyricsDirty = false;
+          state.lyricsSaved = {};
+          (r.sent || []).forEach(function(row){ state.lyricsSaved[row.id] = true; });
+          if(state.tab === 'lyrics') render();
+        }
         if(r.kind === 'gallery'){
           state.gallerySha = r.j.sha || state.gallerySha; state.galleryDirty = false;
           state.gallery.forEach(function(it){ delete it._blob; });
@@ -1883,7 +2053,7 @@
   document.getElementById('saveBtn2').addEventListener('click', save);
 
   window.addEventListener('beforeunload', function(e){
-    if(state.entriesDirty || state.homepageDirty || state.newReleasesDirty || state.galleryDirty || state.galUpload || nrUploading()){ e.preventDefault(); e.returnValue = ''; }
+    if(state.entriesDirty || state.homepageDirty || state.newReleasesDirty || state.galleryDirty || state.lyricsDirty || state.galUpload || nrUploading()){ e.preventDefault(); e.returnValue = ''; }
   });
 
   // ---------------------------------------------------------------------
@@ -1899,8 +2069,10 @@
       .catch(function(err){ return {ok:false, j:{error: err.message}}; }),
     fetch('/admin/api/gallery').then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
       .catch(function(err){ return {ok:false, j:{error: err.message}}; }),
+    fetch('/admin/api/lyrics').then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+      .catch(function(err){ return {ok:false, j:{error: err.message}}; }),
   ]).then(function(results){
-    var creditsRes = results[0], homepageRes = results[1], nrRes = results[2], galRes = results[3];
+    var creditsRes = results[0], homepageRes = results[1], nrRes = results[2], galRes = results[3], lyrRes = results[4];
     if(!creditsRes.ok){ showMsg('Load failed: ' + (creditsRes.j.error||'unknown error'), 'err'); return; }
     state.entries = creditsRes.j.data || [];
     state.entriesSha = creditsRes.j.sha;
@@ -1936,6 +2108,17 @@
       state.gallerySha = galRes.j.sha;
     } else {
       showMsg('Gallery failed to load: ' + (galRes.j.error||'unknown error'), 'err');
+    }
+    if(lyrRes.ok){
+      state.lyrics = {}; state.lyricsSaved = {};
+      (lyrRes.j.data || []).forEach(function(row){
+        if(row && typeof row.id === 'string' && typeof row.lyrics === 'string'){ state.lyrics[row.id] = row.lyrics; state.lyricsSaved[row.id] = true; }
+      });
+      state.lyricsSha = lyrRes.j.sha;
+      state.lyricsLoaded = true;
+    } else {
+      state.lyricsError = lyrRes.j.error || 'unknown error';
+      showMsg('Lyrics failed to load: ' + state.lyricsError, 'err');
     }
     render();
     loadComments();
