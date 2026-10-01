@@ -42,6 +42,22 @@ function panel(fetchImpl) {
   return { state, buttons, messages, save:context.save };
 }
 
+test('production HTTP redirects before handling requests and preserves path and query', async () => {
+  const api = worker();
+  for (const [url, options, expected] of [
+    ['http://merajmirzaei.com/services?lang=fa', {}, 'https://merajmirzaei.com/services?lang=fa'],
+    ['http://www.merajmirzaei.com/fa/miragesohi', {}, 'https://merajmirzaei.com/fa/miragesohi'],
+    ['http://merajmirzaei.com/admin/login', {method:'POST', body:'password=test'}, 'https://merajmirzaei.com/admin/login'],
+  ]) {
+    const res = await api.worker.fetch(new Request(url, options), {});
+    assert.equal(res.status, 308);
+    assert.equal(res.headers.get('Location'), expected);
+  }
+  const local = await api.worker.fetch(new Request('http://localhost:8787/admin'), {});
+  assert.equal(local.status, 401);
+  assert.equal(local.headers.get('Location'), null);
+});
+
 test('edits made while a save is pending stay dirty and use the new SHA on retry', async () => {
   let resolve;
   const requests = [];
@@ -142,9 +158,10 @@ test('a failed GitHub write leaves existing private revisions intact', async () 
 });
 
 test('the migration recovers all old notes from the pinned original revision', async () => {
-  const current = JSON.parse(fs.readFileSync(new URL('../merajmirzaei-site (4)/data/credits.json', import.meta.url)));
   const legacy = JSON.parse(execFileSync('git', ['show','5c413fbe10ada42b55a6068600791b05dde5eaec:merajmirzaei-site (4)/data/credits.json'],
     {cwd:new URL('..', import.meta.url), encoding:'utf8'}));
+  // Build the initial rollout fixture independently of later live admin saves.
+  const current = legacy.map(({notes, status_musicbrainz, status_discogs, status_genius, ...entry}) => entry);
   let api; let calls = 0;
   api = worker((url) => {
     calls++;
@@ -152,6 +169,7 @@ test('the migration recovers all old notes from the pinned original revision', a
       ? legacy : current;
     return jsonResponse({content:Buffer.from(JSON.stringify(data)).toString('base64'), encoding:'base64', sha:'new'});
   });
+  current[0]._adminRevision = api.LEGACY_CREDITS_REVISION;
   const res = await api.handleGetCredits({COMMENTS:{get:async () => null}});
   const data = (await res.json()).data;
   assert.equal(calls, 2); assert.equal(data.length, legacy.length);

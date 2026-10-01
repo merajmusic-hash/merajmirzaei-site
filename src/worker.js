@@ -3997,6 +3997,16 @@ async function handleRequest(request, env, ctx) {
     const url = new URL(request.url);
     const { pathname } = url;
 
+    // Canonical production URLs use HTTPS. Keep local HTTP previews working,
+    // and preserve the method, path and query when redirecting production.
+    if (url.protocol === 'http:' &&
+        (url.hostname === 'merajmirzaei.com' || url.hostname === 'www.merajmirzaei.com')) {
+      url.protocol = 'https:';
+      url.hostname = 'merajmirzaei.com';
+      url.port = '';
+      return new Response(null, { status: 308, headers: { Location: url.toString() } });
+    }
+
     // The artist page was renamed from /mirage to /miragesohi (and its
     // fa/ twin) when the MIRAGE alias became the artist's primary name.
     // A permanent redirect keeps every old bookmark/backlink working and
