@@ -1,5 +1,6 @@
 // Regression tests without dependencies or real GitHub/KV mutations.
 // Run: node --test scripts/test-admin.mjs
+import * as LyricsFormat from '../merajmirzaei-site (4)/lyrics-format.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -15,26 +16,28 @@ const post = (path, body) => new Request('https://merajmirzaei.com' + path,
 
 function worker(fetchImpl = () => { throw new Error('Unexpected fetch'); }, extras = {}) {
   const context = vm.createContext({ Request, Response, Headers, URL, TextEncoder, TextDecoder,
-    crypto:webcrypto, atob, btoa, setTimeout, console, fetch:fetchImpl, ...extras });
+    LyricsFormat, crypto:webcrypto, atob, btoa, setTimeout, console, fetch:fetchImpl, ...extras });
   vm.runInContext(source.replace("import { EmailMessage } from 'cloudflare:email';", 'class EmailMessage {}')
+    .replace("import * as LyricsFormat from '../merajmirzaei-site (4)/lyrics-format.mjs';", '')
     .replace('export default {', 'const worker = {') + `
     globalThis.api = { worker, handleSave, handleGetCredits, handleSaveGallery, handleLoginPost,
       handleAdminListSubmissions, handleAdminListComments, serveMedia, buildEntityGraph, buildSitemapXml,
-      LEGACY_CREDITS_REVISION, LEGACY_CREDITS_REF, signSession, buildReleaseCardsHtml };`, context);
+      LEGACY_CREDITS_REVISION, LEGACY_CREDITS_REF, signSession, buildReleaseCardsHtml, handleSaveLyrics, handleGetLyrics, readLyricsReadOnly, lyricsFor, lyricsDetailsFor, buildLyricsPageContent, validateLyrics };`, context);
   return context.api;
 }
 
 function panel(fetchImpl) {
   const state = { entries:[], entriesSha:'credits-old', entriesDirty:false, homepage:[], homepageSha:'home-old',
     homepageDirty:false, newReleases:[], newReleasesDirty:false, gallery:[], galleryDirty:false,
-    lyrics:{}, lyricsSaved:{}, lyricsDirty:false, lyricsLoaded:true, saving:false, coverUploads:0 };
+    lyrics:{}, lyricsMeta:{}, lyricsUndo:{}, lyricsSaved:{}, lyricsDirty:false, lyricsLoaded:true, saving:false, coverUploads:0 };
   const buttons = { saveBtn:{disabled:false}, saveBtn2:{disabled:false} };
   const messages = [];
-  const context = vm.createContext({ state, document:{getElementById:(id) => buttons[id]},
+  const context = vm.createContext({ state, LyricsFormat, document:{getElementById:(id) => buttons[id]},
     fetch:fetchImpl, showMsg:(text) => messages.push(text), setDirty:() => {}, render:() => {},
     nrUploading:() => state.newReleases.some((x) => x._uploading != null),
     lyricsHas:(id) => !!String(state.lyrics[id] || '').trim(),
     galById:(id) => state.gallery.find((x) => x.id === id), byOrder:(a,b) => (a.order||0)-(b.order||0) });
+  vm.runInContext(admin.slice(admin.indexOf('  function lyricsHas(id)'), admin.indexOf('  function lyricsLineCount(id)')), context);
   // Execute the shipped save implementation, not a reimplementation.
   const start = admin.indexOf('  function savePayload(kind){');
   const end = admin.indexOf("  document.getElementById('saveBtn').addEventListener", start);
@@ -309,4 +312,150 @@ test('release cards escape stored names and survive a failed client fetch', asyn
   vm.runInContext(renderer, context);
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.equal(preserved.innerHTML, 'server links');
+});
+
+test('pasted Unicode line separators keep verses, stanzas and Persian half spaces', () => {
+  assert.equal(LyricsFormat.cleanText('می\u200cروم\u2028\nمی\u200cمانی\u2028شعر\u2029بند تازه'), 'می\u200cروم\nمی\u200cمانی\nشعر\n\nبند تازه');
+  assert.equal(LyricsFormat.renderHtml('یک\r\nدو\r\n\r\nسه'), '<p dir="auto">یک<br>دو</p><p dir="auto">سه</p>');
+  assert.equal(LyricsFormat.renderHtml('<script> & "poem"'), '<p dir="auto">&lt;script&gt; &amp; &quot;poem&quot;</p>');
+});
+
+test('explicit formatting tools retain words and existing stanza boundaries', () => {
+  assert.equal(LyricsFormat.formatText('یک / دو | سه ؛ چهار  پنج', 'split'), 'یک\nدو\nسه\nچهار\nپنج');
+  assert.equal(LyricsFormat.formatText('یک\nدو\nسه\nچهار\nپنج', 'couplets'), 'یک\nدو\n\nسه\nچهار\n\nپنج');
+  assert.equal(LyricsFormat.formatText('یک\n\nدو', 'compact'), 'یک\nدو');
+  assert.equal(LyricsFormat.formatText('یک   دو\n\nسه', 'clean'), 'یک دو\n\nسه');
+  assert.equal(LyricsFormat.formatText('یک دو سه چهار پنج شش\n\nهفت هشت نه ده', 'wrap', 3), 'یک دو سه\nچهار پنج شش\n\nهفت هشت نه\nده');
+});
+
+test('lyrics save/reload retains poet and layout and keeps old client rows compatible', async () => {
+  let committed;
+  const api = worker((_url, init) => {
+    if (init.method === 'PUT') {
+      const body = JSON.parse(init.body); assert.equal(body.sha, 'lyrics-old');
+      committed = JSON.parse(Buffer.from(body.content, 'base64').toString('utf8'));
+      return jsonResponse({content:{sha:'lyrics-new'}});
+    }
+    return jsonResponse({content:Buffer.from(JSON.stringify(committed)).toString('base64'), encoding:'base64', sha:'lyrics-new'});
+  });
+  const res = await api.handleSaveLyrics(post('/admin/api/save-lyrics', {sha:'lyrics-old',content:[
+    {id:'legacy',lyrics:'One\r\nTwo'},
+    {id:'styled',lyrics:'متن شعر',poet:' شاعر نمونه ',layout:{font:'system',fontSize:24,lineHeight:2.4,stanzaGap:40,textAlign:'center',maxWidth:600,position:'right'}},
+    {id:'later',lyrics:'',poet:'شاعر نمونه',layout:{maxWidth:500}},
+    {id:'empty',lyrics:'',poet:'',layout:LyricsFormat.DEFAULT_LAYOUT},
+  ]}), {});
+  assert.equal(res.status, 200);
+  assert.deepEqual(committed[0], {id:'legacy',lyrics:'One\nTwo'});
+  assert.equal(committed.length, 3); assert.equal(committed[1].poet, 'شاعر نمونه');
+  assert.equal(committed[1].layout.fontSize, 24); assert.equal(committed[2].lyrics, '');
+  const loaded = await (await api.handleGetLyrics({})).json();
+  assert.deepEqual(loaded.data, committed); assert.equal(loaded.sha, 'lyrics-new');
+  const map = await api.readLyricsReadOnly({ASSETS:{fetch:async () => jsonResponse(committed)}});
+  assert.equal(api.lyricsFor(map,{id:'later'}), null);
+  assert.equal(api.lyricsDetailsFor(map,{id:'styled'}).poet, 'شاعر نمونه');
+});
+
+test('invalid lyric layout and credit inputs fail before any GitHub write', async () => {
+  const api = worker();
+  for (const fields of [
+    {poet:'x'.repeat(201)}, {poet:42}, {layout:[]}, {layout:{font:'url(javascript:alert(1))'}},
+    {layout:{fontSize:500}}, {layout:{lineHeight:0}}, {layout:{textAlign:'center;display:none'}},
+    {layout:{position:'outside'}}, {layout:JSON.parse('{"__proto__":{}}')}, {layout:{unknown:1}},
+  ]) assert.equal((await api.handleSaveLyrics(post('/admin/api/save-lyrics', {content:[{id:'one',lyrics:'poem',...fields}]}), {})).status, 400);
+  assert.doesNotMatch(LyricsFormat.layoutStyle({font:'url(evil)',textAlign:'right;display:none'}), /evil|display:none/);
+});
+
+test('lyric credit and appearance edits during saving remain dirty for the next save', async () => {
+  let resolve; const sent = [];
+  const p = panel((_url,init) => {sent.push(JSON.parse(init.body)); return new Promise(r => {resolve=r;});});
+  p.state.lyrics.one = 'Poem'; p.state.lyricsDirty = true; p.state.lyricsSha = 'old';
+  p.state.lyricsMeta.one = {poet:'Before',layout:{fontSize:20}};
+  const first = p.save(); await Promise.resolve();
+  p.state.lyricsMeta.one.poet = 'After'; p.state.lyricsMeta.one.layout.fontSize = 28;
+  resolve(jsonResponse({ok:true,sha:'new'})); await first;
+  assert.equal(sent[0].content[0].poet,'Before'); assert.equal(sent[0].content[0].layout.fontSize,20);
+  assert.equal(p.state.lyricsDirty,true); assert.equal(p.state.lyricsSha,'new');
+  const retry = p.save(); await Promise.resolve();
+  assert.equal(sent[1].content[0].poet,'After'); assert.equal(sent[1].content[0].layout.fontSize,28); assert.equal(sent[1].sha,'new');
+  resolve(jsonResponse({ok:true,sha:'final'})); await retry;
+  assert.equal(p.state.lyricsDirty,false);
+});
+
+test('an entered credit without text is saved but never marked as a published poem', async () => {
+  let submitted;
+  const p = panel((_url,init) => {submitted=JSON.parse(init.body); return Promise.resolve(jsonResponse({ok:true,sha:'new'}));});
+  p.state.lyricsMeta.one = {poet:'Poet'}; p.state.lyricsDirty=true;
+  await p.save(); assert.equal(submitted.content[0].lyrics,''); assert.equal(submitted.content[0].poet,'Poet');
+  assert.equal(p.state.lyricsSaved.one,false);
+});
+
+test('public poem renders escaped credit and safe layout in both page languages', () => {
+  const api = worker(), entry={id:'one',title_en:'Song',title_fa:'ترانه',artist_en:'Artist',artist_fa:'خواننده',pages:['releases']};
+  const map = new Map([['one',{lyrics:'یک\nدو\n\nسه',poet:'<script>Poet & name</script>',layout:{fontSize:28,textAlign:'center',maxWidth:600,position:'right'}}]]);
+  for (const lang of ['fa','en']) {
+    const html=api.buildLyricsPageContent(entry,lang,'releases',map.get('one').lyrics,{creditsData:[entry],lyricsMap:map,hasStory:false});
+    assert.match(html,/&lt;script&gt;Poet &amp; name&lt;\/script&gt;/); assert.doesNotMatch(html,/<script>Poet/);
+    assert.match(html,/--lyr-size:28px/); assert.match(html,/--lyr-align:center/); assert.match(html,/--lyr-width:600px/);
+    assert.match(html,/lang="fa" dir="rtl"><p dir="auto">یک<br>دو<\/p><p dir="auto">سه<\/p>/);
+    assert.match(html,lang === 'fa' ? /ترانه‌سرا/ : /Lyrics by/);
+  }
+});
+
+test('structured lyricist credit appears only when explicitly entered', async () => {
+  const api=worker(), entry={id:'one',title_en:'Song',title_fa:'ترانه',artist_en:'Artist',pages:['releases']};
+  for (const poet of ['', 'Poet']) {
+    const env={ASSETS:{fetch:async req => jsonResponse(new URL(req.url).pathname.endsWith('credits.json')
+      ? [entry] : new URL(req.url).pathname.endsWith('lyrics.json') ? [{id:'one',lyrics:'One\nTwo',poet}] : [])}};
+    const graph=await api.buildEntityGraph('/releases/one/lyrics',env);
+    const composition=graph.nodes.find(n=>n['@type']==='MusicComposition');
+    assert.ok(composition); assert.equal(composition.lyricist?.name,poet || undefined);
+    assert.equal(composition.lyrics.author?.name,poet || undefined);
+  }
+});
+
+function lyricsEditor() {
+  const state={lyrics:{one:'یک / دو | سه ؛ چهار',two:'Other poem'},lyricsMeta:{},lyricsUndo:{},lyricsSaved:{},entries:[]};
+  const element=()=>({classList:{toggle:()=>{}},setAttribute(k,v){this[k]=v;}});
+  const input={...element(),value:state.lyrics.one,selectionEnd:3,focus(){this.focused=true;},setSelectionRange(start,end){this.selectionStart=start;this.selectionEnd=end;}};
+  const name=element(), poet={...element(),querySelector:()=>name};
+  const nodes={'.lyr-status':element(),'textarea[data-lyr]':input,'.lyr-text':element(),'.lyr-empty':element(),'.lyr-preview-poet':poet,'[data-format="undo"]':element(),'[data-lyr-words]':{value:'3'}};
+  const row={querySelector:s=>nodes[s],querySelectorAll:()=>[]};
+  const context=vm.createContext({state,LyricsFormat,document:{getElementById:()=>null},setDirty:()=>{},
+    hasPage:(e,p)=>e.pages.includes(p),esc:LyricsFormat.escapeText});
+  vm.runInContext(admin.slice(admin.indexOf('  function lyricsHas(id)'),admin.indexOf('  function renderLyricsTab()')),context);
+  const button=action=>({getAttribute:key=>key==='data-id'?'one':action,closest:()=>row});
+  return {state,nodes,input,context,row,action:a=>context.lyricsFormatAction(button(a))};
+}
+
+test('editor tools update only their poem, preview and dirty state; Undo restores exact text', () => {
+  const p=lyricsEditor(), original=p.state.lyrics.one;
+  p.action('split'); assert.equal(p.input.value,'یک\nدو\nسه\nچهار');
+  assert.equal(p.state.lyrics.two,'Other poem'); assert.equal(p.state.lyricsDirty,true);
+  assert.equal(p.nodes['.lyr-text'].innerHTML,'<p dir="auto">یک<br>دو<br>سه<br>چهار</p>');
+  assert.equal(p.nodes['[data-format="undo"]'].disabled,false);
+  p.action('couplets'); assert.equal(p.input.value,'یک\nدو\n\nسه\nچهار');
+  p.action('undo'); assert.equal(p.input.value,'یک\nدو\nسه\nچهار');
+  p.action('undo'); assert.equal(p.input.value,original); assert.equal(p.nodes['[data-format="undo"]'].disabled,true);
+  assert.equal(p.input.focused,true);
+});
+
+test('line break toolbar inserts at cursor without deleting selected words', () => {
+  const p=lyricsEditor(); p.state.lyrics.one='First Second'; p.input.value='First Second'; p.input.selectionStart=0;p.input.selectionEnd=5;
+  p.action('line'); assert.equal(p.input.value,'First\n Second'); assert.equal(p.input.selectionEnd,6);
+  p.action('undo'); assert.equal(p.input.value,'First Second');
+});
+
+test('credit and layout controls immediately update preview without rerendering the editor', () => {
+  const p=lyricsEditor();
+  const control=(attrs,value,type='text',valid=true)=>({value,type,validity:{valid},getAttribute:k=>attrs[k]??null,closest:()=>p.row});
+  p.context.lyricsControlInput(control({'data-lyr-meta':'one'},'<Poet>'),false);
+  assert.equal(p.nodes['.lyr-preview-poet'].hidden,false);assert.equal(p.nodes['.lyr-preview-poet'].querySelector().textContent,'<Poet>');
+  const font=control({'data-lyr-layout':'one','data-layout-field':'fontSize'},'28','number');
+  p.context.lyricsControlInput(font,false); assert.match(p.nodes['.lyr-text'].style,/--lyr-size:28px/);
+  p.context.lyricsControlInput(control({'data-lyr-layout':'one','data-layout-field':'fontSize'},'','number'),false);
+  assert.equal(p.state.lyricsMeta.one.layout.fontSize,28);
+  const outside=control({'data-lyr-layout':'one','data-layout-field':'fontSize'},'90','number',false);
+  p.context.lyricsControlInput(outside,true); assert.equal(outside.value,36);
+  p.action('reset'); assert.equal(p.state.lyricsMeta.one.poet,'<Poet>'); assert.equal(p.state.lyricsMeta.one.layout.fontSize,18.5);
+  assert.equal(p.state.lyricsMeta.two,undefined);
 });

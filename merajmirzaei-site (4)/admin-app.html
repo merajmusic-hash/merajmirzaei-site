@@ -9,11 +9,12 @@
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <title>Site admin</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;600&family=Vazirmatn:wght@400;500;700&display=swap">
 <style>
   :root{
     --ink:#0B0D10; --panel:#14181D; --panel-2:#1B2027; --line:#262D36;
     --brass:#C2A878; --text:#E7E4DE; --muted:#8B95A1;
-    --good:#7FBF7F; --bad:#e08585;
+    --good:#7FBF7F; --bad:#e08585; --fa:Vazirmatn,system-ui,sans-serif; --body:"Inter Tight",system-ui,sans-serif;
     --header-h:56px; /* kept in sync with the real <header> height by JS */
   }
   *{box-sizing:border-box}
@@ -185,9 +186,9 @@
   /* Lyrics tab */
   .lyr-top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;margin:0 0 12px;font-size:12px}
   .lyr-top label{display:inline-flex;align-items:center;gap:5px;cursor:pointer}
-  .lyr-table{min-width:760px;table-layout:auto;width:100%;max-width:1100px}
+  .lyr-table{min-width:0;table-layout:fixed;width:100%;max-width:1600px}
   .lyr-table td{vertical-align:top}
-  .lyr-song{min-width:190px;width:240px}
+  .lyr-song{width:210px;overflow-wrap:anywhere}
   .lyr-title{font-weight:700;font-size:13px;line-height:1.4}
   .lyr-sub{color:var(--muted);font-size:11px;line-height:1.5;margin-top:2px}
   .lyr-badge{display:inline-block;font-size:10px;padding:0 5px;border:1px solid var(--line);border-radius:3px;margin-inline-start:6px;color:var(--muted)}
@@ -195,11 +196,27 @@
   .lyr-status.has{color:var(--good)}
   .lyr-links{margin-top:6px;font-size:11px;display:flex;gap:10px}
   .lyr-links a{color:var(--brass)}
-  td.lyr-box{width:100%}
-  td.lyr-box textarea.lyr-text{display:block;width:100%;min-height:46px;height:46px;resize:vertical;font-size:14px;line-height:1.8;
-    background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:4px;padding:6px 9px}
-  td.lyr-box textarea.lyr-text:focus{height:340px;border-color:var(--brass);outline:none}
-  td.lyr-box textarea.lyr-text.filled{border-color:rgba(127,191,127,.45)}
+  .lyr-editor{direction:rtl;font-family:var(--fa)}
+  .lyr-editor summary{cursor:pointer;color:var(--brass);padding:4px 0 10px}
+  .lyr-tools,.lyr-settings{display:flex;flex-wrap:wrap;align-items:end;gap:8px;margin:12px 0}
+  .lyr-tools button{font-family:var(--fa);font-size:12px;padding:6px 9px}
+  .lyr-settings label,.lyr-tools label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted)}
+  .lyr-settings select,.lyr-settings input{max-width:100%;font:inherit;color:var(--text)}
+  .lyr-settings input[type=number]{width:90px;direction:ltr}
+  .lyr-settings .lyr-poet-field{flex:1;min-width:180px}
+  .lyr-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+  .lyr-columns h3{font-size:13px;color:var(--muted);margin:8px 0}
+  textarea.lyr-input{display:block;width:100%;min-height:340px;resize:vertical;font-family:var(--fa);font-size:16px;line-height:1.9;
+    background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:4px;padding:14px}
+  textarea.lyr-input:focus{border-color:var(--brass);outline:none}
+  textarea.lyr-input.filled{border-color:rgba(127,191,127,.45)}
+  .lyr-preview{min-width:0;direction:ltr}
+  .lyr-preview-heading{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline;direction:rtl}
+  .lyr-preview-poet{color:var(--brass);font-size:14px;margin:8px 0}
+  .lyr-empty{color:var(--muted);font-size:13px;direction:rtl}
+  .lyr-help{font-size:12px;line-height:1.9;color:var(--muted);margin:8px 0}
+  @media(max-width:1150px){.lyr-columns{grid-template-columns:minmax(0,1fr)}}
+  @media(max-width:700px){.lyr-table,.lyr-table tbody,.lyr-table tr,.lyr-table td{display:block;width:100%;min-width:0}.lyr-table tr{border-bottom:1px solid var(--line)}.lyr-table td{border:0}.lyr-settings input[type=number]{width:80px}}
   .col-lyrics{white-space:nowrap}
 
   /* Gallery tab */
@@ -248,7 +265,11 @@
   <button id="saveBtn2" class="primary">Save</button>
 </footer>
 
-<script>
+<script type="module">
+import * as LyricsFormat from "/lyrics-format.mjs";
+var lyricsStyle = document.createElement("style");
+lyricsStyle.textContent = LyricsFormat.TEXT_CSS;
+document.head.appendChild(lyricsStyle);
 (function(){
   var RELEASE_TYPES = ['single', 'album track', 'album'];
   var STATUS_VALUES = ['not started', 'pending', 'done'];
@@ -259,7 +280,7 @@
     homepage: [], homepageSha: null, homepageDirty: false,
     newReleases: [], newReleasesSha: null, newReleasesDirty: false,
     gallery: [], gallerySha: null, galleryDirty: false, galUpload: null,
-    lyrics: {}, lyricsSaved: {}, lyricsSha: null, lyricsDirty: false, lyricsLoaded: false, lyricsError: null,
+    lyrics: {}, lyricsMeta: {}, lyricsUndo: {}, lyricsSaved: {}, lyricsSha: null, lyricsDirty: false, lyricsLoaded: false, lyricsError: null,
     lyricsOnlyEmpty: false, lyricsFocus: null,
     comments: { pending: [], approved: [], loaded: false, error: null },
     subs: { list: [], loaded: false, loading: false, next: null, total: 0, error: null, mail: null, emailConfigured: false },
@@ -678,10 +699,70 @@
   // its own file and saved with the same Save button as everything else.
   // ---------------------------------------------------------------------
 
-  function lyricsHas(id){ return !!String(state.lyrics[id] || '').trim(); }
-
+  function lyricsHas(id){ return !!LyricsFormat.cleanText(state.lyrics[id] || ''); }
+  function lyricsMetaFor(id){
+    var meta = state.lyricsMeta[id] || {};
+    return { poet:typeof meta.poet === 'string' ? meta.poet : '', layout:LyricsFormat.normalizeLayout(meta.layout) };
+  }
+  function lyricsHasDetails(id){
+    var meta = lyricsMetaFor(id);
+    return !!meta.poet.trim() || JSON.stringify(meta.layout) !== JSON.stringify(LyricsFormat.DEFAULT_LAYOUT);
+  }
   function lyricsLineCount(id){
-    return String(state.lyrics[id] || '').split(/\r?\n/).filter(function(l){ return l.trim(); }).length;
+    return LyricsFormat.cleanText(state.lyrics[id] || '').split('\n').filter(Boolean).length;
+  }
+  function updateLyricsRow(id, row){
+    if(!row) return;
+    var text = state.lyrics[id] || '', meta = lyricsMetaFor(id), lang = LyricsFormat.textLang(text);
+    var status = row.querySelector('.lyr-status');
+    status.textContent = lyricsStatusHtml(id); status.classList.toggle('has', lyricsHas(id));
+    row.querySelector('textarea[data-lyr]').classList.toggle('filled', lyricsHas(id));
+    var preview = row.querySelector('.lyr-text');
+    preview.innerHTML = LyricsFormat.renderHtml(text);
+    preview.setAttribute('style', LyricsFormat.layoutStyle(meta.layout));
+    preview.setAttribute('lang', lang); preview.setAttribute('dir', lang === 'fa' ? 'rtl' : 'ltr');
+    row.querySelector('.lyr-empty').hidden = lyricsHas(id);
+    var poet = row.querySelector('.lyr-preview-poet');
+    poet.hidden = !meta.poet.trim(); poet.querySelector('bdi').textContent = meta.poet.trim();
+    var undo = row.querySelector('[data-format="undo"]');
+    undo.disabled = !(state.lyricsUndo[id] || []).length;
+    updateLyricsCount();
+  }
+  function lyricsControlInput(t, committed){
+    var id = t.getAttribute('data-lyr-meta');
+    if(id == null) id = t.getAttribute('data-lyr-layout');
+    if(id == null) return false;
+    var meta = lyricsMetaFor(id), field = t.getAttribute('data-layout-field');
+    if(field){
+      if(t.type === 'number'){
+        if(!committed && (t.value === '' || !t.validity.valid)) return true;
+        meta.layout[field] = t.value === '' ? LyricsFormat.DEFAULT_LAYOUT[field] : Number(t.value);
+      } else meta.layout[field] = t.value;
+      meta.layout = LyricsFormat.normalizeLayout(meta.layout);
+      if(committed) t.value = meta.layout[field];
+    } else meta.poet = t.value;
+    state.lyricsMeta[id] = meta; state.lyricsDirty = true; setDirty();
+    updateLyricsRow(id, t.closest('tr'));
+    return true;
+  }
+  function lyricsFormatAction(button){
+    var id = button.getAttribute('data-id'), action = button.getAttribute('data-format'), row = button.closest('tr');
+    var ta = row.querySelector('textarea[data-lyr]'), before = state.lyrics[id] || '', after;
+    var history = state.lyricsUndo[id] || (state.lyricsUndo[id] = []);
+    if(action === 'reset'){
+      var meta = lyricsMetaFor(id); meta.layout = LyricsFormat.normalizeLayout(); state.lyricsMeta[id] = meta;
+      row.querySelectorAll('[data-lyr-layout]').forEach(function(el){ el.value = meta.layout[el.getAttribute('data-layout-field')]; });
+      state.lyricsDirty = true; setDirty(); updateLyricsRow(id, row); return;
+    }
+    if(action === 'undo'){ if(!history.length) return; after = history.pop(); }
+    else if(action === 'line' || action === 'stanza'){
+      var at = ta.selectionEnd; after = before.slice(0,at) + (action === 'line' ? '\n' : '\n\n') + before.slice(at);
+    } else after = LyricsFormat.formatText(before, action, row.querySelector('[data-lyr-words]').value);
+    if(after === before) return;
+    if(action !== 'undo'){ history.push(before); if(history.length > 10) history.shift(); }
+    state.lyrics[id] = after; ta.value = after; state.lyricsDirty = true; setDirty(); updateLyricsRow(id,row);
+    ta.focus();
+    if(action === 'line' || action === 'stanza') ta.setSelectionRange(at + (action === 'line' ? 1 : 2), at + (action === 'line' ? 1 : 2));
   }
 
   function slugifyId(id){
@@ -707,7 +788,7 @@
   }
 
   function lyricsStatusHtml(id){
-    return lyricsHas(id) ? '✓ ' + lyricsLineCount(id) + ' lines' : 'No lyrics yet';
+    return lyricsHas(id) ? '✓ ' + lyricsLineCount(id) + ' خط' : 'هنوز شعری ندارد';
   }
 
   function updateLyricsCount(){
@@ -719,24 +800,32 @@
   }
 
   function lyricsRowHtml(e){
-    var hub = hasPage(e, 'credits') ? 'credits' : 'releases';
-    var slug = slugifyId(e.id);
-    var saved = !!state.lyricsSaved[e.id];
-    var title = e.title_en || e.title_fa;
-    var titleAlt = e.title_en && e.title_fa ? e.title_fa : '';
+    var hub = hasPage(e, 'credits') ? 'credits' : 'releases', slug = slugifyId(e.id), saved = !!state.lyricsSaved[e.id];
+    var title = e.title_en || e.title_fa, titleAlt = e.title_en && e.title_fa ? e.title_fa : '';
     var artist = [e.artist_en, e.artist_fa && e.artist_fa !== e.artist_en ? e.artist_fa : ''].filter(Boolean).join(' · ');
-    return '<tr>'
-      + '<td class="lyr-song">'
+    var id = esc(e.id), meta = lyricsMetaFor(e.id), l = meta.layout, text = state.lyrics[e.id] || '', lang = LyricsFormat.textLang(text);
+    function tool(action,label,extra){ return '<button type="button" data-action="lyrics-format" data-id="'+id+'" data-format="'+action+'" '+(extra || '')+'>'+label+'</button>'; }
+    function select(field,label,options){ return '<label>'+label+'<select data-lyr-layout="'+id+'" data-layout-field="'+field+'">'+options.map(function(o){ return '<option value="'+o[0]+'"'+(l[field] === o[0] ? ' selected' : '')+'>'+o[1]+'</option>'; }).join('')+'</select></label>'; }
+    function number(field,label,min,max,step){ return '<label>'+label+'<input type="number" data-lyr-layout="'+id+'" data-layout-field="'+field+'" value="'+l[field]+'" min="'+min+'" max="'+max+'" step="'+step+'"></label>'; }
+    return '<tr><td class="lyr-song">'
       + '<div class="lyr-title" dir="auto">'+esc(title)+'<span class="lyr-badge">'+(hub === 'credits' ? 'Credits' : 'Releases')+'</span></div>'
       + (titleAlt ? '<div class="lyr-sub" dir="auto">'+esc(titleAlt)+'</div>' : '')
-      + '<div class="lyr-sub" dir="auto">'+esc(artist)+'</div>'
-      + '<div class="lyr-status'+(lyricsHas(e.id) ? ' has' : '')+'">'+esc(lyricsStatusHtml(e.id))+'</div>'
-      + (saved ? '<div class="lyr-links">Open page: <a href="/fa/'+hub+'/'+esc(slug)+'/lyrics" target="_blank" rel="noopener noreferrer">FA</a>'
-        + '<a href="/'+hub+'/'+esc(slug)+'/lyrics" target="_blank" rel="noopener noreferrer">EN</a></div>' : '')
-      + '</td>'
-      + '<td class="lyr-box"><textarea class="lyr-text'+(lyricsHas(e.id) ? ' filled' : '')+'" data-lyr="'+esc(e.id)+'" dir="auto" spellcheck="false" '
-      + 'placeholder="Paste the lyrics here · ترانه را اینجا پیست کن">'+esc(state.lyrics[e.id] || '')+'</textarea></td>'
-      + '</tr>';
+      + '<div class="lyr-sub" dir="auto">'+esc(artist)+'</div><div class="lyr-status'+(lyricsHas(e.id) ? ' has' : '')+'">'+esc(lyricsStatusHtml(e.id))+'</div>'
+      + (saved ? '<div class="lyr-links">Open page: <a href="/fa/'+hub+'/'+esc(slug)+'/lyrics" target="_blank" rel="noopener noreferrer">FA</a><a href="/'+hub+'/'+esc(slug)+'/lyrics" target="_blank" rel="noopener noreferrer">EN</a></div>' : '')
+      + '</td><td class="lyr-box"><details class="lyr-editor"'+(lyricsHas(e.id) || lyricsHasDetails(e.id) || state.lyricsFocus === e.id ? ' open' : '')+'><summary>ویرایش شعر و پیش‌نمایش</summary>'
+      + '<div class="lyr-settings"><label class="lyr-poet-field">نام شاعر / ترانه‌سرا<input type="text" dir="auto" maxlength="200" data-lyr-meta="'+id+'" value="'+esc(meta.poet)+'" placeholder="نامی که کنار شعر نمایش داده می‌شود"></label></div>'
+      + '<div class="lyr-tools">'+tool('clean','پاک‌سازی فاصله‌ها')+tool('split','جدا کردن مصرع‌ها')+tool('couplets','هر دو خط، یک بند')+tool('compact','حذف خط‌های خالی')
+      + '<label>کلمه در هر خط<input type="number" min="3" max="24" value="8" data-lyr-words aria-label="تعداد کلمه در هر خط" style="width:65px"></label>'+tool('wrap','خط‌بندی پاراگراف')
+      + tool('line','خط بعدی')+tool('stanza','بند جدید')+tool('undo','برگرداندن ابزار', (state.lyricsUndo[e.id] || []).length ? '' : 'disabled')+'</div>'
+      + '<p class="lyr-help">«جدا کردن مصرع‌ها» از /، |، ؛ و فاصله‌های چندتایی استفاده می‌کند. خط‌بندی پاراگراف بر اساس تعداد کلمه است؛ بعد از آن پیش‌نمایش را بررسی کن. Enter برای خط بعدی و دو Enter برای بند جدید است.</p>'
+      + '<div class="lyr-settings">'+select('font','فونت',[['site','فونت سایت'],['system','Tahoma / Arial'],['classic','کلاسیک'],['mono','یک‌عرض']])
+      + number('fontSize','اندازه فونت',14,36,.5)+number('lineHeight','فاصله خط‌ها',1.3,3.2,.1)+number('stanzaGap','فاصله بندها (px)',0,64,1)
+      + select('textAlign','چینش متن',[['start','خودکار'],['right','راست'],['center','وسط'],['left','چپ']])
+      + number('maxWidth','عرض کادر (px)',280,1000,10)+select('position','جای کادر',[['right','راست'],['center','وسط'],['left','چپ']])+tool('reset','ظاهر پیش‌فرض')+'</div>'
+      + '<div class="lyr-columns"><div><h3>متن شعر</h3><textarea class="lyr-input'+(lyricsHas(e.id) ? ' filled' : '')+'" data-lyr="'+id+'" dir="auto" spellcheck="false" aria-label="متن شعر '+esc(title)+'" placeholder="ترانه را اینجا پیست کن">'+esc(text)+'</textarea></div>'
+      + '<div class="lyr-preview"><div class="lyr-preview-heading"><h3>پیش‌نمایش زنده</h3><p class="lyr-preview-poet"'+(!meta.poet.trim() ? ' hidden' : '')+'>ترانه‌سرا: <bdi>'+esc(meta.poet.trim())+'</bdi></p></div>'
+      + '<div class="lyr-text" style="'+esc(LyricsFormat.layoutStyle(l))+'" lang="'+lang+'" dir="'+(lang === 'fa' ? 'rtl' : 'ltr')+'">'+LyricsFormat.renderHtml(text)+'</div><p class="lyr-empty"'+(lyricsHas(e.id) ? ' hidden' : '')+'>با نوشتن شعر، پیش‌نمایش اینجا دیده می‌شود.</p></div></div>'
+      + '</details></td></tr>';
   }
 
   function renderLyricsTab(){
@@ -750,11 +839,7 @@
     var songs = lyricsSongs().filter(function(e){ return matchesFilter(e, q); });
     if(state.lyricsOnlyEmpty) songs = songs.filter(function(e){ return !lyricsHas(e.id); });
 
-    var html = '<p class="nr-intro">Paste each song’s lyrics into its box. A blank line starts a new stanza. '
-      + 'Every song with lyrics gets its own public Lyrics page (and a “Lyrics” button on the song’s page); '
-      + 'a song left empty gets no page. Press Save to publish — the pages are live about a minute later.</p>'
-      + '<p class="nr-intro" dir="rtl" style="font-family:system-ui,sans-serif">برای هر آهنگ، ترانه را کپی و پیست کن. '
-      + 'یک خط خالی یعنی بند جدید. بعد از Save، حدود یک دقیقه بعد صفحهٔ ترانه ساخته می‌شود.</p>'
+    var html = '<p class="nr-intro" dir="rtl" style="font-family:var(--fa)">شعر، نام ترانه‌سرا و ظاهر هر آهنگ را جدا تنظیم کن. پیش‌نمایش بلافاصله تغییر می‌کند. برای انتشار روی سایت، Save را بزن و منتظر پایان انتشار بمان. آهنگ بدون شعر صفحهٔ Lyrics ندارد.</p>'
       + '<div class="lyr-top"><span id="lyrCount"></span>'
       + '<label><input type="checkbox" id="lyrOnlyEmpty"'+(state.lyricsOnlyEmpty ? ' checked' : '')+'> Only songs without lyrics</label></div>';
     if(!songs.length){
@@ -1604,14 +1689,10 @@
     if(lyrId != null){
       state.lyrics[lyrId] = t.value;
       state.lyricsDirty = true; setDirty();
-      // Update just this row (a full re-render would take the focus away).
-      var lrow = t.closest('tr');
-      var lstatus = lrow && lrow.querySelector('.lyr-status');
-      if(lstatus){ lstatus.textContent = lyricsStatusHtml(lyrId); lstatus.classList.toggle('has', lyricsHas(lyrId)); }
-      t.classList.toggle('filled', lyricsHas(lyrId));
-      updateLyricsCount();
+      updateLyricsRow(lyrId, t.closest('tr'));
       return;
     }
+    if(lyricsControlInput(t, false)) return;
     var galId = t.getAttribute('data-gal');
     if(galId != null){
       var g = galById(galId);
@@ -1696,6 +1777,7 @@
 
   wrap.addEventListener('change', function(e){
     var t = e.target;
+    if(lyricsControlInput(t, true)) return;
     if(t.id === 'lyrOnlyEmpty'){
       state.lyricsOnlyEmpty = t.checked;
       render();
@@ -1782,6 +1864,7 @@
     var t = e.target;
     var action = t.getAttribute('data-action');
     if(!action) return;
+    if(action === 'lyrics-format'){ lyricsFormatAction(t); return; }
     if(action === 's-more'){ loadSubmissions(true); return; }
     if(action === 'delete-row'){
       var id = t.getAttribute('data-id');
@@ -1973,7 +2056,10 @@
     });
     var order = state.entries.map(function(e){ return e.id; });
     Object.keys(state.lyrics).forEach(function(id){ if(order.indexOf(id) === -1) order.push(id); });
-    return order.filter(lyricsHas).map(function(id){ return { id:id, lyrics:String(state.lyrics[id]) }; });
+    Object.keys(state.lyricsMeta).forEach(function(id){ if(order.indexOf(id) === -1) order.push(id); });
+    return order.filter(function(id){ return lyricsHas(id) || lyricsHasDetails(id); }).map(function(id){
+      var meta = lyricsMetaFor(id); return { id:id, lyrics:String(state.lyrics[id] || ''), poet:meta.poet.trim(), layout:meta.layout };
+    });
   }
 
   function save(){
@@ -2015,7 +2101,7 @@
         state[kind+'Dirty'] = !unchanged;
         if(kind === 'lyrics'){
           state.lyricsSaved = {};
-          job.sent.forEach(function(row){ state.lyricsSaved[row.id] = true; });
+          job.sent.forEach(function(row){ state.lyricsSaved[row.id] = !!LyricsFormat.cleanText(row.lyrics); });
           if(unchanged && state.tab === 'lyrics') render();
         }
         if(kind === 'gallery'){
@@ -2110,9 +2196,9 @@
       showMsg('Gallery failed to load: ' + (galRes.j.error||'unknown error'), 'err');
     }
     if(lyrRes.ok){
-      state.lyrics = {}; state.lyricsSaved = {};
+      state.lyrics = {}; state.lyricsMeta = {}; state.lyricsUndo = {}; state.lyricsSaved = {};
       (lyrRes.j.data || []).forEach(function(row){
-        if(row && typeof row.id === 'string' && typeof row.lyrics === 'string'){ state.lyrics[row.id] = row.lyrics; state.lyricsSaved[row.id] = true; }
+        if(row && typeof row.id === 'string' && typeof row.lyrics === 'string'){ state.lyrics[row.id] = row.lyrics; state.lyricsMeta[row.id] = {poet:typeof row.poet === 'string' ? row.poet : '', layout:LyricsFormat.normalizeLayout(row.layout)}; state.lyricsSaved[row.id] = !!LyricsFormat.cleanText(row.lyrics); }
       });
       state.lyricsSha = lyrRes.j.sha;
       state.lyricsLoaded = true;

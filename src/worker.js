@@ -1,4 +1,5 @@
 import { EmailMessage } from 'cloudflare:email';
+import * as LyricsFormat from '../merajmirzaei-site (4)/lyrics-format.mjs';
 
 // Static-asset passthrough for the public site, plus a password-gated
 // /admin panel for editing data/credits.json and data/homepage.json. The
@@ -279,6 +280,8 @@ function validateLyrics(data) {
     seen.add(e.id);
     if (typeof e.lyrics !== 'string') return `entry ${i}: lyrics must be a string`;
     if (e.lyrics.length > LYRICS_MAX_CHARS) return `entry ${i}: lyrics too long (max ${LYRICS_MAX_CHARS} characters)`;
+    const detailError = LyricsFormat.validateDetails(e);
+    if (detailError) return `entry ${i}: ${detailError}`;
   }
   return null;
 }
@@ -780,17 +783,10 @@ function findStoryForEntry(stories, entry) {
 // search for the title would otherwise miss the page. (ZWNJ is kept: it is
 // part of Persian spelling.)
 function cleanLyricsText(s) {
-  return String(s == null ? '' : s)
-    .replace(/\r\n?/g, '\n')
-    .replace(/[﻿​]/g, '')
-    .replace(/ك/g, 'ک')
-    .replace(/ي/g, 'ی')
-    .split('\n').map((line) => line.replace(/^[ \t ]+|[ \t ]+$/g, '')).join('\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+  return LyricsFormat.cleanText(s);
 }
 
-// song id (slugified, like every recording URL) -> cleaned lyrics text.
+// Song id -> cleaned text, public lyricist credit and normalized layout.
 // Empty map when the file is missing or unreadable, so a problem here can
 // only ever remove the lyrics features, never break a page.
 async function readLyricsReadOnly(env) {
@@ -803,7 +799,7 @@ async function readLyricsReadOnly(env) {
     for (const row of data) {
       if (!row || typeof row.id !== 'string' || typeof row.lyrics !== 'string') continue;
       const text = cleanLyricsText(row.lyrics);
-      if (text) map.set(slugifyName(row.id), text);
+      if (text) map.set(slugifyName(row.id), { lyrics:text, poet:typeof row.poet === 'string' ? row.poet.trim().slice(0,200) : '', layout:LyricsFormat.normalizeLayout(row.layout) });
     }
   } catch (e) {
     // fall through with whatever was read
@@ -811,32 +807,18 @@ async function readLyricsReadOnly(env) {
   return map;
 }
 
+function lyricsDetailsFor(lyricsMap, entry) {
+  const row = lyricsMap && lyricsMap.get(slugifyName(entry.id));
+  return row && typeof row === 'object' ? row : { lyrics:typeof row === 'string' ? row : '', poet:'', layout:LyricsFormat.normalizeLayout() };
+}
+
 function lyricsFor(lyricsMap, entry) {
-  return (lyricsMap && lyricsMap.get(slugifyName(entry.id))) || null;
+  return lyricsDetailsFor(lyricsMap, entry).lyrics || null;
 }
 
-// Stanzas are separated by a blank line; lines within one by a line break.
-function lyricsStanzas(text) {
-  return String(text).split(/\n{2,}/)
-    .map((block) => block.split('\n').map((l) => l.trim()).filter(Boolean))
-    .filter((lines) => lines.length);
-}
-
-// Each stanza is its own <p dir="auto"> (so a line that starts in Persian
-// reads right-to-left even on an English page, and a stray English line
-// inside Persian lyrics does not flip the stanza).
-function renderLyricsHtml(text) {
-  return lyricsStanzas(text)
-    .map((lines) => '<p dir="auto">' + lines.map((l) => escapeHtmlAttr(l)).join('<br>') + '</p>')
-    .join('');
-}
-
-// 'fa' when most of the letters are Arabic-script (Persian), else 'en'.
-function lyricsLang(text) {
-  const arabic = (String(text).match(/[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/g) || []).length;
-  const latin = (String(text).match(/[A-Za-z]/g) || []).length;
-  return arabic > latin ? 'fa' : 'en';
-}
+function lyricsStanzas(text) { return LyricsFormat.stanzas(text); }
+function renderLyricsHtml(text) { return LyricsFormat.renderHtml(text); }
+function lyricsLang(text) { return LyricsFormat.textLang(text); }
 
 function lyricsFirstLine(text, max) {
   const first = String(text).split('\n').map((l) => l.trim()).find(Boolean) || '';
@@ -1274,18 +1256,17 @@ function otherLyricsByArtist(creditsData, lyricsMap, entry) {
 const LYRICS_PAGE_CSS = '<style>'
   + '.lyr-h2{font-family:var(--display);font-weight:800;font-size:22px;line-height:1.5;margin:40px 0 14px;color:var(--text)}'
   + 'body.fa .lyr-h2{font-family:var(--fa)}'
-  + '.lyr-text{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:24px 26px}'
-  + '.lyr-text p{font-size:18.5px;line-height:2.1;color:var(--text);margin:0 0 26px;max-width:none}'
-  + '.lyr-text p:last-child{margin-bottom:0}'
-  + '.lyr-text[lang="fa"]{direction:rtl}'
-  + '.lyr-text[lang="fa"] p{font-family:var(--fa)}'
+  + LyricsFormat.TEXT_CSS
+  + '.lyr-heading{display:flex;align-items:baseline;justify-content:space-between;gap:8px 24px;flex-wrap:wrap;margin-top:12px}'
+  + '.lyr-heading .lyr-h2{margin:0 0 14px}'
+  + '.lyr-poet{font-size:15px;color:var(--brass);margin:0 0 14px}'
   + '.lyr-note{font-size:13px;color:var(--muted);margin:14px 0 0}'
   + '@media(max-width:760px){.article{padding-left:var(--pad);padding-right:var(--pad)}}'
-  + '@media(max-width:520px){.lyr-text{padding:18px 16px}.lyr-text p{font-size:17px;line-height:2}}'
   + '</style>\n';
 
 function buildLyricsPageContent(entry, lang, hub, text, opts) {
   const { creditsData, lyricsMap, hasStory } = opts;
+  const details = lyricsDetailsFor(lyricsMap, entry);
   const L = RECORDING_LABELS[lang];
   const P = LYRICS_PAGE_LABELS[lang];
   const { title, titleAlt, artist, artistAlt } = lyricsNames(entry, lang);
@@ -1368,8 +1349,9 @@ function buildLyricsPageContent(entry, lang, hub, text, opts) {
     + '</div>'
     + spotifyEmbed
     + youtubeEmbed
-    + `<h2 class="lyr-h2" style="margin-top:12px">${escapeHtmlAttr(L.lyrics + ' — ' + title)}</h2>`
-    + `<div class="lyr-text" lang="${textLang}" dir="${textLang === 'fa' ? 'rtl' : 'ltr'}">${renderLyricsHtml(text)}</div>`
+    + `<div class="lyr-heading"><h2 class="lyr-h2">${escapeHtmlAttr(L.lyrics + ' — ' + title)}</h2>`
+    + (details.poet ? `<p class="lyr-poet">${lang === 'fa' ? 'ترانه‌سرا' : 'Lyrics by'}: <bdi>${escapeHtmlAttr(details.poet)}</bdi></p>` : '') + '</div>'
+    + `<div class="lyr-text" style="${escapeHtmlAttr(LyricsFormat.layoutStyle(details.layout))}" lang="${textLang}" dir="${textLang === 'fa' ? 'rtl' : 'ltr'}">${renderLyricsHtml(text)}</div>`
     + `<p class="lyr-note">${escapeHtmlAttr(P.note)}</p>`
     + `<div class="linkrow" style="margin-top:28px">${linkButtons.join('')}</div>`
     + moreBlock
@@ -1501,7 +1483,8 @@ async function buildEntityGraph(pathname, env) {
   if (lyricsSlug) {
     const creditsData = await readCreditsReadOnly(env);
     const entry = creditsData ? findEntryBySlug(creditsData, lyricsSlug.hub, lyricsSlug.recordingSlug) : null;
-    const text = entry ? lyricsFor(await readLyricsReadOnly(env), entry) : null;
+    const lyricsMap = entry ? await readLyricsReadOnly(env) : new Map();
+    const text = entry ? lyricsFor(lyricsMap, entry) : null;
     if (entry && text) {
       const title = lang === 'fa' ? (entry.title_fa || entry.title_en) : (entry.title_en || entry.title_fa);
       const trackUrl = SITE_ORIGIN + pathFor(lang, lyricsSlug.hub + '/' + lyricsSlug.recordingSlug);
@@ -1528,6 +1511,11 @@ async function buildEntityGraph(pathname, env) {
         inLanguage: textLang,
         lyrics: { '@type': 'CreativeWork', inLanguage: textLang, text },
       };
+      const details = lyricsDetailsFor(lyricsMap, entry);
+      if (details.poet) {
+        composition.lyricist = { '@type':'Person', name:details.poet };
+        composition.lyrics.author = { '@type':'Person', name:details.poet };
+      }
       const altTitle = lang === 'fa' ? entry.title_en : entry.title_fa;
       if (altTitle && altTitle !== title) composition.alternateName = altTitle;
       if (rec) composition.recordedAs = { '@id': recordingId };
@@ -2389,12 +2377,20 @@ async function handleSaveLyrics(request, env) {
   const invalid = validateLyrics(content);
   if (invalid) return json({ error: invalid }, 400);
 
-  // Only songs that actually have lyrics are stored; the text itself is
+  // Keep entered credits/layout even before a poem is pasted. Text itself is
   // kept as pasted (only the line endings are unified and the ends trimmed).
   const rows = [];
   for (const row of content) {
     const lyrics = row.lyrics.replace(/\r\n?/g, '\n').trim();
-    if (lyrics) rows.push({ id: row.id, lyrics });
+    const poet = (row.poet || '').trim();
+    const layout = LyricsFormat.normalizeLayout(row.layout);
+    const hasLayout = JSON.stringify(layout) !== JSON.stringify(LyricsFormat.DEFAULT_LAYOUT);
+    if (lyrics || poet || hasLayout) {
+      const saved = { id:row.id, lyrics };
+      if (poet) saved.poet = poet;
+      if (row.layout != null) saved.layout = layout;
+      rows.push(saved);
+    }
   }
 
   const text = JSON.stringify(rows, null, 2) + '\n';
