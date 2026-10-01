@@ -1,8 +1,7 @@
 name: Back up site data
 
 # Every admin-panel Save commits to data/, which runs this. It keeps an
-# always-current copy of the site data (the same CSV/JSON the admin
-# "Export" buttons give) plus one dated snapshot per day, all as files on
+# always-current copy of public site data, plus one dated snapshot per day, all as files on
 # the "site-backups" GitHub release — so nothing is committed back to the
 # repo and no extra site deploy is triggered.
 
@@ -46,7 +45,7 @@ jobs:
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" --target main --prerelease \
               --title "Site data backups" \
-              --notes "Automatic backups of the site data, updated every time the admin panel saves. The *-latest files are always the current data (credits-latest.csv is the same as the admin Export CSV). backup-YYYY-MM-DD.zip is the data as it was at the end of that day (the last 365 days are kept)."
+              --notes "Automatic backups of public site data, updated every time the admin panel saves. Private notes and internal statuses are excluded. Use the authenticated admin Export buttons for a complete private backup. The *-latest files are current; backup-YYYY-MM-DD.zip holds each day's public data (last 365 days kept)."
           fi
           cd "$RUNNER_TEMP/backup"
           zip -q -X "backup-$DAY.zip" ./*-latest.*

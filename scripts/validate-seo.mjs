@@ -41,6 +41,8 @@ const STATIC_PAGES = [
 ];
 
 const PERSON_ID = 'https://merajmirzaei.com/#person';
+const WEBSITE_ID = 'https://merajmirzaei.com/#website';
+const ARTIST_PROFILE = 'https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9';
 
 let failures = 0;
 function fail(msg) {
@@ -123,6 +125,46 @@ async function checkPage(path, { requireOgImagePrefix = 'https://merajmirzaei.co
     fail(`${path}: expected exactly 1 Person node, found ${personNodes.length}`);
   } else if (personNodes[0]['@id'] !== PERSON_ID) {
     fail(`${path}: Person @id is "${personNodes[0]['@id']}", expected "${PERSON_ID}"`);
+  }
+
+  const person = personNodes[0];
+  if (person) {
+    for (const name of ['معراج میرزایی', 'Miragesohi', 'میراژسهی']) {
+      if (!Array.isArray(person.alternateName) || !person.alternateName.includes(name)) {
+        fail(`${path}: Person is missing the alternate name "${name}"`);
+      }
+    }
+    if (!Array.isArray(person.sameAs) || !person.sameAs.includes(ARTIST_PROFILE)) {
+      fail(`${path}: Person does not link to the current Miragesohi Spotify profile`);
+    }
+  }
+
+  if (path === '/' || path === '/fa/') {
+    const sites = graph.filter((n) => n['@type'] === 'WebSite');
+    if (sites.length !== 1) {
+      fail(`${path}: expected one shared WebSite identity, found ${sites.length}`);
+    } else {
+      const site = sites[0];
+      if (site['@id'] !== WEBSITE_ID || site.url !== 'https://merajmirzaei.com/') {
+        fail(`${path}: WebSite must use the canonical domain-root identity`);
+      }
+      if (site.publisher?.['@id'] !== PERSON_ID) fail(`${path}: WebSite publisher must be the canonical Person`);
+      for (const name of ['معراج میرزایی', 'Miragesohi', 'میراژسهی']) {
+        if (!Array.isArray(site.alternateName) || !site.alternateName.includes(name)) {
+          fail(`${path}: WebSite is missing the alternate name "${name}"`);
+        }
+      }
+      const profile = graph.find((n) => n['@type'] === 'ProfilePage');
+      if (profile?.isPartOf?.['@id'] !== WEBSITE_ID) fail(`${path}: ProfilePage must reference the shared WebSite`);
+    }
+  }
+
+  if (['/', '/fa/', '/about', '/fa/about', '/miragesohi', '/fa/miragesohi'].includes(path)) {
+    const visibleText = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ');
+    for (const name of ['Meraj Mirzaei', 'معراج میرزایی', 'Miragesohi', 'میراژسهی']) {
+      if (!visibleText.includes(name)) fail(`${path}: "${name}" must appear in readable page text`);
+    }
   }
 
   const canonicalMatch = html.match(/<link rel="canonical" href="([^"]+)">/);

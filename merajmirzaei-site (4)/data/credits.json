@@ -22,7 +22,7 @@
     "links": [
       {
         "label": "Spotify (artist)",
-        "url": "https://open.spotify.com/artist/3wHa2wASrgywhttuHleFl1"
+        "url": "https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9"
       },
       {
         "label": "Spotify",
@@ -43,10 +43,7 @@
     ],
     "start_seconds": "",
     "cover_url": "/images/covers/peyvastegi-munmp9li.jpg",
-    "status_musicbrainz": "not started",
-    "status_discogs": "not started",
-    "status_genius": "not started",
-    "notes": ""
+    "_adminRevision": "legacy-5c413fbe10ada42b55a6068600791b05dde5eaec"
   },
   {
     "id": "mirage-farangis",
@@ -71,7 +68,7 @@
     "links": [
       {
         "label": "Spotify (artist)",
-        "url": "https://open.spotify.com/artist/3wHa2wASrgywhttuHleFl1"
+        "url": "https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9"
       },
       {
         "label": "Spotify",
@@ -91,11 +88,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/farangis-munmpntj.jpg",
-    "status_musicbrainz": "not started",
-    "status_discogs": "not started",
-    "status_genius": "not started",
-    "notes": ""
+    "cover_url": "/images/covers/farangis-munmpntj.jpg"
   },
   {
     "id": "mirage-labet-bekhandeh",
@@ -120,7 +113,7 @@
     "links": [
       {
         "label": "Spotify (artist)",
-        "url": "https://open.spotify.com/artist/3wHa2wASrgywhttuHleFl1"
+        "url": "https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9"
       },
       {
         "label": "Spotify",
@@ -140,11 +133,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/labet-bekhandeh-munmpvft.jpg",
-    "status_musicbrainz": "not started",
-    "status_discogs": "not started",
-    "status_genius": "not started",
-    "notes": ""
+    "cover_url": "/images/covers/labet-bekhandeh-munmpvft.jpg"
   },
   {
     "id": "mirage-baz-baroon-remix",
@@ -169,7 +158,7 @@
     "links": [
       {
         "label": "Spotify (artist)",
-        "url": "https://open.spotify.com/artist/3wHa2wASrgywhttuHleFl1"
+        "url": "https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9"
       },
       {
         "label": "Spotify",
@@ -189,11 +178,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/mirage-baz-baroon-remix.jpg",
-    "status_musicbrainz": "not started",
-    "status_discogs": "not started",
-    "status_genius": "not started",
-    "notes": ""
+    "cover_url": "/images/covers/mirage-baz-baroon-remix.jpg"
   },
   {
     "id": "mirage-baz-baroon",
@@ -218,7 +203,7 @@
     "links": [
       {
         "label": "Spotify (artist)",
-        "url": "https://open.spotify.com/artist/3wHa2wASrgywhttuHleFl1"
+        "url": "https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9"
       },
       {
         "label": "Spotify",
@@ -238,11 +223,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/baz-baroon-munmq2xq.jpg",
-    "status_musicbrainz": "not started",
-    "status_discogs": "not started",
-    "status_genius": "not started",
-    "notes": ""
+    "cover_url": "/images/covers/baz-baroon-munmq2xq.jpg"
   },
   {
     "id": "mirage-thunder",
@@ -267,7 +248,7 @@
     "links": [
       {
         "label": "Spotify (artist)",
-        "url": "https://open.spotify.com/artist/3wHa2wASrgywhttuHleFl1"
+        "url": "https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9"
       },
       {
         "label": "Spotify",
@@ -287,11 +268,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/thunder-mugscjbz.jpg",
-    "status_musicbrainz": "not started",
-    "status_discogs": "not started",
-    "status_genius": "not started",
-    "notes": ""
+    "cover_url": "/images/covers/thunder-mugscjbz.jpg"
   },
   {
     "id": "googoosh-naaz-edkeh",
@@ -320,11 +297,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/googoosh-naaz-edkeh.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/googoosh-naaz-edkeh.jpg"
   },
   {
     "id": "kamyar-dance",
@@ -353,11 +326,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/kamyar-danse.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/kamyar-danse.jpg"
   },
   {
     "id": "kamyar-dokhtar-shirazi",
@@ -386,11 +355,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/kamyar-dokhtar-shirazi.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/kamyar-dokhtar-shirazi.jpg"
   },
   {
     "id": "kamyar-sad-darsad",
@@ -419,11 +384,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/kamyar-sad-darsad.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/kamyar-sad-darsad.jpg"
   },
   {
     "id": "kamyar-khoshhalam-ft-melanie",
@@ -447,11 +408,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": ""
   },
   {
     "id": "kamyar-dele-mano-bordi",
@@ -480,11 +437,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/kamyar-dele-mano-bordi.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/kamyar-dele-mano-bordi.jpg"
   },
   {
     "id": "mehrdad-asemani-eshghe-zoleykhaei",
@@ -513,11 +466,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "https://open.spotify.com/track/5rFpZNIQg5J55osG3FixyC?si=00df544cce0e49bb",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "Composer Mehrdad Asemani, except Bahaneh by Aref Ghazvini"
+    "cover_url": "https://open.spotify.com/track/5rFpZNIQg5J55osG3FixyC?si=00df544cce0e49bb"
   },
   {
     "id": "mehrdad-asemani-mastaneh",
@@ -546,11 +495,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "https://open.spotify.com/track/7L5zMYy342U1skcwylPoei?si=67593ec6ccac4ead",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "Composer Mehrdad Asemani, except Bahaneh by Aref Ghazvini"
+    "cover_url": "https://open.spotify.com/track/7L5zMYy342U1skcwylPoei?si=67593ec6ccac4ead"
   },
   {
     "id": "mehrdad-asemani-javanane-vatan",
@@ -579,11 +524,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "https://open.spotify.com/track/52SbJqqhwdcNoalPgIJKHR?si=4d6ac61b34094242",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "Composer Mehrdad Asemani, except Bahaneh by Aref Ghazvini"
+    "cover_url": "https://open.spotify.com/track/52SbJqqhwdcNoalPgIJKHR?si=4d6ac61b34094242"
   },
   {
     "id": "mehrdad-asemani-bahaneh",
@@ -612,11 +553,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "Composer Mehrdad Asemani, except Bahaneh by Aref Ghazvini"
+    "cover_url": ""
   },
   {
     "id": "mehrdad-asemani-sareban",
@@ -645,11 +582,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "https://open.spotify.com/track/4EtLXsY1ZzoOtwN76t9cvA?si=4492955c7d8e435e",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "Composer Mehrdad Asemani, except Bahaneh by Aref Ghazvini"
+    "cover_url": "https://open.spotify.com/track/4EtLXsY1ZzoOtwN76t9cvA?si=4492955c7d8e435e"
   },
   {
     "id": "mehrdad-asemani-tekrare-bihodeh",
@@ -678,11 +611,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "https://open.spotify.com/track/4ygYGInq1r3FFqN17xeFg6?si=f7fd88e0b4264e08",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "Composer Mehrdad Asemani, except Bahaneh by Aref Ghazvini"
+    "cover_url": "https://open.spotify.com/track/4ygYGInq1r3FFqN17xeFg6?si=f7fd88e0b4264e08"
   },
   {
     "id": "mehrdad-asemani-yar-shirin",
@@ -711,11 +640,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/mehrdad-asemani-yar-shirin.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/mehrdad-asemani-yar-shirin.jpg"
   },
   {
     "id": "mehrdad-asemani-aghoosh-to-rework",
@@ -744,11 +669,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/mehrdad-asemani-yar-shirin.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/mehrdad-asemani-yar-shirin.jpg"
   },
   {
     "id": "mehrdad-asemani-hala-chera",
@@ -777,11 +698,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/mehrdad-asemani-yar-shirin.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/mehrdad-asemani-yar-shirin.jpg"
   },
   {
     "id": "mehrdad-asemani-invare-donya-with-asha",
@@ -810,11 +727,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/mehrdad-asemani-yar-shirin.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/mehrdad-asemani-yar-shirin.jpg"
   },
   {
     "id": "mehrdad-asemani-konje-mahtab",
@@ -843,11 +756,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "https://open.spotify.com/album/0ZPbcLAa7ssuDv5RblVx7Q?si=QVWNGRQRS5S-4Y7IV6D4MA",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "https://open.spotify.com/album/0ZPbcLAa7ssuDv5RblVx7Q?si=QVWNGRQRS5S-4Y7IV6D4MA"
   },
   {
     "id": "mehrdad-asemani-negam-kon",
@@ -876,11 +785,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "https://open.spotify.com/album/0ZPbcLAa7ssuDv5RblVx7Q?si=QVWNGRQRS5S-4Y7IV6D4MA",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "https://open.spotify.com/album/0ZPbcLAa7ssuDv5RblVx7Q?si=QVWNGRQRS5S-4Y7IV6D4MA"
   },
   {
     "id": "mehrdad-asemani-dastamo-begir",
@@ -909,11 +814,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "https://open.spotify.com/album/0ZPbcLAa7ssuDv5RblVx7Q?si=QVWNGRQRS5S-4Y7IV6D4MA",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "https://open.spotify.com/album/0ZPbcLAa7ssuDv5RblVx7Q?si=QVWNGRQRS5S-4Y7IV6D4MA"
   },
   {
     "id": "mehrdad-asemani-nafas-banoo",
@@ -942,11 +843,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "https://open.spotify.com/album/0ZPbcLAa7ssuDv5RblVx7Q?si=QVWNGRQRS5S-4Y7IV6D4MA",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "https://open.spotify.com/album/0ZPbcLAa7ssuDv5RblVx7Q?si=QVWNGRQRS5S-4Y7IV6D4MA"
   },
   {
     "id": "mehrdad-asemani-bonbast",
@@ -975,11 +872,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "https://open.spotify.com/album/0ZPbcLAa7ssuDv5RblVx7Q?si=QVWNGRQRS5S-4Y7IV6D4MA",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "different song from the Black Cats Bonbast"
+    "cover_url": "https://open.spotify.com/album/0ZPbcLAa7ssuDv5RblVx7Q?si=QVWNGRQRS5S-4Y7IV6D4MA"
   },
   {
     "id": "mehrdad-asemani-khanoomi-remix",
@@ -1008,11 +901,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "https://open.spotify.com/track/0dG4SMwZiDGfPrBqMhT72Q?si=35ceaa1b05504903",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "distinct from the Khanomi single and the Khanomi album"
+    "cover_url": "https://open.spotify.com/track/0dG4SMwZiDGfPrBqMhT72Q?si=35ceaa1b05504903"
   },
   {
     "id": "black-cats-naaz",
@@ -1041,11 +930,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/black-cats-naaz.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/black-cats-naaz.jpg"
   },
   {
     "id": "black-cats-bonbast",
@@ -1069,11 +954,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": ""
   },
   {
     "id": "helen-khosh-be-halam",
@@ -1102,11 +983,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/e7/ba/1f/e7ba1f6d-9416-7644-a744-cf6529d4b5e4/artwork.jpg/600x600bb.webp",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/e7/ba/1f/e7ba1f6d-9416-7644-a744-cf6529d4b5e4/artwork.jpg/600x600bb.webp"
   },
   {
     "id": "fataneh-eshghe-mondegar",
@@ -1135,11 +1012,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "https://www.navahang.com/images/2018/09/Fataneh-Eshghe-Mondegar.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "https://www.navahang.com/images/2018/09/Fataneh-Eshghe-Mondegar.jpg"
   },
   {
     "id": "shahyad-bazi",
@@ -1163,11 +1036,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": ""
   },
   {
     "id": "sahar-lalaei",
@@ -1191,11 +1060,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": ""
   },
   {
     "id": "salar-aghili-royaye-man",
@@ -1224,11 +1089,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/salar-aghili-royaye-man.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/salar-aghili-royaye-man.jpg"
   },
   {
     "id": "salar-aghili-nafas",
@@ -1257,11 +1118,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/salar-aghili-nafas.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/salar-aghili-nafas.jpg"
   },
   {
     "id": "salar-aghili-panah",
@@ -1290,11 +1147,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/salar-aghili-panah.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/salar-aghili-panah.jpg"
   },
   {
     "id": "amir-abbas-golab-forogh",
@@ -1323,11 +1176,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/amirabbas-golab-forough.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/amirabbas-golab-forough.jpg"
   },
   {
     "id": "amir-abbas-golab-cheghadr-mehraboni",
@@ -1356,11 +1205,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/amirabbas-golab-che-ghad-mehrabooni.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/amirabbas-golab-che-ghad-mehrabooni.jpg"
   },
   {
     "id": "amir-abbas-golab-serial-bipayan",
@@ -1384,11 +1229,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": ""
   },
   {
     "id": "amir-abbas-golab-paeez-delam",
@@ -1417,11 +1258,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/amirabbas-golab-paeeze-delam.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/amirabbas-golab-paeeze-delam.jpg"
   },
   {
     "id": "rastaak-bikhabri",
@@ -1450,11 +1287,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/rastaak-hallaj-bi-khabari.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/rastaak-hallaj-bi-khabari.jpg"
   },
   {
     "id": "rastaak-chak",
@@ -1483,11 +1316,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/rastaak-hallaj-chak.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/rastaak-hallaj-chak.jpg"
   },
   {
     "id": "rastaak-gharaz-az-mozahemat",
@@ -1516,11 +1345,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/rastaak-hallaj-gharaz-az-mozahemat.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/rastaak-hallaj-gharaz-az-mozahemat.jpg"
   },
   {
     "id": "rastaak-dokhtarone",
@@ -1549,11 +1374,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/rastaak-hallaj-dokhtarooneh.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/rastaak-hallaj-dokhtarooneh.jpg"
   },
   {
     "id": "rastaak-faseleh",
@@ -1582,11 +1403,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/rastaak-hallaj-faseleh.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/rastaak-hallaj-faseleh.jpg"
   },
   {
     "id": "ahmad-saeedi-yadet-rafteh",
@@ -1610,11 +1427,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": ""
   },
   {
     "id": "ahmad-saeedi-rafigh-fab",
@@ -1643,11 +1456,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/ahmad-saeedi-refighe-fab.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/ahmad-saeedi-refighe-fab.jpg"
   },
   {
     "id": "ahmad-saeedi-abadan",
@@ -1671,11 +1480,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": ""
   },
   {
     "id": "ahmad-saeedi-darya",
@@ -1704,11 +1509,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/ahmad-saeedi-darya.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/ahmad-saeedi-darya.jpg"
   },
   {
     "id": "ahmad-saeedi-begoo",
@@ -1737,11 +1538,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/ahmad-saeedi-begoo.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/ahmad-saeedi-begoo.jpg"
   },
   {
     "id": "arsalan-ziba",
@@ -1765,11 +1562,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "credited on album cover; music producer Farid Mohajerpour"
+    "cover_url": ""
   },
   {
     "id": "arsalan-arezoo",
@@ -1793,11 +1586,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "credited on album cover; music producer Farid Mohajerpour"
+    "cover_url": ""
   },
   {
     "id": "arsalan-del-nemikanam-azat",
@@ -1821,11 +1610,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "credited on album cover; music producer Farid Mohajerpour"
+    "cover_url": ""
   },
   {
     "id": "arsalan-jadeh",
@@ -1849,11 +1634,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "credited on album cover; music producer Farid Mohajerpour"
+    "cover_url": ""
   },
   {
     "id": "arsalan-yade-to-miyoftam",
@@ -1877,11 +1658,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "credited on album cover; music producer Farid Mohajerpour"
+    "cover_url": ""
   },
   {
     "id": "arsalan-ghalbi-ke-nemizaneh",
@@ -1905,11 +1682,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "credited on album cover; music producer Farid Mohajerpour"
+    "cover_url": ""
   },
   {
     "id": "arsalan-dars",
@@ -1933,11 +1706,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "credited on album cover; music producer Farid Mohajerpour"
+    "cover_url": ""
   },
   {
     "id": "arsalan-zendegi",
@@ -1961,11 +1730,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "credited on album cover; music producer Farid Mohajerpour"
+    "cover_url": ""
   },
   {
     "id": "arsalan-gharibe",
@@ -1989,11 +1754,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": ""
   },
   {
     "id": "arsalan-ghafelgir",
@@ -2022,11 +1783,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/arsalan-ghafelgir.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/arsalan-ghafelgir.jpg"
   },
   {
     "id": "milad-j-lajbazi",
@@ -2055,11 +1812,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/milad-j-lajbazi.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/milad-j-lajbazi.jpg"
   },
   {
     "id": "milad-j-roya",
@@ -2088,11 +1841,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/milad-j-roya.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/milad-j-roya.jpg"
   },
   {
     "id": "milad-j-befarma-eshgham",
@@ -2121,11 +1870,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/milad-j-befarma-eshgham.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/milad-j-befarma-eshgham.jpg"
   },
   {
     "id": "milad-j-shabgardi",
@@ -2154,11 +1899,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/milad-j-shab-gardi.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/milad-j-shab-gardi.jpg"
   },
   {
     "id": "milad-j-becharkhon",
@@ -2182,11 +1923,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": ""
   },
   {
     "id": "milad-j-sedamo-dari-damet-garm",
@@ -2215,11 +1952,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/milad-j-damam-garm.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/milad-j-damam-garm.jpg"
   },
   {
     "id": "milad-j-sorate-mahet",
@@ -2248,11 +1981,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/milad-j-soorate-mahet.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "/images/covers/milad-j-soorate-mahet.jpg"
   },
   {
     "id": "milad-j-ghose-dar",
@@ -2276,11 +2005,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": ""
   },
   {
     "id": "milad-j-jange",
@@ -2304,11 +2029,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": ""
   },
   {
     "id": "milad-j-cheghad-zood-miresi",
@@ -2332,11 +2053,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": ""
   },
   {
     "id": "ahmadreza-nabizadeh-dokhtare-baroon",
@@ -2360,11 +2077,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": ""
   },
   {
     "id": "amir-abbas-hassanzadeh-leyla-khanom-live",
@@ -2393,11 +2106,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "https://open.spotify.com/album/45SPOZ8GigXxUj0sbDRMIR?si=Bt_UDNh1SPW28El7K02Idg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "https://open.spotify.com/album/45SPOZ8GigXxUj0sbDRMIR?si=Bt_UDNh1SPW28El7K02Idg"
   },
   {
     "id": "amir-abbas-hassanzadeh-moje-mosbat",
@@ -2426,11 +2135,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": ""
   },
   {
     "id": "panida-mano-to",
@@ -2454,11 +2159,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": ""
   },
   {
     "id": "reza-pahlevani-shirin-shirine",
@@ -2487,11 +2188,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": ""
   },
   {
     "id": "majid-rokni-delkhoshi",
@@ -2520,11 +2217,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "https://www.navahang.com/images/2019/02/Majid-Rokni-Delkhoshi.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "https://www.navahang.com/images/2019/02/Majid-Rokni-Delkhoshi.jpg"
   },
   {
     "id": "iman-sani-baba-karam",
@@ -2553,11 +2246,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "https://musicsweb.ir/wp-content/uploads/2023/03/iman-sani-babakaram-musicsweb.ir_.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": "https://musicsweb.ir/wp-content/uploads/2023/03/iman-sani-babakaram-musicsweb.ir_.jpg"
   },
   {
     "id": "morteza-lotfi-davom-nemiyaram",
@@ -2581,11 +2270,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": ""
+    "cover_url": ""
   },
   {
     "id": "sasan-pashaeifar-amadeam-ke-sar-naham",
@@ -2609,11 +2294,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "credited on album cover"
+    "cover_url": ""
   },
   {
     "id": "sasan-pashaeifar-khoda-haminjast",
@@ -2637,11 +2318,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "credited on album cover"
+    "cover_url": ""
   },
   {
     "id": "sasan-pashaeifar-az-yade-to-miram-aroom-aroom",
@@ -2665,11 +2342,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "credited on album cover"
+    "cover_url": ""
   },
   {
     "id": "sasan-pashaeifar-sar-beneh-bar-balin",
@@ -2693,11 +2366,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "credited on album cover"
+    "cover_url": ""
   },
   {
     "id": "sasan-pashaeifar-hilat-raha-kon",
@@ -2721,11 +2390,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "credited on album cover; with Amir Ghaffarmanesh"
+    "cover_url": ""
   },
   {
     "id": "sasan-pashaeifar-to-nisti-ghose-bidare",
@@ -2749,11 +2414,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "credited on album cover"
+    "cover_url": ""
   },
   {
     "id": "sasan-pashaeifar-manam-tanha",
@@ -2777,11 +2438,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "credited on album cover"
+    "cover_url": ""
   },
   {
     "id": "sasan-pashaeifar-ba-khoda-hamishe",
@@ -2805,11 +2462,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "credited on album cover"
+    "cover_url": ""
   },
   {
     "id": "sasan-pashaeifar-khoda-haminjast-remix",
@@ -2833,11 +2486,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "credited on album cover"
+    "cover_url": ""
   },
   {
     "id": "sasan-pashaeifar-man-na-manam",
@@ -2861,11 +2510,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "NEEDS VERIFICATION — not listed on the album cover, may be a separate release"
+    "cover_url": ""
   },
   {
     "id": "reza-sadeghi-entry",
@@ -2889,11 +2534,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "song titles not yet supplied"
+    "cover_url": ""
   },
   {
     "id": "shahram-shokoohi-entry",
@@ -2922,11 +2563,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "https://musicbaran1.ir/music/shahram-shokoohi-khianat/",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "song titles not yet supplied"
+    "cover_url": "https://musicbaran1.ir/music/shahram-shokoohi-khianat/"
   },
   {
     "id": "sintaj-entry",
@@ -2950,11 +2587,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "song titles not yet supplied"
+    "cover_url": ""
   },
   {
     "id": "rastin-entry",
@@ -2978,11 +2611,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "song titles not yet supplied"
+    "cover_url": ""
   },
   {
     "id": "milad-mosaddegh-entry",
@@ -3006,11 +2635,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "song titles not yet supplied"
+    "cover_url": ""
   },
   {
     "id": "saman-mansoor-entry",
@@ -3034,11 +2659,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "song titles not yet supplied"
+    "cover_url": ""
   },
   {
     "id": "afshin-amini-entry",
@@ -3062,11 +2683,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "song titles not yet supplied"
+    "cover_url": ""
   },
   {
     "id": "benyamin-baran-entry",
@@ -3090,11 +2707,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "song titles not yet supplied"
+    "cover_url": ""
   },
   {
     "id": "sadraddin-entry",
@@ -3118,11 +2731,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "song titles not yet supplied"
+    "cover_url": ""
   },
   {
     "id": "ghazal-enayat-entry",
@@ -3146,11 +2755,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "song titles not yet supplied"
+    "cover_url": ""
   },
   {
     "id": "ali-panahi-entry",
@@ -3174,11 +2779,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "song titles not yet supplied"
+    "cover_url": ""
   },
   {
     "id": "rastaak-serghate-adabi",
@@ -3202,11 +2803,7 @@
     "role_mastering": true,
     "links": [],
     "start_seconds": "",
-    "cover_url": "/images/covers/rastaak-serghate-adabi.jpg",
-    "status_musicbrainz": "",
-    "status_discogs": "",
-    "status_genius": "",
-    "notes": "credited on release cover; lyrics and music Rastaak, arrangement Farid Mohajerpour"
+    "cover_url": "/images/covers/rastaak-serghate-adabi.jpg"
   },
   {
     "id": "new-1788546862191-9eahs",
@@ -3233,11 +2830,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "https://open.spotify.com/track/6q1h3n0J7CnEGRbJ8SmwZS?si=f107ae353b264239",
-    "status_musicbrainz": "not started",
-    "status_discogs": "not started",
-    "status_genius": "not started",
-    "notes": ""
+    "cover_url": "https://open.spotify.com/track/6q1h3n0J7CnEGRbJ8SmwZS?si=f107ae353b264239"
   },
   {
     "id": "new-1790330185189-7ht8i",
@@ -3268,11 +2861,7 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/dor-az-tasavor-mugse8lj.png",
-    "status_musicbrainz": "not started",
-    "status_discogs": "not started",
-    "status_genius": "not started",
-    "notes": ""
+    "cover_url": "/images/covers/dor-az-tasavor-mugse8lj.webp"
   },
   {
     "id": "new-1790441193810-5wt4t",
@@ -3303,10 +2892,6 @@
       }
     ],
     "start_seconds": "",
-    "cover_url": "/images/covers/didi-ey-tanha-omidam-munmqpbc.jpg",
-    "status_musicbrainz": "not started",
-    "status_discogs": "not started",
-    "status_genius": "not started",
-    "notes": ""
+    "cover_url": "/images/covers/didi-ey-tanha-omidam-munmqpbc.jpg"
   }
 ]

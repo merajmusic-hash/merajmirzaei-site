@@ -236,7 +236,7 @@
   <span id="dirtyFlag" class="hint" style="display:none">Unsaved changes</span>
   <button type="button" id="exportCsvBtn" class="small" title="Download every field of every credit, as currently shown, as a CSV file">Export CSV</button>
   <button type="button" id="exportJsonBtn" class="small" title="Download every field of every credit, as currently shown, as a JSON file">Export JSON</button>
-  <a class="hdr-link" href="https://github.com/merajmusic-hash/merajmirzaei-site/releases/tag/site-backups" target="_blank" rel="noopener noreferrer" title="Automatic backups of all site data — updated every time you Save, plus one copy per day">Backups</a>
+  <a class="hdr-link" href="https://github.com/merajmusic-hash/merajmirzaei-site/releases/tag/site-backups" target="_blank" rel="noopener noreferrer" title="Public site data backups. Use Export JSON or CSV for a complete backup including private notes.">Public backups</a>
   <button id="saveBtn" class="primary">Save</button>
   <form method="POST" action="/admin/logout"><button type="submit">Log out</button></form>
 </header>
@@ -255,13 +255,14 @@
 
   var state = {
     entries: [], entriesSha: null, entriesDirty: false,
+    saving: false, coverUploads: 0,
     homepage: [], homepageSha: null, homepageDirty: false,
     newReleases: [], newReleasesSha: null, newReleasesDirty: false,
     gallery: [], gallerySha: null, galleryDirty: false, galUpload: null,
     lyrics: {}, lyricsSaved: {}, lyricsSha: null, lyricsDirty: false, lyricsLoaded: false, lyricsError: null,
     lyricsOnlyEmpty: false, lyricsFocus: null,
     comments: { pending: [], approved: [], loaded: false, error: null },
-    subs: { list: [], loaded: false, error: null, mail: null, emailConfigured: false },
+    subs: { list: [], loaded: false, loading: false, next: null, total: 0, error: null, mail: null, emailConfigured: false },
     tab: /^#submissions$/.test(location.hash) ? 'submissions' : 'credits',
   };
   window.__adminState = state; // testability hook only; not a security boundary
@@ -1160,14 +1161,14 @@
   // GAL_MAX_EDGE, and re-encodes it as JPEG. Browsers apply the photo's
   // own rotation (EXIF) when drawing it, so portrait phone photos stay
   // upright.
-  function galPrepare(file){
+  function prepareImage(file, maxEdge, quality, maxBytes){
     return new Promise(function(resolve, reject){
       var url = URL.createObjectURL(file);
       var img = new Image();
       img.onload = function(){
         var w = img.naturalWidth, h = img.naturalHeight;
         if(!w || !h){ URL.revokeObjectURL(url); reject(new Error('“' + file.name + '” could not be read as a photo.')); return; }
-        var scale = Math.min(1, GAL_MAX_EDGE / Math.max(w, h));
+        var scale = Math.min(1, maxEdge / Math.max(w, h));
         var cw = Math.max(1, Math.round(w * scale)), ch = Math.max(1, Math.round(h * scale));
         var canvas = document.createElement('canvas');
         canvas.width = cw; canvas.height = ch;
@@ -1177,13 +1178,20 @@
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, cw, ch);
         URL.revokeObjectURL(url);
-        canvas.toBlob(function(blob){
-          if(!blob){ reject(new Error('“' + file.name + '” could not be converted.')); return; }
-          var reader = new FileReader();
-          reader.onload = function(){ resolve({ blob: blob, base64: String(reader.result).split(',')[1] }); };
-          reader.onerror = function(){ reject(new Error('“' + file.name + '” could not be read.')); };
-          reader.readAsDataURL(blob);
-        }, 'image/jpeg', GAL_JPEG_QUALITY);
+        function encode(){
+          canvas.toBlob(function(blob){
+            if(!blob){ reject(new Error('“' + file.name + '” could not be converted.')); return; }
+            if(maxBytes && blob.size > maxBytes){
+              if(quality > 0.65){ quality -= 0.1; encode(); return; }
+              reject(new Error('This cover is too complex to fit in 1MB. Choose a smaller image.')); return;
+            }
+            var reader = new FileReader();
+            reader.onload = function(){ resolve({ blob: blob, base64: String(reader.result).split(',')[1] }); };
+            reader.onerror = function(){ reject(new Error('“' + file.name + '” could not be read.')); };
+            reader.readAsDataURL(blob);
+          }, 'image/jpeg', quality);
+        }
+        encode();
       };
       img.onerror = function(){
         URL.revokeObjectURL(url);
@@ -1197,7 +1205,7 @@
   }
 
   function galUploadOne(file){
-    return galPrepare(file).then(function(prep){
+    return prepareImage(file, GAL_MAX_EDGE, GAL_JPEG_QUALITY).then(function(prep){
       return fetch('/admin/api/gallery/upload', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
@@ -1345,18 +1353,31 @@
   var SUB_ROLES = { poet: 'Poet · شاعر', composer: 'Composer · آهنگساز', mix: 'Mix & master · میکس و مستر' };
   var SUB_SERVICES = { mix: 'Mixing', master: 'Mastering', mixmaster: 'Mix & master' };
 
-  function loadSubmissions(){
-    return fetch('/admin/api/submissions').then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+  function loadSubmissions(more){
+    var S = state.subs;
+    if(S.loading || (more && !S.next)) return;
+    S.loading = true;
+    var endpoint = '/admin/api/submissions' + (more ? '?before=' + encodeURIComponent(S.next) : '');
+    return fetch(endpoint).then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
       .then(function(res){
         var S = state.subs;
         if(!res.ok){ S.error = res.j.error || 'Could not load submissions'; }
-        else { S.list = res.j.submissions || []; S.mail = res.j.mail || null; S.emailConfigured = !!res.j.emailConfigured; S.error = null; }
+        else {
+          var incoming = res.j.submissions || [];
+          if(more){
+            var ids = {}; S.list.forEach(function(s){ ids[s.id] = true; });
+            S.list = S.list.concat(incoming.filter(function(s){ return !ids[s.id]; }));
+          } else S.list = incoming;
+          S.next = res.j.next || null; S.total = res.j.total || 0;
+          S.mail = res.j.mail || null; S.emailConfigured = !!res.j.emailConfigured; S.error = null;
+        }
         S.loaded = true;
-        var unread = S.list.filter(function(x){ return !x.read; }).length;
+        var unread = res.j.unread == null ? S.list.filter(function(x){ return !x.read; }).length : res.j.unread;
         subsBadge.textContent = unread ? String(unread) : '';
         if(state.tab === 'submissions') render();
       })
-      .catch(function(err){ state.subs.error = err.message; state.subs.loaded = true; if(state.tab === 'submissions') render(); });
+      .catch(function(err){ state.subs.error = err.message; state.subs.loaded = true; if(state.tab === 'submissions') render(); })
+      .finally(function(){ S.loading = false; if(state.tab === 'submissions') render(); });
   }
 
   function fmtSize(b){
@@ -1421,8 +1442,10 @@
     else if(S.error) html += '<div class="msg err" style="margin:0">'+esc(S.error)+'</div>';
     else {
       var shown = S.list.filter(match);
+      html += '<p class="hint">Showing ' + S.list.length + ' of ' + S.total + ' submissions. Search filters the loaded submissions.</p>';
       html += shown.length ? shown.map(subCardHtml).join('') : '<p class="hint">'+(S.list.length ? 'Nothing matches the filter.' : 'Nothing has been sent yet.')+'</p>';
     }
+    if(S.next) html += '<button type="button" class="small" data-action="s-more"' + (S.loading ? ' disabled' : '') + '>Load older submissions</button>';
     wrap.innerHTML = html;
   }
 
@@ -1730,25 +1753,28 @@
       var allowed = {'image/jpeg':1,'image/png':1,'image/webp':1};
       if(!allowed[file.type]){ showMsg('Unsupported image type. Use JPEG, PNG or WebP.', 'err'); return; }
       if(file.size > 8*1024*1024){ showMsg('Image too large (max 8MB).', 'err'); return; }
-      var reader = new FileReader();
-      reader.onload = function(){
-        var base64 = reader.result.split(',')[1];
-        showMsg('Uploading image…', 'ok');
-        fetch('/admin/api/upload-image', {
+      if(entry2._coverUploading){ showMsg('Wait for this cover upload to finish.', 'err'); return; }
+      entry2._coverUploading = true;
+      state.coverUploads++;
+      showMsg('Preparing cover…', 'ok');
+      prepareImage(file, 1200, 0.85, 1024*1024).then(function(prep){
+        return fetch('/admin/api/upload-image', {
           method: 'POST',
           headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ filenameHint: entry2.title_en || entry2.artist_en, mime: file.type, contentBase64: base64 })
-        }).then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
-          .then(function(res){
-            if(!res.ok){ showMsg('Upload failed: ' + (res.j.error||'unknown error'), 'err'); return; }
-            entry2.cover_url = res.j.path;
-            try{ entry2._coverPreview = URL.createObjectURL(file); }catch(e){}
-            state.entriesDirty = true; setDirty();
-            showMsg('Image uploaded. Now press Save \u2014 the new image shows on the live site about a minute later.', 'ok');
-            render();
-          }).catch(function(err){ showMsg('Upload failed: ' + err.message, 'err'); });
-      };
-      reader.readAsDataURL(file);
+          body: JSON.stringify({ filenameHint: entry2.title_en || entry2.artist_en, mime: 'image/jpeg', contentBase64: prep.base64 })
+        }).then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j, blob:prep.blob}; }); });
+      }).then(function(res){
+        if(!res.ok || !res.j.ok) throw new Error(res.j.error || 'unknown error');
+        if(entryById(fileId) !== entry2) return; // removed while uploading
+        entry2.cover_url = res.j.path;
+        if(entry2._coverPreview) URL.revokeObjectURL(entry2._coverPreview);
+        entry2._coverPreview = URL.createObjectURL(res.blob);
+        state.entriesDirty = true; setDirty();
+        showMsg('Cover uploaded. Press Save to put it on the site.', 'ok');
+        render();
+      }).catch(function(err){ showMsg('Upload failed: ' + err.message, 'err'); })
+        .finally(function(){ entry2._coverUploading = false; state.coverUploads--; });
+      t.value = '';
     }
   });
 
@@ -1756,6 +1782,7 @@
     var t = e.target;
     var action = t.getAttribute('data-action');
     if(!action) return;
+    if(action === 's-more'){ loadSubmissions(true); return; }
     if(action === 'delete-row'){
       var id = t.getAttribute('data-id');
       var entry = entryById(id);
@@ -1931,129 +1958,102 @@
   // and sha, since they're two separate files/commits on the GitHub side.
   // ---------------------------------------------------------------------
 
+  function savePayload(kind){
+    if(kind === 'entries') return state.entries.map(function(e){
+      var o = {}; for(var k in e){ if(k.charAt(0) !== '_') o[k] = e[k]; } return o;
+    });
+    if(kind === 'homepage') return state.homepage.slice().sort(byOrder).map(function(h){ return { artist_en:h.artist_en, order:h.order }; });
+    if(kind === 'newReleases') return state.newReleases.slice().sort(byOrder).map(function(it, k){
+      return { id:it.id, release_id:it.release_id || '', title_en:(it.title_en || '').trim(), title_fa:(it.title_fa || '').trim(),
+        youtube_url:it.video_url ? '' : (it.youtube_url || '').trim(), video_url:it.video_url || '', order:k };
+    });
+    if(kind === 'gallery') return state.gallery.slice().sort(byOrder).map(function(it, k){
+      return { id:it.id, src:it.src, people:(it.people || []).map(function(n){ return String(n).trim(); }).filter(Boolean),
+        caption_en:(it.caption_en || '').trim(), caption_fa:(it.caption_fa || '').trim(), order:k };
+    });
+    var order = state.entries.map(function(e){ return e.id; });
+    Object.keys(state.lyrics).forEach(function(id){ if(order.indexOf(id) === -1) order.push(id); });
+    return order.filter(lyricsHas).map(function(id){ return { id:id, lyrics:String(state.lyrics[id]) }; });
+  }
+
   function save(){
-    var jobs = [];
-    if(state.entriesDirty){
-      jobs.push(
-        fetch('/admin/api/save', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          // Fields starting with "_" (like _coverPreview) are for this page
-          // only and are never saved.
-          body: JSON.stringify({ content: state.entries.map(function(e){
-            var o = {}; for(var k in e){ if(k.charAt(0) !== '_') o[k] = e[k]; } return o;
-          }), sha: state.entriesSha })
-        }).then(function(r){ return r.json().then(function(j){ return {kind:'entries', ok:r.ok, j:j}; }); })
-      );
+    if(state.saving) return;
+    // Finish every preflight check before sending the first request.
+    if(state.coverUploads || nrUploading() || state.galUpload){
+      showMsg('An upload is still running. Save once it finishes.', 'err'); return;
     }
-    if(state.homepageDirty){
-      var payload = state.homepage.slice().sort(byOrder).map(function(h){ return { artist_en: h.artist_en, order: h.order }; });
-      jobs.push(
-        fetch('/admin/api/save-homepage', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ content: payload, sha: state.homepageSha })
-        }).then(function(r){ return r.json().then(function(j){ return {kind:'homepage', ok:r.ok, j:j}; }); })
-      );
+    if(state.lyricsDirty && !state.lyricsLoaded){
+      showMsg('The lyrics did not load, so they cannot be saved. Reload the page.', 'err'); return;
     }
-    if(state.newReleasesDirty){
-      if(nrUploading()){ showMsg('A video is still uploading — Save once it reaches 100%.', 'err'); return; }
-      var nrPayload = state.newReleases.slice().sort(byOrder).map(function(it, k){
-        return {
-          id: it.id,
-          release_id: it.release_id || '',
-          title_en: (it.title_en || '').trim(),
-          title_fa: (it.title_fa || '').trim(),
-          youtube_url: it.video_url ? '' : (it.youtube_url || '').trim(),
-          video_url: it.video_url || '',
-          order: k,
-        };
-      });
-      jobs.push(
-        fetch('/admin/api/save-new-releases', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ content: nrPayload, sha: state.newReleasesSha })
-        }).then(function(r){ return r.json().then(function(j){ return {kind:'newreleases', ok:r.ok, j:j}; }); })
-      );
-    }
-    if(state.galleryDirty){
-      if(state.galUpload){ showMsg('Photos are still uploading — Save once they’re done.', 'err'); return; }
-      var galSorted = state.gallery.slice().sort(byOrder);
-      var galPayload = galSorted.map(function(it, k){
-        return {
-          id: it.id,
-          src: it.src,
-          people: (it.people || []).map(function(n){ return String(n).trim(); }).filter(Boolean),
-          caption_en: (it.caption_en || '').trim(),
-          caption_fa: (it.caption_fa || '').trim(),
-          order: k,
-        };
-      });
-      var galNewFiles = galSorted.filter(function(it){ return it._blob; }).map(function(it){ return { src: it.src, blobSha: it._blob }; });
-      jobs.push(
-        fetch('/admin/api/gallery/save', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ content: galPayload, sha: state.gallerySha, newFiles: galNewFiles })
-        }).then(function(r){ return r.json().then(function(j){ return {kind:'gallery', ok:r.ok, j:j}; }); })
-      );
-    }
-    if(state.lyricsDirty){
-      if(!state.lyricsLoaded){ showMsg('The lyrics did not load, so they cannot be saved. Reload the page.', 'err'); return; }
-      var lyrOrder = state.entries.map(function(e){ return e.id; });
-      Object.keys(state.lyrics).forEach(function(id){ if(lyrOrder.indexOf(id) === -1) lyrOrder.push(id); });
-      var lyrPayload = lyrOrder.filter(lyricsHas).map(function(id){ return { id: id, lyrics: String(state.lyrics[id]) }; });
-      jobs.push(
-        fetch('/admin/api/save-lyrics', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ content: lyrPayload, sha: state.lyricsSha })
-        }).then(function(r){ return r.json().then(function(j){ return {kind:'lyrics', ok:r.ok, j:j, sent:lyrPayload}; }); })
-      );
-    }
-    if(!jobs.length){ showMsg('Nothing to save.', 'ok'); return; }
+    var paths = { entries:'save', homepage:'save-homepage', newReleases:'save-new-releases', gallery:'gallery/save', lyrics:'save-lyrics' };
+    var pending = Object.keys(paths).filter(function(kind){ return state[kind+'Dirty']; }).map(function(kind){
+      var sent = savePayload(kind);
+      var body = { content:sent, sha:state[kind+'Sha'] };
+      if(kind === 'gallery') body.newFiles = state.gallery.filter(function(it){ return it._blob; })
+        .map(function(it){ return { src:it.src, blobSha:it._blob }; });
+      return { kind:kind, sent:sent, snapshot:JSON.stringify(sent), body:body };
+    });
+    if(!pending.length){ showMsg('Nothing to save.', 'ok'); return; }
+    state.saving = true;
+    var buttons = [document.getElementById('saveBtn'), document.getElementById('saveBtn2')];
+    buttons.forEach(function(btn){ btn.disabled = true; });
     showMsg('Saving…', 'ok');
-    Promise.all(jobs).then(function(results){
-      var failed = results.filter(function(r){ return !r.ok; });
+    return Promise.all(pending.map(function(job){
+      // A failed request must not hide the SHA returned by another success.
+      return Promise.resolve().then(function(){
+        return fetch('/admin/api/' + paths[job.kind], {
+          method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(job.body)
+        });
+      }).then(function(r){ return r.json().then(function(j){ return { job:job, ok:r.ok && !!j.ok, j:j }; }); })
+        .catch(function(err){ return { job:job, ok:false, j:{error:err.message} }; });
+    })).then(function(results){
       results.forEach(function(r){
         if(!r.ok) return;
-        if(r.kind === 'entries'){ state.entriesSha = r.j.sha || state.entriesSha; state.entriesDirty = false; }
-        if(r.kind === 'homepage'){ state.homepageSha = r.j.sha || state.homepageSha; state.homepageDirty = false; }
-        if(r.kind === 'newreleases'){ state.newReleasesSha = r.j.sha || state.newReleasesSha; state.newReleasesDirty = false; }
-        if(r.kind === 'lyrics'){
-          state.lyricsSha = r.j.sha || state.lyricsSha; state.lyricsDirty = false;
+        var job = r.job, kind = job.kind;
+        var unchanged = JSON.stringify(savePayload(kind)) === job.snapshot;
+        state[kind+'Sha'] = r.j.sha || state[kind+'Sha'];
+        state[kind+'Dirty'] = !unchanged;
+        if(kind === 'lyrics'){
           state.lyricsSaved = {};
-          (r.sent || []).forEach(function(row){ state.lyricsSaved[row.id] = true; });
-          if(state.tab === 'lyrics') render();
+          job.sent.forEach(function(row){ state.lyricsSaved[row.id] = true; });
+          if(unchanged && state.tab === 'lyrics') render();
         }
-        if(r.kind === 'gallery'){
-          state.gallerySha = r.j.sha || state.gallerySha; state.galleryDirty = false;
-          state.gallery.forEach(function(it){ delete it._blob; });
-          // The server may have renamed photo files after the names in them.
+        if(kind === 'gallery'){
+          // Clear only blobs in this request. Keep photos added in flight.
           (r.j.content || []).forEach(function(saved){
+            var original = job.sent.filter(function(row){ return row.id === saved.id; })[0];
             var it = galById(saved.id);
-            if(it && saved.src && saved.src !== it.src){
-              if(!it._preview) it._preview = it.src; // new path isn't live until the rebuild
+            if(!it || !original || it.src !== original.src) return;
+            var upload = (job.body.newFiles || []).filter(function(f){ return f.src === original.src; })[0];
+            if(upload && it._blob === upload.blobSha) delete it._blob;
+            if(saved.src && saved.src !== it.src){
+              if(!it._preview) it._preview = it.src;
               it.src = saved.src;
             }
           });
-          if(state.tab === 'gallery') render();
+          if(unchanged && state.tab === 'gallery') render();
         }
       });
       setDirty();
+      var failed = results.filter(function(r){ return !r.ok; });
       if(failed.length){
-        showMsg('Save failed: ' + failed.map(function(r){ return r.j.error || 'unknown error'; }).join('; '), 'err');
+        showMsg('Some changes were not saved: ' + failed.map(function(r){ return r.job.kind + ': ' + (r.j.error || 'unknown error'); }).join('; ')
+          + '. Successful saves are recorded; unsaved changes remain here.', 'err');
+      } else if(Object.keys(paths).some(function(kind){ return state[kind+'Dirty']; })){
+        showMsg('Submitted changes saved. Your newer edits are still unsaved — press Save again.', 'ok');
       } else {
         showMsg('Saved. Cloudflare will rebuild the site automatically (usually under a minute).', 'ok');
       }
-    }).catch(function(err){ showMsg('Save failed: ' + err.message, 'err'); });
+    }).finally(function(){
+      state.saving = false;
+      buttons.forEach(function(btn){ btn.disabled = false; });
+    });
   }
   document.getElementById('saveBtn').addEventListener('click', save);
   document.getElementById('saveBtn2').addEventListener('click', save);
 
   window.addEventListener('beforeunload', function(e){
-    if(state.entriesDirty || state.homepageDirty || state.newReleasesDirty || state.galleryDirty || state.lyricsDirty || state.galUpload || nrUploading()){ e.preventDefault(); e.returnValue = ''; }
+    if(state.entriesDirty || state.homepageDirty || state.newReleasesDirty || state.galleryDirty || state.lyricsDirty || state.saving || state.coverUploads || state.galUpload || nrUploading()){ e.preventDefault(); e.returnValue = ''; }
   });
 
   // ---------------------------------------------------------------------
