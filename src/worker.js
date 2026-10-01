@@ -18,9 +18,8 @@ import { EmailMessage } from 'cloudflare:email';
 const GITHUB_OWNER = 'merajmusic-hash';
 const GITHUB_REPO = 'merajmirzaei-site';
 const GITHUB_BRANCH = 'main';
-// Both paths are repo-root-relative (for the GitHub Contents API) and live
-// inside the static-assets directory, so they're also served publicly at
-// /data/credits.json and /images/covers/<file> respectively.
+// Paths are repo-root-relative. The public credits endpoint strips private
+// fields; new saves store notes/statuses only in the private COMMENTS KV.
 const DATA_PATH = 'merajmirzaei-site (4)/data/credits.json';
 // The homepage's "Selected artists" photo wall: an ordered list of
 // artist_en names, each of which must also have entries in credits.json to
@@ -153,8 +152,8 @@ function ghHeaders(env) {
   };
 }
 
-async function ghGetFile(env, path) {
-  const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}?ref=${GITHUB_BRANCH}`;
+async function ghGetFile(env, path, ref = GITHUB_BRANCH) {
+  const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}?ref=${encodeURIComponent(ref)}`;
   const res = await fetch(url, { headers: ghHeaders(env) });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`GitHub GET ${path} failed: ${res.status} ${await res.text()}`);
@@ -205,13 +204,37 @@ const BOOL_FIELDS = ['role_arrangement', 'role_production', 'role_mix', 'role_ma
 const RELEASE_TYPES = new Set(['single', 'album track', 'album']);
 const STATUS_VALUES = new Set(['not started', 'pending', 'done']);
 const PAGE_VALUES = new Set(['credits', 'releases']);
+const PRIVATE_CREDIT_FIELDS = ['notes', 'status_musicbrainz', 'status_discogs', 'status_genius'];
+// The first public row carries only an opaque revision, never private text.
+// This makes even a notes-only save change the GitHub blob SHA, preserving
+// the same optimistic concurrency check as the other admin tabs.
+const LEGACY_CREDITS_REF = '5c413fbe10ada42b55a6068600791b05dde5eaec';
+const LEGACY_CREDITS_REVISION = 'legacy-' + LEGACY_CREDITS_REF;
+const PUBLIC_CREDIT_FIELDS = STRING_FIELDS.filter((f) => !PRIVATE_CREDIT_FIELDS.includes(f))
+  .concat(BOOL_FIELDS, ['order', 'pages', 'links']);
+
+function publicCredits(entries) {
+  return entries.map((entry) => Object.fromEntries(PUBLIC_CREDIT_FIELDS
+    .filter((field) => Object.prototype.hasOwnProperty.call(entry, field))
+    .map((field) => [field, entry[field]])));
+}
+
+function privateCredits(entries) {
+  return Object.fromEntries(entries.map((entry) => [entry.id, Object.fromEntries(
+    PRIVATE_CREDIT_FIELDS.map((field) => [field, entry[field] || (field === 'notes' ? '' : 'not started')])
+  )]));
+}
 
 function validateEntries(data) {
   if (!Array.isArray(data)) return 'data must be an array';
   if (data.length > 5000) return 'too many entries';
+  const ids = new Set();
   for (let i = 0; i < data.length; i++) {
     const e = data[i];
     if (!e || typeof e !== 'object') return `entry ${i} is not an object`;
+    if (typeof e.id !== 'string' || !e.id.trim() || e.id.length > 200) return `entry ${i}: invalid id`;
+    if (ids.has(e.id)) return `entry ${i}: duplicate id`;
+    ids.add(e.id);
     for (const f of STRING_FIELDS) {
       if (e[f] != null && typeof e[f] !== 'string') return `entry ${i}: ${f} must be a string`;
     }
@@ -302,19 +325,18 @@ const FAVICON_LINKS =
   '<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">\n' +
   '<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">\n';
 
-// Verified profile URLs, unchanged from the site's existing (pre-this-task)
-// JSON-LD — pulled from the already-vetted data already live on the site,
-// not re-derived or guessed.
+// Official profile URLs shared by the site's identity graph. The current
+// Miragesohi Spotify artist was verified through Spotify's oEmbed endpoint.
 const PERSON_SAME_AS = [
   'https://musicbrainz.org/artist/5d52a3f9-f059-4c47-9f4e-0bdb61317fe3',
   'https://www.discogs.com/user/Merajmusic',
   'https://genius.com/merajmirzaei',
-  'https://open.spotify.com/artist/3wHa2wASrgywhttuHleFl1',
+  'https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9',
   'https://youtube.com/@miragesohi',
   'https://www.instagram.com/merajmirzaei_music',
 ];
 const MIRAGE_SAME_AS = [
-  'https://open.spotify.com/artist/3wHa2wASrgywhttuHleFl1',
+  'https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9',
   'https://www.youtube.com/@Miragesohi',
   'https://www.instagram.com/merajmirzaei_music/',
 ];
@@ -330,7 +352,7 @@ const PERSON_LOCALIZED = {
   },
   fa: {
     jobTitle: 'پرودیوسر و مهندس میکس و مستر',
-    description: 'معراج میرزایی (Miragesohi) — پرودیوسر، مهندس میکس و مستر و ساند دیزاینر در لندن. بیش از ۲۰ سال کار در موسیقی ایرانی، الکترونیک و بین‌المللی.',
+    description: 'معراج میرزایی (Meraj Mirzaei)، با نام هنری میراژسهی (Miragesohi) — پرودیوسر، مهندس میکس و مستر و ساند دیزاینر در لندن. بیش از ۲۰ سال کار در موسیقی ایرانی، الکترونیک و بین‌المللی.',
   },
 };
 
@@ -340,7 +362,7 @@ function buildPersonNode(lang) {
     '@type': 'Person',
     '@id': PERSON_ID,
     name: 'Meraj Mirzaei',
-    alternateName: ['معراج میرزایی', 'Miragesohi', 'MIRAGE'],
+    alternateName: ['معراج میرزایی', 'Miragesohi', 'میراژسهی', 'MIRAGE'],
     jobTitle: loc.jobTitle,
     description: loc.description,
     url: SITE_ORIGIN + '/',
@@ -352,12 +374,26 @@ function buildPersonNode(lang) {
   };
 }
 
+// One domain-level site identity, shared by the English and Farsi homepages.
+// Alternate names describe the same site; they do not create extra people.
+function buildWebsiteNode() {
+  return {
+    '@type': 'WebSite',
+    '@id': SITE_ORIGIN + '/#website',
+    name: 'Meraj Mirzaei',
+    alternateName: ['معراج میرزایی', 'Miragesohi', 'میراژسهی'],
+    url: SITE_ORIGIN + '/',
+    inLanguage: ['en', 'fa'],
+    publisher: { '@id': PERSON_ID },
+  };
+}
+
 function buildMirageNode() {
   return {
     '@type': 'MusicGroup',
     '@id': MIRAGE_ID,
     name: 'Miragesohi',
-    alternateName: 'MIRAGE',
+    alternateName: ['میراژسهی', 'MIRAGE'],
     genre: ['Deep house', 'Melodic electronic', 'Trap', 'Pop'],
     foundingDate: '2025',
     member: { '@id': PERSON_ID },
@@ -373,7 +409,7 @@ const NAV_LABELS = {
   about: { en: 'About', fa: 'درباره من' },
   credits: { en: 'Credits', fa: 'کارنامه' },
   releases: { en: 'Releases', fa: 'ریلیزها' },
-  miragesohi: { en: 'Miragesohi', fa: 'Miragesohi' },
+  miragesohi: { en: 'Miragesohi', fa: 'میراژسهی' },
   gallery: { en: 'Gallery', fa: 'گالری' },
   services: { en: 'Services', fa: 'خدمات' },
   collaborate: { en: 'Collaborate', fa: 'همکاری' },
@@ -455,7 +491,8 @@ function buildPageNode(slug, lang) {
         '@type': 'ProfilePage',
         '@id': SITE_ORIGIN + pathFor(lang, 'home') + '#webpage',
         url: SITE_ORIGIN + pathFor(lang, 'home'),
-        name: lang === 'fa' ? 'معراج میرزایی (Meraj Mirzaei) — پرودیوسر و مهندس میکس و مستر، لندن · Miragesohi' : 'Meraj Mirzaei (معراج میرزایی) — Producer & Mix/Mastering Engineer, London · Miragesohi',
+        name: lang === 'fa' ? 'معراج میرزایی — پرودیوسر | میراژسهی' : 'Meraj Mirzaei — Producer | Miragesohi',
+        isPartOf: { '@id': SITE_ORIGIN + '/#website' },
         inLanguage: lang,
         mainEntity: { '@id': PERSON_ID },
       };
@@ -464,7 +501,7 @@ function buildPageNode(slug, lang) {
         '@type': 'AboutPage',
         '@id': SITE_ORIGIN + pathFor(lang, 'about') + '#webpage',
         url: SITE_ORIGIN + pathFor(lang, 'about'),
-        name: lang === 'fa' ? 'درباره من — معراج میرزایی، لندن' : 'About — Meraj Mirzaei, Producer & Mix/Mastering Engineer, London',
+        name: lang === 'fa' ? 'درباره معراج میرزایی — پرودیوسر | میراژسهی' : 'About Meraj Mirzaei — Producer | Miragesohi',
         inLanguage: lang,
         mainEntity: { '@id': PERSON_ID },
       };
@@ -1627,6 +1664,7 @@ async function buildEntityGraph(pathname, env) {
 
   const pageNode = buildPageNode(slug, lang);
   if (pageNode) nodes.push(pageNode);
+  if (slug === 'home') nodes.push(buildWebsiteNode());
 
   if (slug === 'gallery' && pageNode) {
     const galleryItems = await readGalleryReadOnly(env);
@@ -2162,6 +2200,14 @@ function json(obj, status = 200) {
 
 async function handleLoginPost(request, env) {
   if (!env.ADMIN_PASSWORD) return html('Admin not configured', 503);
+  if (!env.ADMIN_LOGIN_LIMITER) return html('Login protection is not configured. Please contact the site owner.', 503);
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const { success } = await env.ADMIN_LOGIN_LIMITER.limit({ key: 'admin-login:' + await sha256Hex(ip) });
+  if (!success) {
+    const response = html(loginPage('Too many login attempts. Wait a minute and try again.'), 429);
+    response.headers.set('Retry-After', '60');
+    return response;
+  }
   let password = '';
   const contentType = request.headers.get('Content-Type') || '';
   if (contentType.includes('application/json')) {
@@ -2171,10 +2217,6 @@ async function handleLoginPost(request, env) {
     const form = await request.formData();
     password = form.get('password') || '';
   }
-  // Small fixed delay slows down naive scripted brute force; the real
-  // protection is the password itself plus the page being unindexed and
-  // unlinked.
-  await new Promise((r) => setTimeout(r, 300));
   if (!timingSafeEqual(String(password), env.ADMIN_PASSWORD)) {
     return html(loginPage('Wrong password.'), 401);
   }
@@ -2201,14 +2243,30 @@ function handleLogout() {
 async function handleGetCredits(env) {
   const file = await ghGetFile(env, DATA_PATH);
   if (!file) return json({ error: 'data/credits.json not found in repo' }, 500);
-  const content = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
+  const content = await ghGetFileText(env, file, DATA_PATH);
   let data;
   try {
     data = JSON.parse(content);
   } catch (e) {
     return json({ error: 'data/credits.json is not valid JSON: ' + e.message }, 500);
   }
-  return json({ data, sha: file.sha });
+  if (!Array.isArray(data)) return json({ error: 'data/credits.json is not a list' }, 500);
+  const revision = data[0] && data[0]._adminRevision;
+  let privateData = privateCredits(data); // compatibility with pre-migration saves
+  if (revision) {
+    if (!env.COMMENTS) return json({ error: 'Private credits storage is not connected.' }, 503);
+    privateData = await env.COMMENTS.get('admin:credits:' + revision, 'json');
+    if (!privateData && revision === LEGACY_CREDITS_REVISION) {
+      // Read the old, immutable revision only until the first admin Save.
+      // Never silently replace missing private notes with empty values.
+      const legacy = await ghGetFile(env, DATA_PATH, LEGACY_CREDITS_REF);
+      if (!legacy || !legacy.content) return json({ error: 'The existing private notes could not be recovered.' }, 503);
+      privateData = privateCredits(JSON.parse(utf8FromBase64(legacy.content)));
+    }
+    if (!privateData) return json({ error: 'Private notes could not be loaded. Please retry before editing.' }, 503);
+  }
+  const clean = publicCredits(data).map((entry) => ({ ...entry, ...(privateData[entry.id] || {}) }));
+  return json({ data: clean, sha: file.sha });
 }
 
 async function handleSave(request, env) {
@@ -2217,9 +2275,15 @@ async function handleSave(request, env) {
   const { content, sha } = body;
   const invalid = validateEntries(content);
   if (invalid) return json({ error: invalid }, 400);
-
-  const text = JSON.stringify(content, null, 2) + '\n';
+  if (!env.COMMENTS) return json({ error: 'Private credits storage is not connected. Nothing was saved.' }, 503);
+  const revision = crypto.randomUUID();
+  const clean = publicCredits(content);
+  if (clean.length) clean[0]._adminRevision = revision;
+  const text = JSON.stringify(clean, null, 2) + '\n';
   try {
+    // Store private data first, under a unique revision. A failed or
+    // conflicting GitHub commit cannot replace another admin's notes.
+    await env.COMMENTS.put('admin:credits:' + revision, JSON.stringify(privateCredits(content)));
     const result = await ghPutFile(
       env,
       DATA_PATH,
@@ -2348,6 +2412,7 @@ const ALLOWED_IMAGE_TYPES = {
   'image/webp': 'webp',
 };
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+const MAX_COVER_BYTES = 1024 * 1024;
 
 function safeSlug(s) {
   return String(s || 'cover')
@@ -2365,7 +2430,7 @@ async function handleUploadImage(request, env) {
   if (!ext) return json({ error: 'Unsupported image type. Use JPEG, PNG, or WebP.' }, 400);
   if (!contentBase64 || typeof contentBase64 !== 'string') return json({ error: 'Missing image data' }, 400);
   const approxBytes = contentBase64.length * 0.75;
-  if (approxBytes > MAX_IMAGE_BYTES) return json({ error: 'Image too large (max 8MB).' }, 400);
+  if (approxBytes > MAX_COVER_BYTES) return json({ error: 'Cover too large (max 1MB). Resize it before uploading.' }, 400);
 
   const slug = safeSlug(filenameHint);
   const path = `${COVERS_DIR}/${slug}-${Date.now().toString(36)}.${ext}`;
@@ -2448,8 +2513,8 @@ async function ghApi(env, method, apiPath, body) {
 }
 
 // Files currently in a repo directory ([] if it doesn't exist yet).
-async function ghListDir(env, dirPath) {
-  const url = `${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(dirPath).replace(/%2F/g, '/')}?ref=${GITHUB_BRANCH}`;
+async function ghListDir(env, dirPath, ref = GITHUB_BRANCH) {
+  const url = `${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(dirPath).replace(/%2F/g, '/')}?ref=${encodeURIComponent(ref)}`;
   const res = await fetch(url, { headers: ghHeaders(env) });
   if (res.status === 404) return [];
   if (!res.ok) throw new Error(`GitHub GET ${dirPath} failed: ${res.status}`);
@@ -2539,57 +2604,55 @@ async function handleSaveGallery(request, env) {
   }
 
   try {
-    // Same "someone else saved first" check as every other tab's save.
-    const current = await ghGetFile(env, GALLERY_PATH);
-    if ((current ? current.sha : null) !== (sha || null)) {
-      return json({ error: 'Someone else saved changes since you loaded this page. Reload and try again.' }, 409);
-    }
-
-    const existing = await ghListDir(env, GALLERY_DIR);
-    const existingSrcs = new Set(existing.map((f) => '/images/gallery/' + f.name));
-    for (const src of used) {
-      if (GALLERY_UPLOAD_SRC_RE.test(src) && !existingSrcs.has(src) && !adds.has(src)) {
-        return json({ error: `A photo on the list is missing (${src.split('/').pop()}). Remove it and upload it again.` }, 400);
-      }
-    }
-
-    // Give each uploaded photo its name-based file name (see
-    // galleryFileNameFor); a renamed photo is written at its new path and
-    // its old file is removed below like any other unused file.
-    const existingByName = new Map(existing.map((f) => [f.name, f]));
-    const taken = new Set(existing.map((f) => f.name));
-    const writes = new Map(); // final src -> blob sha
-    const finalContent = content.map((e) => {
-      if (!GALLERY_UPLOAD_SRC_RE.test(e.src)) return e;
-      const name = e.src.split('/').pop();
-      const target = galleryFileNameFor(e, name, taken);
-      taken.add(target);
-      const src = '/images/gallery/' + target;
-      if (adds.has(e.src)) writes.set(src, adds.get(e.src));
-      else if (target !== name) writes.set(src, existingByName.get(name).sha);
-      return target === name ? e : { ...e, src };
-    });
-    const finalUsed = new Set(finalContent.map((e) => e.src));
-    const text = JSON.stringify(finalContent, null, 2) + '\n';
-
-    const tree = [];
-    for (const [src, blobSha] of writes) {
-      tree.push({ path: ASSETS_DIR + src, mode: '100644', type: 'blob', sha: blobSha });
-    }
-    for (const f of existing) {
-      if (!finalUsed.has('/images/gallery/' + f.name)) {
-        tree.push({ path: f.path, mode: '100644', type: 'blob', sha: null }); // delete
-      }
-    }
-    tree.push({ path: GALLERY_PATH, mode: '100644', type: 'blob', content: text });
-
-    // Build the commit on top of the current branch head. If something
-    // else (e.g. the artwork bot) moves the branch in between, rebuild on
-    // the new head and try again rather than overwrite it.
     let lastErr = null;
     for (let attempt = 0; attempt < 3; attempt++) {
+      // All reads and the commit use one immutable head. Recheck on every
+      // retry; a concurrent gallery save must conflict, never be rebased.
       const ref = await ghApi(env, 'GET', `/git/ref/heads/${GITHUB_BRANCH}`);
       const headSha = ref.object.sha;
+      // Same "someone else saved first" check as every other tab's save.
+      const current = await ghGetFile(env, GALLERY_PATH, headSha);
+      if ((current ? current.sha : null) !== (sha || null)) {
+        return json({ error: 'Someone else saved changes since you loaded this page. Reload and try again.' }, 409);
+      }
+
+      const existing = await ghListDir(env, GALLERY_DIR, headSha);
+      const existingSrcs = new Set(existing.map((f) => '/images/gallery/' + f.name));
+      for (const src of used) {
+        if (GALLERY_UPLOAD_SRC_RE.test(src) && !existingSrcs.has(src) && !adds.has(src)) {
+          return json({ error: `A photo on the list is missing (${src.split('/').pop()}). Remove it and upload it again.` }, 400);
+        }
+      }
+
+      // Give each uploaded photo its name-based file name (see
+      // galleryFileNameFor); a renamed photo is written at its new path and
+      // its old file is removed below like any other unused file.
+      const existingByName = new Map(existing.map((f) => [f.name, f]));
+      const taken = new Set(existing.map((f) => f.name));
+      const writes = new Map(); // final src -> blob sha
+      const finalContent = content.map((e) => {
+        if (!GALLERY_UPLOAD_SRC_RE.test(e.src)) return e;
+        const name = e.src.split('/').pop();
+        const target = galleryFileNameFor(e, name, taken);
+        taken.add(target);
+        const src = '/images/gallery/' + target;
+        if (adds.has(e.src)) writes.set(src, adds.get(e.src));
+        else if (target !== name) writes.set(src, existingByName.get(name).sha);
+        return target === name ? e : { ...e, src };
+      });
+      const finalUsed = new Set(finalContent.map((e) => e.src));
+      const text = JSON.stringify(finalContent, null, 2) + '\n';
+
+      const tree = [];
+      for (const [src, blobSha] of writes) {
+        tree.push({ path: ASSETS_DIR + src, mode: '100644', type: 'blob', sha: blobSha });
+      }
+      for (const f of existing) {
+        if (!finalUsed.has('/images/gallery/' + f.name)) {
+          tree.push({ path: f.path, mode: '100644', type: 'blob', sha: null }); // delete
+        }
+      }
+      tree.push({ path: GALLERY_PATH, mode: '100644', type: 'blob', content: text });
       const headCommit = await ghApi(env, 'GET', `/git/commits/${headSha}`);
       const newTree = await ghApi(env, 'POST', '/git/trees', { base_tree: headCommit.tree.sha, tree });
       const commit = await ghApi(env, 'POST', '/git/commits', {
@@ -3034,18 +3097,6 @@ async function serveMedia(request, env, ctx, match) {
     'X-Robots-Tag': 'noindex',
   };
 
-  if (cache && ctx && ctx.waitUntil) {
-    ctx.waitUntil((async () => {
-      const full = await fetch(upstreamUrl);
-      if (full.status !== 200) return;
-      const headers = new Headers(baseHeaders);
-      headers.set('Cache-Control', 'public, max-age=31536000, immutable');
-      const len = full.headers.get('Content-Length');
-      if (len) headers.set('Content-Length', len);
-      await cache.put(cacheKey, new Response(full.body, { status: 200, headers }));
-    })().catch(() => {}));
-  }
-
   const direct = await fetch(upstreamUrl, { method: isHead ? 'HEAD' : 'GET', headers: rangeHeaders });
   if (direct.status !== 200 && direct.status !== 206) {
     return new Response('Video temporarily unavailable', { status: 502 });
@@ -3054,6 +3105,20 @@ async function serveMedia(request, env, ctx, match) {
   for (const h of ['Content-Length', 'Content-Range']) {
     const v = direct.headers.get(h);
     if (v) headers.set(h, v);
+  }
+  // A HEAD request fetches headers only. For a full GET, clone the
+  // response already fetched rather than download the same video twice.
+  if (!isHead && cache && ctx && ctx.waitUntil) {
+    const fullResponse = !range && direct.status === 200 ? direct.clone() : null;
+    ctx.waitUntil((async () => {
+      const full = fullResponse || await fetch(upstreamUrl);
+      if (full.status !== 200) { if (full.body) await full.body.cancel(); return; }
+      const cacheHeaders = new Headers(baseHeaders);
+      cacheHeaders.set('Cache-Control', 'public, max-age=31536000, immutable');
+      const length = full.headers.get('Content-Length');
+      if (length) cacheHeaders.set('Content-Length', length);
+      await cache.put(cacheKey, new Response(full.body, { status:200, headers:cacheHeaders }));
+    })().catch(() => {}));
   }
   headers.set('Cache-Control', 'public, max-age=3600');
   return new Response(isHead ? null : direct.body, { status: direct.status, headers });
@@ -3177,14 +3242,14 @@ async function handleGetComments(request, env, ctx) {
 async function handleAdminListComments(env) {
   if (!env.COMMENTS) return json({ error: 'Comments storage is not connected yet.', code: 'unavailable' }, 503);
   const [pending, approved] = await Promise.all([
-    env.COMMENTS.list({ prefix: 'p:', limit: 1000 }),
-    env.COMMENTS.list({ prefix: 'a:', limit: 1000 }),
+    listAllKeys(env.COMMENTS, 'p:'),
+    listAllKeys(env.COMMENTS, 'a:'),
   ]);
   const shape = (k) => (k.metadata ? { key: k.name, ...k.metadata } : null);
   const newestFirst = (a, b) => b.ts - a.ts;
   return json({
-    pending: pending.keys.map(shape).filter(Boolean).sort(newestFirst),
-    approved: approved.keys.map(shape).filter(Boolean).sort(newestFirst),
+    pending: pending.map(shape).filter(Boolean).sort(newestFirst),
+    approved: approved.map(shape).filter(Boolean).sort(newestFirst),
   });
 }
 
@@ -3564,19 +3629,44 @@ async function notifyCollab(env, rec, buffers) {
 
 // --- admin: Submissions tab -----------------------------------------------
 
-async function handleAdminListSubmissions(env) {
+async function listAllKeys(namespace, prefix) {
+  const keys = [];
+  let cursor;
+  do {
+    const page = await namespace.list({ prefix, limit:1000, ...(cursor ? { cursor } : {}) });
+    keys.push(...page.keys);
+    if (page.list_complete) return keys;
+    if (!page.cursor || page.cursor === cursor) throw new Error('Storage returned an invalid page cursor. Please retry.');
+    cursor = page.cursor;
+  } while (true);
+}
+
+async function handleAdminListSubmissions(request, env) {
   if (!env.COMMENTS) return json({ error: 'Storage is not connected yet.', code: 'unavailable' }, 503);
-  const listed = await env.COMMENTS.list({ prefix: 's:', limit: 1000 });
-  const keys = listed.keys
-    .slice()
-    .sort((a, b) => ((b.metadata && b.metadata.ts) || 0) - ((a.metadata && a.metadata.ts) || 0))
-    .slice(0, 300);
+  const before = new URL(request.url).searchParams.get('before');
+  let boundary = null;
+  if (before) {
+    const match = /^(\d+):(s:[a-z0-9-]+)$/.exec(before);
+    if (!match) return json({ error:'Invalid page cursor' }, 400);
+    boundary = { ts:Number(match[1]), name:match[2] };
+  }
+  // Scan metadata across every KV page before sorting. KV key ordering
+  // must never cause recent submissions to disappear behind the first 1000.
+  const listed = await listAllKeys(env.COMMENTS, 's:');
+  const timestamp = (k) => (k.metadata && k.metadata.ts) || 0;
+  const sorted = listed.sort((a, b) => timestamp(b) - timestamp(a) || b.name.localeCompare(a.name));
+  const eligible = boundary ? sorted.filter((k) => timestamp(k) < boundary.ts
+    || (timestamp(k) === boundary.ts && k.name.localeCompare(boundary.name) < 0)) : sorted;
+  const keys = eligible.slice(0, 50);
   const [recs, mail] = await Promise.all([
     Promise.all(keys.map((k) => env.COMMENTS.get(k.name, 'json').catch(() => null))),
     env.COMMENTS.get('collab:mailstatus', 'json').catch(() => null),
   ]);
   return json({
     submissions: recs.filter(Boolean).sort((a, b) => b.ts - a.ts),
+    next: eligible.length > keys.length ? timestamp(keys[keys.length - 1]) + ':' + keys[keys.length - 1].name : null,
+    total: listed.length,
+    unread: listed.filter((k) => k.metadata && !k.metadata.read).length,
     mail,
     emailConfigured: !!env.SEND_EMAIL,
   });
@@ -3819,6 +3909,14 @@ async function routeAdminRequest(request, env, pathname) {
   if (pathname === '/admin' || pathname === '/admin/') {
     return serveAdminApp(env);
   }
+  if (pathname === '/admin/__diag') {
+    return json({
+      hasAdminPassword: !!env.ADMIN_PASSWORD,
+      hasGithubToken: !!env.GITHUB_TOKEN,
+      hasSendEmail: !!env.SEND_EMAIL,
+      lastCollabEmail: env.COMMENTS ? await env.COMMENTS.get('collab:mailstatus', 'json').catch(() => null) : null,
+    });
+  }
   if (pathname === '/admin/api/credits' && request.method === 'GET') {
     if (!env.GITHUB_TOKEN) return json({ error: 'Admin not fully configured (missing GITHUB_TOKEN)' }, 503);
     return handleGetCredits(env);
@@ -3881,7 +3979,7 @@ async function routeAdminRequest(request, env, pathname) {
     return handleAdminDeleteComment(request, env);
   }
   if (pathname === '/admin/api/submissions' && request.method === 'GET') {
-    return handleAdminListSubmissions(env);
+    return handleAdminListSubmissions(request, env);
   }
   if (pathname === '/admin/api/submissions/file' && (request.method === 'GET' || request.method === 'HEAD')) {
     return handleAdminSubmissionFile(request, env);
@@ -3895,8 +3993,7 @@ async function routeAdminRequest(request, env, pathname) {
   return new Response('Not found', { status: 404 });
 }
 
-export default {
-  async fetch(request, env, ctx) {
+async function handleRequest(request, env, ctx) {
     const url = new URL(request.url);
     const { pathname } = url;
 
@@ -3910,6 +4007,20 @@ export default {
     }
     if (pathname === '/fa/mirage' || pathname === '/fa/mirage.html' || pathname === '/fa/mirage/') {
       return Response.redirect(SITE_ORIGIN + '/fa/miragesohi', 301);
+    }
+
+    // Protect old deployed JSON as well as new saves. Encoded and
+    // extensionless paths cannot bypass the filter via asset resolution.
+    let decodedPath;
+    try { decodedPath = decodeURIComponent(pathname).replace(/\\/g, '/').replace(/\/+/g, '/'); }
+    catch { return new Response('Invalid path', { status:400 }); }
+    if (/^\/data\/credits(?:\.json)?\/?$/.test(decodedPath)) {
+      if (!['GET', 'HEAD'].includes(request.method)) return new Response('Method not allowed', { status:405 });
+      const entries = await readCreditsReadOnly(env);
+      if (!entries) return json({ error:'Credits temporarily unavailable' }, 503);
+      return new Response(request.method === 'HEAD' ? null : JSON.stringify(publicCredits(entries)), {
+        headers:{ 'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store', 'X-Content-Type-Options':'nosniff' }
+      });
     }
 
     // Uploaded New Release videos (see serveMedia above).
@@ -3938,11 +4049,9 @@ export default {
     // Collaboration submissions from the /collaborate page (see
     // handlePostCollab above).
     if (pathname === '/api/collab') {
-      // GET: only whether the notification email works (ok/error/time) —
-      // never any submission content.
+      // GET exposes configuration only, never internal email errors.
       if (request.method === 'GET') {
-        const mail = env.COMMENTS ? await env.COMMENTS.get('collab:mailstatus', 'json').catch(() => null) : null;
-        return json({ emailBinding: !!env.SEND_EMAIL, lastEmail: mail });
+        return json({ emailBinding: !!env.SEND_EMAIL });
       }
       if (request.method !== 'POST') {
         return new Response('Method not allowed', { status: 405, headers: { Allow: 'POST' } });
@@ -3956,30 +4065,14 @@ export default {
     }
 
     try {
-      if (pathname === '/admin/__diag') {
-        // Temporary, unauthenticated-by-design diagnostic: reveals only
-        // whether each secret binding is present, never its value or
-        // length, so it's safe to leave reachable while debugging a
-        // "not configured" report. Remove once the secrets are confirmed
-        // wired up correctly.
-        return json({
-          hasAdminPassword: !!env.ADMIN_PASSWORD,
-          hasGithubToken: !!env.GITHUB_TOKEN,
-          hasSendEmail: !!env.SEND_EMAIL,
-          // How the last collaboration notification email went (ok/error
-          // text/time only — no submission content).
-          lastCollabEmail: env.COMMENTS ? await env.COMMENTS.get('collab:mailstatus', 'json').catch(() => null) : null,
-          collabSubmissions: env.COMMENTS ? (await env.COMMENTS.list({ prefix: 's:', limit: 1000 })).keys.length : null,
-        });
-      }
       if (pathname === '/admin/login' && request.method === 'POST') {
         return await handleLoginPost(request, env);
       }
       if (pathname === '/admin/logout' && request.method === 'POST') {
         return handleLogout();
       }
-      if (pathname.startsWith('/admin')) {
-        return await routeAdminRequest(request, env, pathname);
+      if (decodedPath.startsWith('/admin')) {
+        return await routeAdminRequest(request, env, decodedPath);
       }
     } catch (err) {
       // Never leak a raw stack trace — this is server logic reachable only
@@ -4059,5 +4152,17 @@ export default {
       }
     }
     return assetResponse;
+}
+
+export default {
+  async fetch(request, env, ctx) {
+    const response = await handleRequest(request, env, ctx);
+    let pathname = new URL(request.url).pathname;
+    try { pathname = decodeURIComponent(pathname).replace(/\\/g, '/').replace(/\/+/g, '/'); } catch {}
+    if (pathname.startsWith('/admin')) {
+      response.headers.set('Cache-Control', 'private, no-store');
+      response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    }
+    return response;
   },
 };

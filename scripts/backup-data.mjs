@@ -7,8 +7,8 @@
 //   node scripts/backup-data.mjs <output dir>
 //
 // Writes into <output dir>:
-//   credits-latest.csv   — identical to the admin panel's "Export CSV"
-//   credits-latest.json  — identical to the admin panel's "Export JSON"
+//   credits-latest.csv   — public credits only; private fields are excluded
+//   credits-latest.json  — public credits only; private fields are excluded
 //   <name>-latest.json   — a copy of every other data/*.json file
 // The workflow then zips these into a dated snapshot and uploads it all to
 // the "site-backups" GitHub release.
@@ -23,14 +23,13 @@ if (!outDir) {
   process.exit(1);
 }
 
-// Must match EXPORT_FIELDS / buildCsv in admin-app.html, so a backup opens
-// exactly like a manual export does.
+// Public backups omit the private KV fields. The authenticated admin
+// Export buttons still include them for a complete private backup.
 const EXPORT_FIELDS = [
   'id', 'order', 'pages', 'artist_en', 'artist_fa', 'artist_image', 'spotify_artist_url',
   'title_en', 'title_fa', 'release_type', 'album_name', 'year', 'label',
   'role_arrangement', 'role_production', 'role_mix', 'role_mastering',
   'links', 'start_seconds', 'cover_url',
-  'status_musicbrainz', 'status_discogs', 'status_genius', 'notes',
 ];
 
 function formatLinksForCsv(links) {
@@ -69,9 +68,11 @@ if (!files.includes('credits.json')) {
 
 for (const file of files) {
   const text = fs.readFileSync(path.join(DATA_DIR, file), 'utf8');
-  const data = JSON.parse(text); // fail loudly rather than back up a broken file
+  let data = JSON.parse(text); // fail loudly rather than back up a broken file
   const base = file.replace(/\.json$/, '');
   if (base === 'credits') {
+    data = data.map((entry) => Object.fromEntries(Object.entries(entry).filter(([key]) =>
+      !['notes', 'status_musicbrainz', 'status_discogs', 'status_genius', '_adminRevision'].includes(key))));
     fs.writeFileSync(path.join(outDir, 'credits-latest.json'), JSON.stringify(data, null, 2));
     fs.writeFileSync(path.join(outDir, 'credits-latest.csv'), buildCsv(data));
     console.log(`credits: ${data.length} entries -> credits-latest.csv, credits-latest.json`);

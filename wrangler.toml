@@ -2,6 +2,12 @@ name = "merajmirzaei-site"
 main = "src/worker.js"
 compatibility_date = "2024-09-23"
 
+# Ten admin login attempts per minute per source IP, including failures.
+[[ratelimits]]
+name = "ADMIN_LOGIN_LIMITER"
+namespace_id = "76241001"
+simple = { limit = 10, period = 60 }
+
 [assets]
 directory = "./merajmirzaei-site (4)"
 binding = "ASSETS"
