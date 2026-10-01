@@ -2,7 +2,7 @@
   {
     "id": "mirage-peyvastegi",
     "artist_en": "Miragesohi",
-    "artist_fa": "Miragesohi",
+    "artist_fa": "میراژسهی",
     "title_en": "Peyvastegi",
     "title_fa": "پیوستگی",
     "release_type": "single",
@@ -11,7 +11,7 @@
     "label": "",
     "cover_url": "/images/covers/peyvastegi-munmp9li.jpg",
     "artist_image": "",
-    "spotify_artist_url": "",
+    "spotify_artist_url": "https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9",
     "start_seconds": "",
     "role_arrangement": true,
     "role_production": true,
@@ -48,7 +48,7 @@
   {
     "id": "mirage-farangis",
     "artist_en": "Miragesohi",
-    "artist_fa": "Miragesohi",
+    "artist_fa": "میراژسهی",
     "title_en": "Farangis",
     "title_fa": "فرنگیس",
     "release_type": "single",
@@ -57,7 +57,7 @@
     "label": "",
     "cover_url": "/images/covers/farangis-munmpntj.jpg",
     "artist_image": "",
-    "spotify_artist_url": "",
+    "spotify_artist_url": "https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9",
     "start_seconds": "",
     "role_arrangement": true,
     "role_production": true,
@@ -93,7 +93,7 @@
   {
     "id": "mirage-labet-bekhandeh",
     "artist_en": "Miragesohi",
-    "artist_fa": "Miragesohi",
+    "artist_fa": "میراژسهی",
     "title_en": "Labet Bekhandeh",
     "title_fa": "لبت بخنده",
     "release_type": "single",
@@ -102,7 +102,7 @@
     "label": "",
     "cover_url": "/images/covers/labet-bekhandeh-munmpvft.jpg",
     "artist_image": "",
-    "spotify_artist_url": "",
+    "spotify_artist_url": "https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9",
     "start_seconds": "",
     "role_arrangement": true,
     "role_production": true,
@@ -138,7 +138,7 @@
   {
     "id": "mirage-baz-baroon-remix",
     "artist_en": "Miragesohi",
-    "artist_fa": "Miragesohi",
+    "artist_fa": "میراژسهی",
     "title_en": "Baz Baroon (Remix)",
     "title_fa": "باز بارون (ریمیکس)",
     "release_type": "single",
@@ -147,7 +147,7 @@
     "label": "",
     "cover_url": "/images/covers/mirage-baz-baroon-remix.jpg",
     "artist_image": "",
-    "spotify_artist_url": "",
+    "spotify_artist_url": "https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9",
     "start_seconds": "",
     "role_arrangement": true,
     "role_production": true,
@@ -183,7 +183,7 @@
   {
     "id": "mirage-baz-baroon",
     "artist_en": "Miragesohi",
-    "artist_fa": "Miragesohi",
+    "artist_fa": "میراژسهی",
     "title_en": "Baz Baroon",
     "title_fa": "باز بارون",
     "release_type": "single",
@@ -192,7 +192,7 @@
     "label": "",
     "cover_url": "/images/covers/baz-baroon-munmq2xq.jpg",
     "artist_image": "",
-    "spotify_artist_url": "",
+    "spotify_artist_url": "https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9",
     "start_seconds": "",
     "role_arrangement": true,
     "role_production": true,
@@ -228,7 +228,7 @@
   {
     "id": "mirage-thunder",
     "artist_en": "Miragesohi",
-    "artist_fa": "Miragesohi",
+    "artist_fa": "میراژسهی",
     "title_en": "Thunder",
     "title_fa": "تاندر",
     "release_type": "single",
@@ -237,7 +237,7 @@
     "label": "",
     "cover_url": "/images/covers/thunder-mugscjbz.jpg",
     "artist_image": "",
-    "spotify_artist_url": "",
+    "spotify_artist_url": "https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9",
     "start_seconds": "",
     "role_arrangement": true,
     "role_production": true,
@@ -2835,7 +2835,7 @@
   {
     "id": "new-1790330185189-7ht8i",
     "artist_en": "Miragesohi",
-    "artist_fa": "Miragesohi",
+    "artist_fa": "میراژسهی",
     "title_en": "Dor Az Tasavor",
     "title_fa": "دور از تصور ",
     "release_type": "single",
@@ -2854,19 +2854,24 @@
     ],
     "links": [
       {
+        "label": "Spotify (artist)",
+        "url": "https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9"
+      },
+      {
         "label": "Spotify",
-        "url": "https://open.spotify.com/album/76pMMRuU2QuTivqWyfXhg8?si=VzaWciDHSD-Ahpg5-DCqYg"
+        "url": "https://open.spotify.com/album/76pMMRuU2QuTivqWyfXhg8"
       },
       {
         "label": "Download on Telegram",
         "url": "https://t.me/merajmirzaei"
       }
-    ]
+    ],
+    "spotify_artist_url": "https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9"
   },
   {
     "id": "new-1790441193810-5wt4t",
     "artist_en": "Miragesohi",
-    "artist_fa": "Miragesohi",
+    "artist_fa": "میراژسهی",
     "title_en": "Didi Ey Tanha Omidam ",
     "title_fa": "دیدی ای تنها امیدم",
     "release_type": "single",
@@ -2885,13 +2890,18 @@
     ],
     "links": [
       {
+        "label": "Spotify (artist)",
+        "url": "https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9"
+      },
+      {
         "label": "Spotify",
-        "url": "https://open.spotify.com/album/6OSanHKLnzJ000FSjMgv8b?si=DSyrRkaYQzSXEM2Z5kRkzg"
+        "url": "https://open.spotify.com/album/6OSanHKLnzJ000FSjMgv8b"
       },
       {
         "label": "Download on Telegram",
         "url": "https://t.me/merajmirzaei"
       }
-    ]
+    ],
+    "spotify_artist_url": "https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9"
   }
 ]
