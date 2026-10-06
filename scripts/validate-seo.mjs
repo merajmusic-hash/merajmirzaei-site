@@ -167,6 +167,19 @@ async function checkPage(path, { requireOgImagePrefix = 'https://merajmirzaei.co
     }
   }
 
+  // Every Miragesohi page (the artist page, the Releases hub and anything
+  // under /releases/) ends with the block that leads into the credits; no
+  // other page carries it.
+  const isMiragesohiPage = /^(\/fa)?\/(miragesohi|releases(\/[a-z0-9-]+(\/(about|lyrics))?)?)$/.test(path);
+  const careerBlocks = (html.match(/<section class="cb" id="careerBlock">/g) || []).length;
+  if (careerBlocks !== (isMiragesohiPage ? 1 : 0)) {
+    fail(`${path}: expected ${isMiragesohiPage ? 1 : 0} career block(s), found ${careerBlocks}`);
+  } else if (isMiragesohiPage) {
+    const prefix = path.startsWith('/fa/') ? '/fa' : '';
+    if (!html.includes(`<a class="btn" href="${prefix}/credits">`)) fail(`${path}: career block has no link to the credits`);
+    if (!new RegExp(`<a class="cb-tile[^"]*" href="${prefix}/credits/artist/[a-z0-9-]+"`).test(html)) fail(`${path}: career block has no artist links`);
+  }
+
   const canonicalMatch = html.match(/<link rel="canonical" href="([^"]+)">/);
   if (!canonicalMatch) {
     fail(`${path}: missing <link rel="canonical">`);

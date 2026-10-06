@@ -1954,6 +1954,20 @@ async function applyEntitySeo(response, env, pathname, ogImageOverride) {
     }
   }
 
+  // Every Miragesohi page ends with the way into the rest of the career
+  // (see buildCareerBlockHtml). Song, story and lyrics pages replace
+  // <main> before they get here, so this lands at the end of theirs too.
+  if (isMiragesohiPagePath(canonicalPath)) {
+    try {
+      const creditsData = await readCreditsReadOnly(env);
+      const careerHtml = creditsData ? buildCareerBlockHtml(creditsData, await readHomepageOrderReadOnly(env), lang) : '';
+      if (careerHtml) rewriter = rewriter.on('main', new HeadInjector(careerHtml));
+    } catch (err) {
+      // The block is an extra; the page itself must still be served.
+      console.error('buildCareerBlockHtml failed', (err && err.stack) || err);
+    }
+  }
+
   // The gallery page's photos come from data/gallery.json (edited on the
   // admin "Gallery" tab), not from the page's own markup.
   if (canonicalPath === pathFor('en', 'gallery') || canonicalPath === pathFor('fa', 'gallery')) {
@@ -3904,6 +3918,121 @@ async function buildArtistIndexHtml(env, lang) {
   </nav>
 </section>
 `;
+}
+
+// ---------------------------------------------------------------------
+// "Before Miragesohi" — a block at the end of every Miragesohi page (the
+// artist page, the Releases hub, and each release's own page, story and
+// lyrics). Those are the pages a search for "Miragesohi" lands on, and
+// none of them led to the twenty years of work for other singers. The
+// block names the first singers of the homepage wall, in the wall's own
+// order, each linking to that singer's page, plus the full credit sheet.
+// Names and links are in the served HTML; only a photo that has to come
+// from Spotify is filled in by the small script at the end (same photo
+// priority as the wall: artist_image, then Spotify, then a cover).
+// ---------------------------------------------------------------------
+
+const CAREER_BLOCK_SIZE = 6;
+const CAREER_BLOCK_LABELS = {
+  en: {
+    eyebrow: 'Before Miragesohi',
+    heading: 'Meraj Mirzaei’s credits',
+    intro: 'Production, mixing and mastering for singers you know.',
+    more: 'Full credits',
+  },
+  fa: {
+    eyebrow: 'پیش از میراژسهی',
+    heading: 'کارنامه معراج میرزایی',
+    intro: 'پروداکشن، میکس و مستر برای خواننده‌هایی که می‌شناسید.',
+    more: 'کارنامه کامل',
+  },
+};
+
+const CAREER_BLOCK_CSS = '<style>'
+  + '.cb h2{font-size:clamp(24px,6vw,36px)}'
+  // (a song page's own paragraph styles must not restyle the block's label)
+  + '.cb .eyebrow{font-size:11px;line-height:1.7;color:var(--brass);margin:0}'
+  + '.cb-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:22px}'
+  + '@media(min-width:700px){.cb-tiles{grid-template-columns:repeat(6,1fr);gap:10px}}'
+  + '.cb-tile{position:relative;display:block;aspect-ratio:1/1;border-radius:4px;overflow:hidden;'
+  + 'background:var(--panel);border:1px solid var(--line);text-decoration:none;transition:border-color .2s}'
+  + '.cb-tile:hover{border-color:var(--brass)}'
+  + '.cb-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s}'
+  + '.cb-tile:hover .cb-img{transform:scale(1.05)}'
+  + '.cb-tile.has-photo::after{content:"";position:absolute;inset:0;pointer-events:none;'
+  + 'background:linear-gradient(to top,rgba(11,13,16,.9) 0%,rgba(11,13,16,.4) 45%,transparent 70%)}'
+  + '.cb-name{position:absolute;left:9px;right:9px;bottom:8px;z-index:1;font-family:var(--display);'
+  + 'font-weight:700;font-size:12.5px;line-height:1.3;color:var(--text)}'
+  + 'body.fa .cb-name{font-family:var(--fa);font-size:13px;line-height:1.35}'
+  + '</style>';
+
+// Fills in the photos that come from Spotify. A tile that gets no photo
+// simply stays a plain tile with its name.
+const CAREER_BLOCK_SCRIPT = '<script>(function(){'
+  + 'var tiles=document.querySelectorAll(".cb-tile[data-spotify]");'
+  + 'Array.prototype.forEach.call(tiles,function(t){'
+  + 'function show(src){if(!src)return;var img=new Image();img.className="cb-img";img.alt="";'
+  + 'img.onload=function(){t.insertBefore(img,t.firstChild);t.classList.add("has-photo");};img.src=src;}'
+  + 'var cover=t.getAttribute("data-cover");'
+  + 'fetch("https://open.spotify.com/oembed?url="+encodeURIComponent(t.getAttribute("data-spotify")))'
+  + '.then(function(r){return r.ok?r.json():null;})'
+  + '.then(function(j){show((j&&j.thumbnail_url)||cover);})'
+  + '.catch(function(){show(cover);});'
+  + '});})();</script>';
+
+// The pages that get the block: the Miragesohi artist page, the Releases
+// hub, and everything under /releases/ (a song, its story, its lyrics).
+function isMiragesohiPagePath(canonicalPath) {
+  return /^(\/fa)?\/(miragesohi|releases(\/[a-z0-9-]+(\/(about|lyrics))?)?)$/.test(canonicalPath);
+}
+
+// The singers of the block, in the site's order (see artistsInSiteOrder).
+function careerBlockArtists(creditsData, homepageOrder) {
+  const bySlug = new Map();
+  for (const entry of titledEntriesFor(creditsData, 'credits')) {
+    if (!entry.artist_en || entry.artist_en === 'Miragesohi') continue;
+    const slug = slugifyName(entry.artist_en);
+    if (!bySlug.has(slug)) bySlug.set(slug, { slug, entries: [] });
+    bySlug.get(slug).entries.push(entry);
+  }
+  return artistsInSiteOrder([...bySlug.values()], homepageOrder).slice(0, CAREER_BLOCK_SIZE).map(({ slug, entries }) => ({
+    slug,
+    en: entries[0].artist_en,
+    fa: entries.map((e) => e.artist_fa).find(Boolean) || entries[0].artist_en,
+    image: entries.map((e) => e.artist_image).find(Boolean) || '',
+    spotify: entries.map((e) => e.spotify_artist_url).find(Boolean) || '',
+    cover: entries.map((e) => e.cover_url).find(isLikelyImageUrl) || '',
+  }));
+}
+
+function buildCareerBlockHtml(creditsData, homepageOrder, lang) {
+  const artists = careerBlockArtists(creditsData, homepageOrder);
+  if (!artists.length) return '';
+  const L = CAREER_BLOCK_LABELS[lang] || CAREER_BLOCK_LABELS.en;
+  const tiles = artists.map((a) => {
+    const href = pathFor(lang, 'credits/artist/' + a.slug);
+    const name = `<span class="cb-name">${escapeHtmlAttr(lang === 'fa' ? a.fa : a.en)}</span>`;
+    // The artist's own photo is known now; a Spotify photo is fetched by
+    // the page; a cover is the last resort either way.
+    const ready = a.image || (a.spotify ? '' : a.cover);
+    if (ready) {
+      return `<a class="cb-tile has-photo" href="${escapeHtmlAttr(href)}">`
+        + `<img class="cb-img" src="${escapeHtmlAttr(ready)}" alt="" loading="lazy">${name}</a>`;
+    }
+    const lookup = a.spotify
+      ? ` data-spotify="${escapeHtmlAttr(a.spotify)}"` + (a.cover ? ` data-cover="${escapeHtmlAttr(a.cover)}"` : '')
+      : '';
+    return `<a class="cb-tile" href="${escapeHtmlAttr(href)}"${lookup}>${name}</a>`;
+  }).join('');
+  return `<section class="cb" id="careerBlock">`
+    + CAREER_BLOCK_CSS
+    + `<div class="rail"><p class="eyebrow">${escapeHtmlAttr(L.eyebrow)}</p><div class="ticks"></div><div class="peak"></div></div>`
+    + `<h2>${escapeHtmlAttr(L.heading)}</h2>`
+    + `<p>${escapeHtmlAttr(L.intro)}</p>`
+    + `<div class="cb-tiles">${tiles}</div>`
+    + `<div class="linkrow"><a class="btn" href="${escapeHtmlAttr(pathFor(lang, 'credits'))}">${escapeHtmlAttr(L.more)}</a></div>`
+    + CAREER_BLOCK_SCRIPT
+    + `</section>`;
 }
 
 class BeforeElementInjector {
