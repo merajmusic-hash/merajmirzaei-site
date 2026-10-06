@@ -43,7 +43,7 @@
         "url": "https://t.me/merajmirzaei"
       }
     ],
-    "_adminRevision": "895d0980-fd73-46fd-b10d-38468a609208"
+    "_adminRevision": "3f397f79-b6ec-483b-b7fb-43268cc25ea9"
   },
   {
     "id": "mirage-farangis",
@@ -457,7 +457,7 @@
     "role_production": true,
     "role_mix": true,
     "role_mastering": true,
-    "order": 8,
+    "order": 7,
     "pages": [
       "credits"
     ],
@@ -486,7 +486,7 @@
     "role_production": true,
     "role_mix": true,
     "role_mastering": true,
-    "order": 9,
+    "order": 8,
     "pages": [
       "credits"
     ],
@@ -515,7 +515,7 @@
     "role_production": true,
     "role_mix": true,
     "role_mastering": true,
-    "order": 10,
+    "order": 9,
     "pages": [
       "credits"
     ],
@@ -544,7 +544,7 @@
     "role_production": true,
     "role_mix": true,
     "role_mastering": true,
-    "order": 11,
+    "order": 10,
     "pages": [
       "credits"
     ],
@@ -573,7 +573,7 @@
     "role_production": true,
     "role_mix": true,
     "role_mastering": true,
-    "order": 12,
+    "order": 11,
     "pages": [
       "credits"
     ],
@@ -602,7 +602,7 @@
     "role_production": true,
     "role_mix": true,
     "role_mastering": true,
-    "order": 13,
+    "order": 12,
     "pages": [
       "credits"
     ],
@@ -631,7 +631,7 @@
     "role_production": true,
     "role_mix": true,
     "role_mastering": true,
-    "order": 14,
+    "order": 13,
     "pages": [
       "credits"
     ],
@@ -660,7 +660,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 15,
+    "order": 14,
     "pages": [
       "credits"
     ],
@@ -689,7 +689,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 16,
+    "order": 15,
     "pages": [
       "credits"
     ],
@@ -718,7 +718,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 17,
+    "order": 16,
     "pages": [
       "credits"
     ],
@@ -747,7 +747,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 18,
+    "order": 17,
     "pages": [
       "credits"
     ],
@@ -776,7 +776,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 19,
+    "order": 18,
     "pages": [
       "credits"
     ],
@@ -805,7 +805,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 20,
+    "order": 19,
     "pages": [
       "credits"
     ],
@@ -834,7 +834,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 21,
+    "order": 20,
     "pages": [
       "credits"
     ],
@@ -863,7 +863,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 22,
+    "order": 21,
     "pages": [
       "credits"
     ],
@@ -892,7 +892,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 7,
+    "order": 6,
     "pages": [
       "credits"
     ],
@@ -912,7 +912,7 @@
     "release_type": "single",
     "album_name": "",
     "year": "",
-    "label": "",
+    "label": "AVANG",
     "cover_url": "/images/covers/black-cats-naaz.jpg",
     "artist_image": "",
     "spotify_artist_url": "https://open.spotify.com/artist/1gej3rNdgoHFpH0D4Nxupv",
@@ -921,7 +921,7 @@
     "role_production": true,
     "role_mix": true,
     "role_mastering": true,
-    "order": 23,
+    "order": 22,
     "pages": [
       "credits"
     ],
@@ -931,30 +931,6 @@
         "url": "https://open.spotify.com/album/7sXlgl61dXuIWVFRtnJ9yB"
       }
     ]
-  },
-  {
-    "id": "black-cats-bonbast",
-    "artist_en": "Black Cats",
-    "artist_fa": "بلک کتس",
-    "title_en": "Bonbast",
-    "title_fa": "بن‌بست",
-    "release_type": "single",
-    "album_name": "",
-    "year": "",
-    "label": "",
-    "cover_url": "",
-    "artist_image": "",
-    "spotify_artist_url": "https://open.spotify.com/artist/1gej3rNdgoHFpH0D4Nxupv",
-    "start_seconds": "",
-    "role_arrangement": false,
-    "role_production": false,
-    "role_mix": true,
-    "role_mastering": true,
-    "order": 24,
-    "pages": [
-      "credits"
-    ],
-    "links": []
   },
   {
     "id": "helen-khosh-be-halam",
@@ -974,7 +950,7 @@
     "role_production": true,
     "role_mix": true,
     "role_mastering": true,
-    "order": 25,
+    "order": 23,
     "pages": [
       "credits"
     ],
@@ -1003,7 +979,7 @@
     "role_production": true,
     "role_mix": true,
     "role_mastering": true,
-    "order": 26,
+    "order": 24,
     "pages": [
       "credits"
     ],
@@ -1032,7 +1008,7 @@
     "role_production": true,
     "role_mix": true,
     "role_mastering": true,
-    "order": 27,
+    "order": 25,
     "pages": [
       "credits"
     ],
@@ -1056,7 +1032,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 28,
+    "order": 26,
     "pages": [
       "credits"
     ],
@@ -1080,7 +1056,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 30,
+    "order": 28,
     "pages": [
       "credits"
     ],
@@ -1109,7 +1085,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 29,
+    "order": 27,
     "pages": [
       "credits"
     ],
@@ -1138,7 +1114,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 31,
+    "order": 29,
     "pages": [
       "credits"
     ],
@@ -1167,7 +1143,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 32,
+    "order": 30,
     "pages": [
       "credits"
     ],
@@ -1196,7 +1172,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 33,
+    "order": 31,
     "pages": [
       "credits"
     ],
@@ -1225,7 +1201,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 34,
+    "order": 32,
     "pages": [
       "credits"
     ],
@@ -1249,7 +1225,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 35,
+    "order": 33,
     "pages": [
       "credits"
     ],
@@ -1278,7 +1254,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 36,
+    "order": 34,
     "pages": [
       "credits"
     ],
@@ -1307,7 +1283,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 37,
+    "order": 35,
     "pages": [
       "credits"
     ],
@@ -1336,7 +1312,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 38,
+    "order": 36,
     "pages": [
       "credits"
     ],
@@ -1365,7 +1341,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 39,
+    "order": 37,
     "pages": [
       "credits"
     ],
@@ -1394,7 +1370,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 40,
+    "order": 38,
     "pages": [
       "credits"
     ],
@@ -1423,7 +1399,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 45,
+    "order": 43,
     "pages": [
       "credits"
     ],
@@ -1447,7 +1423,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 44,
+    "order": 42,
     "pages": [
       "credits"
     ],
@@ -1476,7 +1452,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 46,
+    "order": 44,
     "pages": [
       "credits"
     ],
@@ -1500,7 +1476,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 43,
+    "order": 41,
     "pages": [
       "credits"
     ],
@@ -1529,7 +1505,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 42,
+    "order": 40,
     "pages": [
       "credits"
     ],
@@ -1558,7 +1534,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 48,
+    "order": 46,
     "pages": [
       "credits"
     ],
@@ -1582,7 +1558,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 49,
+    "order": 47,
     "pages": [
       "credits"
     ],
@@ -1606,7 +1582,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 50,
+    "order": 48,
     "pages": [
       "credits"
     ],
@@ -1630,7 +1606,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 51,
+    "order": 49,
     "pages": [
       "credits"
     ],
@@ -1654,7 +1630,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 52,
+    "order": 50,
     "pages": [
       "credits"
     ],
@@ -1678,7 +1654,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 53,
+    "order": 51,
     "pages": [
       "credits"
     ],
@@ -1702,7 +1678,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 54,
+    "order": 52,
     "pages": [
       "credits"
     ],
@@ -1726,7 +1702,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 55,
+    "order": 53,
     "pages": [
       "credits"
     ],
@@ -1750,7 +1726,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 56,
+    "order": 54,
     "pages": [
       "credits"
     ],
@@ -1774,7 +1750,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 47,
+    "order": 45,
     "pages": [
       "credits"
     ],
@@ -1803,7 +1779,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 57,
+    "order": 55,
     "pages": [
       "credits"
     ],
@@ -1832,7 +1808,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 58,
+    "order": 56,
     "pages": [
       "credits"
     ],
@@ -1861,7 +1837,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 59,
+    "order": 57,
     "pages": [
       "credits"
     ],
@@ -1890,7 +1866,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 60,
+    "order": 58,
     "pages": [
       "credits"
     ],
@@ -1919,7 +1895,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 61,
+    "order": 59,
     "pages": [
       "credits"
     ],
@@ -1943,7 +1919,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 62,
+    "order": 60,
     "pages": [
       "credits"
     ],
@@ -1972,7 +1948,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 63,
+    "order": 61,
     "pages": [
       "credits"
     ],
@@ -2001,7 +1977,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 64,
+    "order": 62,
     "pages": [
       "credits"
     ],
@@ -2025,7 +2001,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 65,
+    "order": 63,
     "pages": [
       "credits"
     ],
@@ -2049,7 +2025,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 66,
+    "order": 64,
     "pages": [
       "credits"
     ],
@@ -2073,7 +2049,7 @@
     "role_production": true,
     "role_mix": true,
     "role_mastering": true,
-    "order": 67,
+    "order": 65,
     "pages": [
       "credits"
     ],
@@ -2097,7 +2073,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 68,
+    "order": 66,
     "pages": [
       "credits"
     ],
@@ -2126,7 +2102,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 69,
+    "order": 67,
     "pages": [
       "credits"
     ],
@@ -2155,7 +2131,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 71,
+    "order": 69,
     "pages": [
       "credits"
     ],
@@ -2179,7 +2155,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 72,
+    "order": 70,
     "pages": [
       "credits"
     ],
@@ -2208,7 +2184,7 @@
     "role_production": true,
     "role_mix": true,
     "role_mastering": true,
-    "order": 73,
+    "order": 71,
     "pages": [
       "credits"
     ],
@@ -2237,7 +2213,7 @@
     "role_production": true,
     "role_mix": true,
     "role_mastering": true,
-    "order": 74,
+    "order": 72,
     "pages": [
       "credits"
     ],
@@ -2266,7 +2242,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 75,
+    "order": 73,
     "pages": [
       "credits"
     ],
@@ -2290,7 +2266,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 76,
+    "order": 74,
     "pages": [
       "credits"
     ],
@@ -2314,7 +2290,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 77,
+    "order": 75,
     "pages": [
       "credits"
     ],
@@ -2338,7 +2314,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 78,
+    "order": 76,
     "pages": [
       "credits"
     ],
@@ -2362,7 +2338,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 79,
+    "order": 77,
     "pages": [
       "credits"
     ],
@@ -2386,7 +2362,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 80,
+    "order": 78,
     "pages": [
       "credits"
     ],
@@ -2410,7 +2386,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 81,
+    "order": 79,
     "pages": [
       "credits"
     ],
@@ -2434,7 +2410,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 82,
+    "order": 80,
     "pages": [
       "credits"
     ],
@@ -2458,7 +2434,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 83,
+    "order": 81,
     "pages": [
       "credits"
     ],
@@ -2482,7 +2458,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 84,
+    "order": 82,
     "pages": [
       "credits"
     ],
@@ -2506,7 +2482,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 85,
+    "order": 83,
     "pages": [
       "credits"
     ],
@@ -2530,7 +2506,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 86,
+    "order": 84,
     "pages": [
       "credits"
     ],
@@ -2554,7 +2530,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 87,
+    "order": 85,
     "pages": [
       "credits"
     ],
@@ -2583,7 +2559,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 88,
+    "order": 86,
     "pages": [
       "credits"
     ],
@@ -2607,7 +2583,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 89,
+    "order": 87,
     "pages": [
       "credits"
     ],
@@ -2631,7 +2607,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 90,
+    "order": 88,
     "pages": [
       "credits"
     ],
@@ -2655,7 +2631,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 91,
+    "order": 89,
     "pages": [
       "credits"
     ],
@@ -2679,7 +2655,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 92,
+    "order": 90,
     "pages": [
       "credits"
     ],
@@ -2703,7 +2679,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 93,
+    "order": 91,
     "pages": [
       "credits"
     ],
@@ -2727,7 +2703,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 94,
+    "order": 92,
     "pages": [
       "credits"
     ],
@@ -2751,7 +2727,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 95,
+    "order": 93,
     "pages": [
       "credits"
     ],
@@ -2775,7 +2751,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 96,
+    "order": 94,
     "pages": [
       "credits"
     ],
@@ -2799,7 +2775,7 @@
     "role_production": false,
     "role_mix": true,
     "role_mastering": true,
-    "order": 41,
+    "order": 39,
     "pages": [
       "credits"
     ],
@@ -2821,7 +2797,7 @@
     "role_production": false,
     "role_mix": false,
     "role_mastering": false,
-    "order": 70,
+    "order": 68,
     "pages": [
       "credits"
     ],
@@ -2843,6 +2819,7 @@
     "year": "2026",
     "label": "",
     "cover_url": "/images/covers/dor-az-tasavor-mugse8lj.webp",
+    "spotify_artist_url": "https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9",
     "start_seconds": "",
     "role_arrangement": true,
     "role_production": true,
@@ -2865,8 +2842,7 @@
         "label": "Download on Telegram",
         "url": "https://t.me/merajmirzaei"
       }
-    ],
-    "spotify_artist_url": "https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9"
+    ]
   },
   {
     "id": "miragesohi-didi-ey-tanha-omidam",
@@ -2879,6 +2855,7 @@
     "year": "2026",
     "label": "",
     "cover_url": "/images/covers/didi-ey-tanha-omidam-munmqpbc.jpg",
+    "spotify_artist_url": "https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9",
     "start_seconds": "",
     "role_arrangement": true,
     "role_production": true,
@@ -2901,7 +2878,33 @@
         "label": "Download on Telegram",
         "url": "https://t.me/merajmirzaei"
       }
+    ]
+  },
+  {
+    "id": "black-cats-bavar-kon",
+    "artist_en": "Black Cats",
+    "artist_fa": "بلک کتس",
+    "title_en": "Bavar Kon",
+    "title_fa": "باور کن",
+    "release_type": "single",
+    "album_name": "",
+    "year": "2019 ",
+    "label": "AVANG",
+    "cover_url": "https://open.spotify.com/album/14xZVZ5t8PBhbH0z2RS9Rd?si=AgBEP5YMTym_6hQKiERd6A",
+    "start_seconds": "",
+    "role_arrangement": false,
+    "role_production": false,
+    "role_mix": true,
+    "role_mastering": true,
+    "order": 95,
+    "pages": [
+      "credits"
     ],
-    "spotify_artist_url": "https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9"
+    "links": [
+      {
+        "label": "Spotify",
+        "url": "https://open.spotify.com/album/14xZVZ5t8PBhbH0z2RS9Rd?si=AgBEP5YMTym_6hQKiERd6A"
+      }
+    ]
   }
 ]
