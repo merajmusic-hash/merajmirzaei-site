@@ -1872,6 +1872,42 @@ class ReplaceElement {
   }
 }
 
+// ---------------------------------------------------------------------
+// Rules every page needs on a phone. Each page carries its own copy of the
+// site's stylesheet, so a fix that has to hold everywhere lives here once
+// and is added at the end of every page's <head> (after the page's own
+// styles, so it wins at equal weight). Checked by scripts/audit-phone.py.
+// ---------------------------------------------------------------------
+const SITE_WIDE_CSS = '<style id="siteWide">'
+  // The small label above an article's title ("Artist · 2022 · Single",
+  // "Title — Artist") was a single unbreakable line: when it was longer
+  // than the screen the whole page scrolled sideways.
+  + '.article>.eyebrow{white-space:normal;line-height:1.9;overflow-wrap:anywhere}'
+  // A long title or name with no spaces wraps instead of widening the page.
+  + '.article .atitle,.article .stand,.article h2,.article h3{overflow-wrap:anywhere}'
+  // An article page keeps the page's side padding on a phone.
+  + '@media(max-width:760px){.article{padding-left:var(--pad);padding-right:var(--pad)}}'
+  // The homepage hero column may be narrower than its widest child wants
+  // (the video player), instead of pushing the text to the screen edge.
+  + '@media(max-width:699px){.herogrid{grid-template-columns:minmax(0,1fr)}}'
+  // The menu is a sideways-scrolling row on a phone. Its far edge fades
+  // out (so the cut-off item reads as "there is more", not as a mistake)
+  // and the row ends with room for the last item to clear the fade.
+  + '@media(max-width:699px){'
+  + '.nav{padding-inline-end:34px;-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 34px),transparent);'
+  + 'mask-image:linear-gradient(to right,#000 calc(100% - 34px),transparent)}'
+  + 'body.fa .nav{-webkit-mask-image:linear-gradient(to left,#000 calc(100% - 34px),transparent);'
+  + 'mask-image:linear-gradient(to left,#000 calc(100% - 34px),transparent)}'
+  + '}'
+  + '</style>\n'
+  // On a phone the current page's menu item can start out of sight (Gallery,
+  // Services, Collaborate, Journal are past the screen edge): bring it in.
+  + '<script>document.addEventListener("DOMContentLoaded",function(){'
+  + 'var n=document.querySelector(".nav"),a=n&&n.querySelector(\'a[aria-current="page"]\');if(!a)return;'
+  + 'var nr=n.getBoundingClientRect(),ar=a.getBoundingClientRect();'
+  + 'if(ar.left<nr.left+40||ar.right>nr.right-40)n.scrollLeft+=(ar.left+ar.width/2)-(nr.left+nr.width/2);'
+  + '});</script>\n';
+
 async function applyEntitySeo(response, env, pathname, ogImageOverride) {
   const contentType = response.headers.get('Content-Type') || '';
   if (!contentType.includes('text/html')) return response;
@@ -1892,7 +1928,8 @@ async function applyEntitySeo(response, env, pathname, ogImageOverride) {
     '<meta property="og:image" content="' + escapeHtmlAttr(ogImage) + '">\n' +
     '<meta name="twitter:card" content="summary_large_image">\n' +
     '<meta name="twitter:image" content="' + escapeHtmlAttr(ogImage) + '">\n' +
-    '<script type="application/ld+json">' + jsonLd + '</script>\n';
+    '<script type="application/ld+json">' + jsonLd + '</script>\n' +
+    SITE_WIDE_CSS;
 
   // Root-relative, matching every other internal link on the page (only
   // canonical/hreflang/JSON-LD urls need to be absolute).

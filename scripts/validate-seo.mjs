@@ -167,6 +167,9 @@ async function checkPage(path, { requireOgImagePrefix = 'https://merajmirzaei.co
     }
   }
 
+  // The phone rules shared by every page (SITE_WIDE_CSS in the worker).
+  if ((html.match(/<style id="siteWide">/g) || []).length !== 1) fail(`${path}: expected the shared phone rules exactly once`);
+
   // Every Miragesohi page (the artist page, the Releases hub and anything
   // under /releases/) ends with the block that leads into the credits; no
   // other page carries it.
