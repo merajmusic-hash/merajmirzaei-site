@@ -908,6 +908,40 @@ function buildRecordingsGraph(creditsData, pageFilter, lang) {
 // artist text), so editing a title later never changes the URL.
 // ---------------------------------------------------------------------
 
+// A few songs were first saved while their id was still the admin panel's
+// placeholder ("new-<time>-<random>"), which gave their pages an address
+// with no song name in it. They have readable ids now. The old ids stay
+// listed here for good, for two reasons:
+//   - every old address (the page, its /about and its /lyrics, both
+//     languages) redirects permanently to the new one, so nothing already
+//     shared or indexed breaks;
+//   - anything stored under the old id — the private notes in KV, the
+//     comments on the song's video — is still found.
+// (The admin panel now gives a new row a readable id the first time it is
+// saved with a title, so this list should not need to grow.)
+const RENAMED_RECORDING_IDS = {
+  'new-1790330185189-7ht8i': 'miragesohi-dor-az-tasavor',
+  'new-1790441193810-5wt4t': 'miragesohi-didi-ey-tanha-omidam',
+  'new-1788546862191-9eahs': 'amir-abbas-hassanzadeh-be-ki-begam',
+};
+
+function currentRecordingId(id) {
+  return Object.prototype.hasOwnProperty.call(RENAMED_RECORDING_IDS, id) ? RENAMED_RECORDING_IDS[id] : id;
+}
+
+// Every id a song has ever had, current one first.
+function allRecordingIds(id) {
+  const current = currentRecordingId(id);
+  return [current].concat(Object.keys(RENAMED_RECORDING_IDS).filter((old) => RENAMED_RECORDING_IDS[old] === current));
+}
+
+// The new address for a request to a renamed song's old one, or null.
+function renamedRecordingPath(pathname) {
+  const m = /^(\/fa)?\/(credits|releases)\/([a-z0-9-]+)(\/about|\/lyrics)?\/?$/.exec(pathname);
+  if (!m || !Object.prototype.hasOwnProperty.call(RENAMED_RECORDING_IDS, m[3])) return null;
+  return (m[1] || '') + '/' + m[2] + '/' + slugifyName(RENAMED_RECORDING_IDS[m[3]]) + (m[4] || '');
+}
+
 function findEntryBySlug(creditsData, hub, recordingSlug) {
   return creditsData.find((e) => {
     if (!Array.isArray(e.pages) || !e.pages.includes(hub)) return false;
@@ -2262,7 +2296,9 @@ async function handleGetCredits(env) {
     }
     if (!privateData) return json({ error: 'Private notes could not be loaded. Please retry before editing.' }, 503);
   }
-  const clean = publicCredits(data).map((entry) => ({ ...entry, ...(privateData[entry.id] || {}) }));
+  // A renamed song's notes may still be stored under its old id.
+  const privateFor = (id) => allRecordingIds(id).map((known) => privateData[known]).find(Boolean) || {};
+  const clean = publicCredits(data).map((entry) => ({ ...entry, ...privateFor(entry.id) }));
   return json({ data: clean, sha: file.sha });
 }
 
@@ -3194,7 +3230,8 @@ async function handlePostComment(request, env) {
   if (body.website) return json({ ok: true, pending: true });
   if (typeof body.elapsed === 'number' && body.elapsed < 2000) return json({ ok: true, pending: true });
 
-  const song = String(body.song || '');
+  // (A page cached before a song was renamed still sends its old id.)
+  const song = currentRecordingId(String(body.song || ''));
   if (!COMMENT_SONG_RE.test(song)) return json({ error: 'Invalid song' }, 400);
   const name = cleanCommentText(body.name, 40, 120);
   const text = cleanCommentText(body.text, 200, 600);
@@ -3221,7 +3258,7 @@ async function handlePostComment(request, env) {
 
 async function handleGetComments(request, env, ctx) {
   const url = new URL(request.url);
-  const song = url.searchParams.get('song') || '';
+  const song = currentRecordingId(url.searchParams.get('song') || '');
   if (!COMMENT_SONG_RE.test(song)) return json({ error: 'Invalid song' }, 400);
   if (!env.COMMENTS) return json({ comments: [] });
 
@@ -3231,11 +3268,14 @@ async function handleGetComments(request, env, ctx) {
     const hit = await cache.match(key).catch(() => undefined);
     if (hit) return hit;
   }
-  const listed = await env.COMMENTS.list({ prefix: `a:${song}:`, limit: COMMENTS_PER_SONG_MAX });
-  const comments = listed.keys
+  // Comments approved before a song was renamed are stored under its old id.
+  const lists = await Promise.all(allRecordingIds(song).map((id) =>
+    env.COMMENTS.list({ prefix: `a:${id}:`, limit: COMMENTS_PER_SONG_MAX })));
+  const comments = lists.flatMap((listed) => listed.keys)
     .map((k) => k.metadata)
     .filter((m) => m && m.text)
     .sort((a, b) => a.ts - b.ts)
+    .slice(-COMMENTS_PER_SONG_MAX)
     .map((m) => ({ name: m.name, text: m.text, ts: m.ts }));
   const res = new Response(JSON.stringify({ comments }), {
     headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=30' },
@@ -3250,7 +3290,8 @@ async function handleAdminListComments(env) {
     listAllKeys(env.COMMENTS, 'p:'),
     listAllKeys(env.COMMENTS, 'a:'),
   ]);
-  const shape = (k) => (k.metadata ? { key: k.name, ...k.metadata } : null);
+  // `song` is always the song's current id, so the panel can name it.
+  const shape = (k) => (k.metadata ? { key: k.name, ...k.metadata, song: currentRecordingId(k.metadata.song) } : null);
   const newestFirst = (a, b) => b.ts - a.ts;
   return json({
     pending: pending.map(shape).filter(Boolean).sort(newestFirst),
@@ -3266,7 +3307,8 @@ async function handleAdminApproveComment(request, env) {
   const raw = await env.COMMENTS.get('p:' + id);
   if (!raw) return json({ error: 'That comment is no longer waiting — reload the page.' }, 404);
   const rec = JSON.parse(raw);
-  if (!COMMENT_SONG_RE.test(rec.song || '')) return json({ error: 'Invalid comment' }, 400);
+  rec.song = currentRecordingId(rec.song || '');
+  if (!COMMENT_SONG_RE.test(rec.song)) return json({ error: 'Invalid comment' }, 400);
   await env.COMMENTS.put(`a:${rec.song}:${id}`, JSON.stringify(rec), { metadata: rec });
   await env.COMMENTS.delete('p:' + id);
   const cache = (typeof caches !== 'undefined' && caches.default) || null;
@@ -3282,7 +3324,7 @@ async function handleAdminDeleteComment(request, env) {
   if (!m) return json({ error: 'Invalid comment' }, 400);
   await env.COMMENTS.delete(key);
   const cache = (typeof caches !== 'undefined' && caches.default) || null;
-  if (cache && m[2]) await cache.delete(commentsCacheKey(new URL(request.url).origin, m[2])).catch(() => {});
+  if (cache && m[2]) await cache.delete(commentsCacheKey(new URL(request.url).origin, currentRecordingId(m[2]))).catch(() => {});
   return json({ ok: true });
 }
 
@@ -4046,6 +4088,10 @@ async function handleRequest(request, env, ctx) {
     if (pathname === '/fa/mirage' || pathname === '/fa/mirage.html' || pathname === '/fa/mirage/') {
       return Response.redirect(SITE_ORIGIN + '/fa/miragesohi', 301);
     }
+
+    // A renamed song's old address (see RENAMED_RECORDING_IDS).
+    const renamedPath = renamedRecordingPath(pathname);
+    if (renamedPath) return Response.redirect(SITE_ORIGIN + renamedPath + url.search, 301);
 
     // Protect old deployed JSON as well as new saves. Encoded and
     // extensionless paths cannot bypass the filter via asset resolution.

@@ -346,6 +346,7 @@ document.head.appendChild(lyricsStyle);
   function blankEntry(pages){
     return {
       id: 'new-' + Date.now() + '-' + Math.random().toString(36).slice(2,7),
+      _fresh: true, // never saved with a title yet — see nameFreshRows()
       order: nextOrder(state.entries),
       pages: pages.slice(),
       artist_en:'', artist_fa:'', title_en:'', title_fa:'',
@@ -2062,6 +2063,33 @@ document.head.appendChild(lyricsStyle);
     });
   }
 
+  // A new row starts with a placeholder id ("new-<time>-<random>") because
+  // its song has no name yet. A song's page address is its id, so a row
+  // that has never had a page gets a readable id (artist-title) when it is
+  // saved with its English artist and title. Once a row has been saved with
+  // a title its page exists, and its id — so its address — never changes.
+  // Lyrics and New Release videos that already point at the row follow it.
+  function nameFreshRows(){
+    function slug(s){ return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
+    var renamed = false;
+    state.entries.forEach(function(e){
+      if(!e._fresh || !slug(e.artist_en) || !slug(e.title_en)) return;
+      var base = slug(e.artist_en + ' ' + e.title_en), id = base, n = 2;
+      while(state.entries.some(function(o){ return o !== e && o.id === id; })) id = base + '-' + (n++);
+      if(id === e.id) return;
+      var old = e.id;
+      e.id = id;
+      ['lyrics', 'lyricsMeta', 'lyricsUndo', 'lyricsSaved'].forEach(function(k){
+        if(state[k] && Object.prototype.hasOwnProperty.call(state[k], old)){ state[k][id] = state[k][old]; delete state[k][old]; }
+      });
+      (state.newReleases || []).forEach(function(it){
+        if(it.release_id === old){ it.release_id = id; state.newReleasesDirty = true; }
+      });
+      renamed = true;
+    });
+    return renamed;
+  }
+
   function save(){
     if(state.saving) return;
     // Finish every preflight check before sending the first request.
@@ -2071,6 +2099,8 @@ document.head.appendChild(lyricsStyle);
     if(state.lyricsDirty && !state.lyricsLoaded){
       showMsg('The lyrics did not load, so they cannot be saved. Reload the page.', 'err'); return;
     }
+    // The table's rows carry their entry's id, so redraw it after a rename.
+    if(state.entriesDirty && nameFreshRows()) render();
     var paths = { entries:'save', homepage:'save-homepage', newReleases:'save-new-releases', gallery:'gallery/save', lyrics:'save-lyrics' };
     var pending = Object.keys(paths).filter(function(kind){ return state[kind+'Dirty']; }).map(function(kind){
       var sent = savePayload(kind);
@@ -2099,6 +2129,13 @@ document.head.appendChild(lyricsStyle);
         var unchanged = JSON.stringify(savePayload(kind)) === job.snapshot;
         state[kind+'Sha'] = r.j.sha || state[kind+'Sha'];
         state[kind+'Dirty'] = !unchanged;
+        if(kind === 'entries'){
+          // A row saved with a title has a page now: its id is settled.
+          job.sent.forEach(function(row){
+            if(!(row.title_en || row.title_fa)) return;
+            state.entries.forEach(function(e){ if(e.id === row.id) delete e._fresh; });
+          });
+        }
         if(kind === 'lyrics'){
           state.lyricsSaved = {};
           job.sent.forEach(function(row){ state.lyricsSaved[row.id] = !!LyricsFormat.cleanText(row.lyrics); });
@@ -2161,6 +2198,9 @@ document.head.appendChild(lyricsStyle);
     var creditsRes = results[0], homepageRes = results[1], nrRes = results[2], galRes = results[3], lyrRes = results[4];
     if(!creditsRes.ok){ showMsg('Load failed: ' + (creditsRes.j.error||'unknown error'), 'err'); return; }
     state.entries = creditsRes.j.data || [];
+    state.entries.forEach(function(e){
+      if(/^new-\d+-[a-z0-9]+$/.test(e.id || '') && !(e.title_en || e.title_fa)) e._fresh = true;
+    });
     state.entriesSha = creditsRes.j.sha;
     if(homepageRes.ok){
       state.homepage = (homepageRes.j.data || []).map(function(h){ return { _oid: homepageOid(), artist_en: h.artist_en, order: h.order }; });
