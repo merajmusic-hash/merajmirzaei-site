@@ -22,7 +22,8 @@ function worker(fetchImpl = () => { throw new Error('Unexpected fetch'); }, extr
     .replace('export default {', 'const worker = {') + `
     globalThis.api = { worker, handleSave, handleGetCredits, handleSaveGallery, handleLoginPost,
       handleAdminListSubmissions, handleAdminListComments, serveMedia, buildEntityGraph, buildSitemapXml,
-      LEGACY_CREDITS_REVISION, LEGACY_CREDITS_REF, signSession, buildReleaseCardsHtml, handleSaveLyrics, handleGetLyrics, readLyricsReadOnly, lyricsFor, lyricsDetailsFor, buildLyricsPageContent, validateLyrics };`, context);
+      LEGACY_CREDITS_REVISION, LEGACY_CREDITS_REF, signSession, RENAMED_RECORDING_IDS,
+      handleGetComments, handlePostComment, handleAdminApproveComment, buildReleaseCardsHtml, handleSaveLyrics, handleGetLyrics, readLyricsReadOnly, lyricsFor, lyricsDetailsFor, buildLyricsPageContent, validateLyrics };`, context);
   return context.api;
 }
 
@@ -458,4 +459,143 @@ test('credit and layout controls immediately update preview without rerendering 
   p.context.lyricsControlInput(outside,true); assert.equal(outside.value,36);
   p.action('reset'); assert.equal(p.state.lyricsMeta.one.poet,'<Poet>'); assert.equal(p.state.lyricsMeta.one.layout.fontSize,18.5);
   assert.equal(p.state.lyricsMeta.two,undefined);
+});
+
+// --- readable song addresses ------------------------------------------------
+
+const realCredits = () => JSON.parse(fs.readFileSync(new URL('../merajmirzaei-site (4)/data/credits.json', import.meta.url), 'utf8'));
+const realNewReleases = () => JSON.parse(fs.readFileSync(new URL('../merajmirzaei-site (4)/data/new-releases.json', import.meta.url), 'utf8'));
+
+test('a renamed song\'s old address redirects permanently, in every form, and keeps the query', async () => {
+  const api = worker();
+  for (const [from, to] of [
+    ['/releases/new-1790330185189-7ht8i', '/releases/miragesohi-dor-az-tasavor'],
+    ['/fa/releases/new-1790441193810-5wt4t', '/fa/releases/miragesohi-didi-ey-tanha-omidam'],
+    ['/fa/releases/new-1790441193810-5wt4t/lyrics', '/fa/releases/miragesohi-didi-ey-tanha-omidam/lyrics'],
+    ['/credits/new-1788546862191-9eahs/about', '/credits/amir-abbas-hassanzadeh-be-ki-begam/about'],
+    ['/releases/new-1790330185189-7ht8i/?utm=ig', '/releases/miragesohi-dor-az-tasavor?utm=ig'],
+  ]) {
+    const res = await api.worker.fetch(new Request('https://merajmirzaei.com' + from), {});
+    assert.equal(res.status, 301, from);
+    assert.equal(res.headers.get('Location'), 'https://merajmirzaei.com' + to);
+  }
+});
+
+test('the data uses the new ids only, and every renamed id points at a real titled song', () => {
+  const api = worker();
+  const credits = realCredits();
+  const ids = new Set(credits.map((e) => e.id));
+  assert.equal(ids.size, credits.length);
+  for (const [old, current] of Object.entries(api.RENAMED_RECORDING_IDS)) {
+    assert.equal(ids.has(old), false, old + ' is still in credits.json');
+    const entry = credits.find((e) => e.id === current);
+    assert.ok(entry && entry.title_en, current + ' is not a titled song');
+    assert.equal(Object.prototype.hasOwnProperty.call(api.RENAMED_RECORDING_IDS, current), false);
+  }
+  // No song with a page still has a placeholder id, and no video points at a missing song.
+  for (const e of credits) if (e.title_en || e.title_fa) assert.doesNotMatch(e.id, /^new-\d+-/);
+  for (const it of realNewReleases()) if (it.release_id) assert.ok(ids.has(it.release_id), it.release_id);
+});
+
+test('the sitemap and the release cards use the new address, never the old one', async () => {
+  const credits = realCredits();
+  const api = worker();
+  const env = { ASSETS:{ fetch:async (req) => {
+    const path = new URL(req.url).pathname;
+    if (path === '/data/credits.json') return jsonResponse(credits);
+    return jsonResponse([]);
+  } } };
+  const xml = await api.buildSitemapXml(env);
+  assert.match(xml, /<loc>https:\/\/merajmirzaei\.com\/releases\/miragesohi-dor-az-tasavor<\/loc>/);
+  assert.match(xml, /<loc>https:\/\/merajmirzaei\.com\/fa\/credits\/amir-abbas-hassanzadeh-be-ki-begam<\/loc>/);
+  assert.doesNotMatch(xml, /\/new-\d+-/);
+  const cards = api.buildReleaseCardsHtml(credits, 'fa');
+  assert.match(cards, /href="\/fa\/releases\/miragesohi-didi-ey-tanha-omidam"/);
+  assert.doesNotMatch(cards, /\/new-\d+-/);
+});
+
+test('private notes saved under a song\'s old id still load after the rename', async () => {
+  const stored = [{id:'miragesohi-dor-az-tasavor', title_en:'Dor Az Tasavor', _adminRevision:'rev-1'}, {id:'other', title_en:'Other'}];
+  const api = worker(() => jsonResponse({content:Buffer.from(JSON.stringify(stored)).toString('base64'), encoding:'base64', sha:'s'}));
+  const kv = new Map([['admin:credits:rev-1', {
+    'new-1790330185189-7ht8i': {notes:'OLD-ID NOTE', status_discogs:'done'},
+    other: {notes:'plain'},
+  }]]);
+  const env = { COMMENTS:{get:async (k) => kv.get(k)}, GITHUB_TOKEN:'test' };
+  const loaded = await (await api.handleGetCredits(env)).json();
+  assert.equal(loaded.data[0].notes, 'OLD-ID NOTE');
+  assert.equal(loaded.data[0].status_discogs, 'done');
+  assert.equal(loaded.data[1].notes, 'plain');
+});
+
+test('comments left before a rename still show, and new ones are filed under the new id', async () => {
+  const api = worker();
+  const kv = new Map();
+  const meta = new Map();
+  const put = async (k, v, opts) => { kv.set(k, v); if (opts && opts.metadata) meta.set(k, opts.metadata); };
+  const env = {
+    COMMENTS:{ put, get:async (k) => kv.get(k), delete:async (k) => { kv.delete(k); meta.delete(k); },
+      list:async ({prefix}) => ({ keys:[...meta].filter(([k]) => k.startsWith(prefix)).map(([name, metadata]) => ({name, metadata})), list_complete:true }) },
+    ASSETS:{ fetch:async () => jsonResponse(realNewReleases()) },
+  };
+  // One approved before the rename (old key), one still waiting with the old song id.
+  await put('a:new-1790441193810-5wt4t:aaaaaa-1111', '{}', {metadata:{id:'aaaaaa-1111', song:'new-1790441193810-5wt4t', name:'Sara', text:'old one', ts:1}});
+  const waiting = {id:'bbbbbb-2222', song:'new-1790441193810-5wt4t', name:'Ali', text:'approved later', ts:2};
+  await put('p:bbbbbb-2222', JSON.stringify(waiting), {metadata:waiting});
+  const approved = await api.handleAdminApproveComment(post('/admin/api/comments/approve', {id:'bbbbbb-2222'}), env);
+  assert.equal(approved.status, 200);
+  assert.ok(kv.has('a:miragesohi-didi-ey-tanha-omidam:bbbbbb-2222'));
+  // Asking by the new id, or by the old one (a cached page), returns both.
+  for (const song of ['miragesohi-didi-ey-tanha-omidam', 'new-1790441193810-5wt4t']) {
+    const res = await api.handleGetComments(new Request('https://merajmirzaei.com/api/comments?song=' + song), env);
+    assert.deepEqual((await res.json()).comments.map((c) => c.text), ['old one', 'approved later']);
+  }
+  // A cached page that still posts with the old id is accepted and stored under the new one.
+  const posted = await api.handlePostComment(post('/api/comments', {song:'new-1790441193810-5wt4t', name:'Nima', text:'hello', elapsed:5000}), env);
+  assert.equal(posted.status, 200);
+  const pendingRec = [...meta].find(([k]) => k.startsWith('p:'))[1];
+  assert.equal(pendingRec.song, 'miragesohi-didi-ey-tanha-omidam');
+});
+
+test('a new row gets a readable id on its first titled save; lyrics and videos follow it', async () => {
+  const requests = [];
+  const p = panel((url, init) => { requests.push({url, body:JSON.parse(init.body)}); return Promise.resolve(jsonResponse({ok:true, sha:'next'})); });
+  p.state.entries = [
+    {id:'miragesohi-thunder', artist_en:'Miragesohi', title_en:'Thunder'},
+    {id:'new-1800000000000-abcde', _fresh:true, artist_en:'Miragesohi', title_en:'Thunder', title_fa:'تندر'},
+    {id:'new-1800000000001-fghij', _fresh:true, artist_en:'Reza Sadeghi', title_en:''},
+    {id:'new-1700000000000-zzzzz', artist_en:'Old', title_en:'Already Published'},
+  ];
+  p.state.entriesDirty = true;
+  p.state.lyrics['new-1800000000000-abcde'] = 'line'; p.state.lyricsDirty = true;
+  p.state.newReleases = [{id:'nr-1', release_id:'new-1800000000000-abcde', title_en:'Thunder', order:0}];
+  await p.save();
+  const sent = Object.fromEntries(requests.map((r) => [r.url, r.body.content]));
+  assert.deepEqual(sent['/admin/api/save'].map((e) => e.id),
+    ['miragesohi-thunder', 'miragesohi-thunder-2', 'new-1800000000001-fghij', 'new-1700000000000-zzzzz']);
+  assert.equal(JSON.stringify(sent['/admin/api/save']).includes('_fresh'), false);
+  assert.equal(sent['/admin/api/save-lyrics'][0].id, 'miragesohi-thunder-2');
+  assert.equal(sent['/admin/api/save-new-releases'][0].release_id, 'miragesohi-thunder-2');
+  // Saved with a title: settled. Still untitled: still waiting for a name.
+  assert.equal(p.state.entries[1]._fresh, undefined);
+  assert.equal(p.state.entries[2]._fresh, true);
+  // Retitling a settled row never moves its page.
+  p.state.entries[1].title_en = 'Lightning'; p.state.entriesDirty = true;
+  await p.save();
+  assert.equal(requests.at(-1).body.content[1].id, 'miragesohi-thunder-2');
+});
+
+test('a failed first save leaves the row free to follow a corrected title', async () => {
+  let fail = true; const bodies = [];
+  const p = panel((_url, init) => { bodies.push(JSON.parse(init.body));
+    return Promise.resolve(fail ? jsonResponse({error:'conflict'}, 409) : jsonResponse({ok:true, sha:'next'})); });
+  p.state.entries = [{id:'new-1800000000000-abcde', _fresh:true, artist_en:'Kamyar', title_en:'Typo'}];
+  p.state.entriesDirty = true;
+  await p.save();
+  assert.equal(p.state.entries[0].id, 'kamyar-typo');
+  assert.equal(p.state.entries[0]._fresh, true);
+  p.state.entries[0].title_en = 'Right Name'; fail = false;
+  await p.save();
+  assert.equal(bodies.at(-1).content[0].id, 'kamyar-right-name');
+  assert.equal(p.state.entries[0]._fresh, undefined);
 });
