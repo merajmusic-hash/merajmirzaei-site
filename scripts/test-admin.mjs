@@ -24,7 +24,8 @@ function worker(fetchImpl = () => { throw new Error('Unexpected fetch'); }, extr
       handleAdminListSubmissions, handleAdminListComments, serveMedia, buildEntityGraph, buildSitemapXml,
       LEGACY_CREDITS_REVISION, LEGACY_CREDITS_REF, signSession, RENAMED_RECORDING_IDS,
       handleGetComments, handlePostComment, handleAdminApproveComment,
-      buildArtistIndexHtml, artistsInSiteOrder, buildReleaseCardsHtml, handleSaveLyrics, handleGetLyrics, readLyricsReadOnly, lyricsFor, lyricsDetailsFor, buildLyricsPageContent, validateLyrics };`, context);
+      buildArtistIndexHtml, artistsInSiteOrder,
+      buildCareerBlockHtml, isMiragesohiPagePath, buildReleaseCardsHtml, handleSaveLyrics, handleGetLyrics, readLyricsReadOnly, lyricsFor, lyricsDetailsFor, buildLyricsPageContent, validateLyrics };`, context);
   return context.api;
 }
 
@@ -632,4 +633,61 @@ test('on the real data Googoosh is the first artist name on the Credits page', a
   const names = [...html.matchAll(/<a href="[^"]*">([^<]+)<\/a>/g)].map((m) => m[1]);
   assert.equal(names[0], 'گوگوش');
   assert.equal(new Set(names).size, names.length);
+});
+
+// --- the way from a Miragesohi page into the rest of the career ---------------
+
+test('the career block is on every Miragesohi page and nowhere else', () => {
+  const api = worker();
+  for (const path of ['/miragesohi', '/fa/miragesohi', '/releases', '/fa/releases', '/releases/mirage-thunder',
+    '/fa/releases/miragesohi-dor-az-tasavor', '/releases/mirage-baz-baroon/lyrics', '/fa/releases/mirage-farangis/about']) {
+    assert.equal(api.isMiragesohiPagePath(path), true, path);
+  }
+  for (const path of ['/', '/fa/', '/credits', '/fa/credits', '/credits/kamyar-danse', '/credits/artist/googoosh',
+    '/about', '/gallery', '/releases/', '/fa/releases/x/other', '/miragesohi/extra']) {
+    assert.equal(api.isMiragesohiPagePath(path), false, path);
+  }
+});
+
+test('the career block names the first singers of the homepage wall, in its order, with their pages', () => {
+  const api = worker();
+  const credits = [
+    {id:'k1', pages:['credits'], order:1, artist_en:'Kamyar', artist_fa:'کامیار', title_en:'One', spotify_artist_url:'https://open.spotify.com/artist/KAM', cover_url:'/images/covers/k1.jpg'},
+    {id:'g1', pages:['credits'], order:2, artist_en:'Googoosh', artist_fa:'گوگوش', title_en:'Two', spotify_artist_url:'https://open.spotify.com/artist/GOO', cover_url:'https://open.spotify.com/track/not-an-image'},
+    {id:'h1', pages:['credits'], order:3, artist_en:'Helen', artist_fa:'هلن', title_en:'Three', artist_image:'/images/artists/helen.jpg'},
+    {id:'p1', pages:['credits'], order:4, artist_en:'Panida', artist_fa:'پانیدا', title_en:'Four', cover_url:'/images/covers/p1.png'},
+    {id:'x1', pages:['credits'], order:5, artist_en:'<Odd> "Name"', artist_fa:'', title_en:'Five'},
+    {id:'r1', pages:['credits'], order:6, artist_en:'Reza Sadeghi', artist_fa:'رضا صادقی', title_en:''},
+    {id:'m1', pages:['releases'], order:7, artist_en:'Miragesohi', title_en:'Mine'},
+  ];
+  const home = ['googoosh', 'reza-sadeghi', 'kamyar'];
+  const fa = api.buildCareerBlockHtml(credits, home, 'fa');
+  const names = (html) => [...html.matchAll(/<span class="cb-name">([^<]*)<\/span>/g)].map((m) => m[1]);
+  assert.deepEqual(names(fa), ['گوگوش', 'کامیار', 'هلن', 'پانیدا', '&lt;Odd&gt; &quot;Name&quot;']);
+  assert.match(fa, /href="\/fa\/credits\/artist\/googoosh"/);
+  assert.match(fa, /<a class="btn" href="\/fa\/credits">کارنامه کامل<\/a>/);
+  assert.match(fa, /پیش از میراژسهی/);
+  // Photos: a Spotify one is looked up by the page (its cover only if that is a real image),
+  // the artist's own photo and a plain cover are served straight away.
+  assert.match(fa, /href="\/fa\/credits\/artist\/googoosh" data-spotify="https:\/\/open\.spotify\.com\/artist\/GOO">/);
+  assert.match(fa, /data-spotify="https:\/\/open\.spotify\.com\/artist\/KAM" data-cover="\/images\/covers\/k1\.jpg"/);
+  assert.match(fa, /<img class="cb-img" src="\/images\/artists\/helen\.jpg"/);
+  assert.match(fa, /<img class="cb-img" src="\/images\/covers\/p1\.png"/);
+  assert.doesNotMatch(fa, /Miragesohi<\/span>|رضا صادقی|not-an-image"/);
+  const en = api.buildCareerBlockHtml(credits, home, 'en');
+  assert.deepEqual(names(en).slice(0, 2), ['Googoosh', 'Kamyar']);
+  assert.match(en, /href="\/credits\/artist\/kamyar"/);
+  assert.match(en, /<a class="btn" href="\/credits">Full credits<\/a>/);
+  assert.equal(api.buildCareerBlockHtml([{id:'m1', pages:['releases'], artist_en:'Miragesohi', title_en:'Mine'}], home, 'fa'), '');
+});
+
+test('on the real data the career block shows six singers, Googoosh first', () => {
+  const api = worker();
+  const read = (name) => JSON.parse(fs.readFileSync(new URL('../merajmirzaei-site (4)/data/' + name, import.meta.url), 'utf8'));
+  const home = read('homepage.json').slice().sort((a, b) => (a.order || 0) - (b.order || 0))
+    .map((h) => h.artist_en.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''));
+  const html = api.buildCareerBlockHtml(read('credits.json'), home, 'fa');
+  const names = [...html.matchAll(/<span class="cb-name">([^<]*)<\/span>/g)].map((m) => m[1]);
+  assert.equal(names.length, 6);
+  assert.equal(names[0], 'گوگوش');
 });

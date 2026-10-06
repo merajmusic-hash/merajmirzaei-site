@@ -168,6 +168,8 @@ button.trackcard[aria-expanded="true"] .tc-play{background:var(--brass);color:va
 
 /* article pages */
 .article{padding:40px 0 20px;max-width:720px}
+/* on a phone the article keeps the page's side padding (the rule above resets it) */
+@media(max-width:760px){.article{padding-left:var(--pad);padding-right:var(--pad)}}
 .atitle{font-family:var(--display);font-weight:800;
   font-size:clamp(28px,7vw,44px);line-height:1.14;letter-spacing:-.02em;margin:0 0 16px}
 body.fa .atitle{font-family:var(--fa);letter-spacing:0;line-height:1.5}
