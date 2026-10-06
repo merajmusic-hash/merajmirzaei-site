@@ -704,6 +704,38 @@ async function readCreditsReadOnly(env) {
   }
 }
 
+// data/homepage.json — the homepage's "Selected artists" wall, in the order
+// set on the admin panel's Homepage tab. That order is the one order of
+// artists for the whole site: any list of artist names follows it first
+// (see artistsInSiteOrder). Empty when the file is missing or unreadable.
+async function readHomepageOrderReadOnly(env) {
+  try {
+    const res = await env.ASSETS.fetch(new Request('https://internal/data/homepage.json'));
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!Array.isArray(data)) return [];
+    return data
+      .filter((h) => h && typeof h.artist_en === 'string' && h.artist_en.trim())
+      .slice()
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+      .map((h) => slugifyName(h.artist_en));
+  } catch (e) {
+    return [];
+  }
+}
+
+// Artists in the site's order: the homepage wall's artists first, in the
+// wall's order, then everyone else in the order they already had (the
+// Credits tab's own order). `artists` are objects with a `slug`.
+function artistsInSiteOrder(artists, homepageOrder) {
+  const rank = new Map();
+  homepageOrder.forEach((slug, i) => { if (!rank.has(slug)) rank.set(slug, i); });
+  return artists
+    .map((artist, i) => ({ artist, i, r: rank.has(artist.slug) ? rank.get(artist.slug) : Infinity }))
+    .sort((a, b) => (a.r === b.r ? a.i - b.i : a.r - b.r))
+    .map((x) => x.artist);
+}
+
 // data/song-stories.json — a separate, hand-written "about this track"
 // blurb per recording, matched to a credits.json entry by title+artist
 // rather than by id (the two files were produced independently, so there
@@ -3854,7 +3886,9 @@ async function buildArtistIndexHtml(env, lang) {
   }
   if (!bySlug.size) return null;
 
-  const artists = [...bySlug.values()].sort((a, b) => a.label.localeCompare(b.label, lang === 'fa' ? 'fa' : 'en'));
+  // Same order as the homepage wall and the list right below this one
+  // (not alphabetical, which put the best-known names anywhere).
+  const artists = artistsInSiteOrder([...bySlug.values()], await readHomepageOrderReadOnly(env));
   const L = ARTIST_INDEX_LABELS[lang] || ARTIST_INDEX_LABELS.en;
 
   const links = artists.map((a) => {
