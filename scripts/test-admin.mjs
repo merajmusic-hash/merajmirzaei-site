@@ -23,7 +23,8 @@ function worker(fetchImpl = () => { throw new Error('Unexpected fetch'); }, extr
     globalThis.api = { worker, handleSave, handleGetCredits, handleSaveGallery, handleLoginPost,
       handleAdminListSubmissions, handleAdminListComments, serveMedia, buildEntityGraph, buildSitemapXml,
       LEGACY_CREDITS_REVISION, LEGACY_CREDITS_REF, signSession, RENAMED_RECORDING_IDS,
-      handleGetComments, handlePostComment, handleAdminApproveComment, buildReleaseCardsHtml, handleSaveLyrics, handleGetLyrics, readLyricsReadOnly, lyricsFor, lyricsDetailsFor, buildLyricsPageContent, validateLyrics };`, context);
+      handleGetComments, handlePostComment, handleAdminApproveComment,
+      buildArtistIndexHtml, artistsInSiteOrder, buildReleaseCardsHtml, handleSaveLyrics, handleGetLyrics, readLyricsReadOnly, lyricsFor, lyricsDetailsFor, buildLyricsPageContent, validateLyrics };`, context);
   return context.api;
 }
 
@@ -598,4 +599,37 @@ test('a failed first save leaves the row free to follow a corrected title', asyn
   await p.save();
   assert.equal(bodies.at(-1).content[0].id, 'kamyar-right-name');
   assert.equal(p.state.entries[0]._fresh, undefined);
+});
+
+// --- one order of artists for the whole site -----------------------------------
+
+test('the Credits page lists artist names in the homepage order, then the Credits order', async () => {
+  const api = worker();
+  const credits = [
+    {id:'a1', pages:['credits'], order:1, artist_en:'Ahmad Saeedi', artist_fa:'احمد سعیدی', title_en:'One'},
+    {id:'k1', pages:['credits'], order:2, artist_en:'Kamyar', artist_fa:'کامیار', title_en:'Two'},
+    {id:'p1', pages:['credits'], order:3, artist_en:'Panida', artist_fa:'پانیدا', title_en:'Three'},
+    {id:'g1', pages:['credits'], order:4, artist_en:'Googoosh', artist_fa:'گوگوش', title_en:'Four'},
+    {id:'k2', pages:['credits'], order:5, artist_en:'Kamyar', artist_fa:'کامیار', title_en:'Five'},
+    {id:'r1', pages:['credits'], order:6, artist_en:'Reza Sadeghi', artist_fa:'رضا صادقی', title_en:''},
+    {id:'m1', pages:['releases'], order:7, artist_en:'Miragesohi', title_en:'Mine'},
+  ];
+  const homepage = [{artist_en:'Kamyar', order:1}, {artist_en:'Googoosh', order:0}, {artist_en:'Reza Sadeghi', order:2}];
+  const env = { ASSETS:{ fetch:async (req) => jsonResponse(new URL(req.url).pathname === '/data/homepage.json' ? homepage : credits) } };
+  const names = (html) => [...html.matchAll(/<a href="[^"]*">([^<]+)<\/a>/g)].map((m) => m[1]);
+  assert.deepEqual(names(await api.buildArtistIndexHtml(env, 'fa')), ['گوگوش', 'کامیار', 'احمد سعیدی', 'پانیدا']);
+  assert.deepEqual(names(await api.buildArtistIndexHtml(env, 'en')), ['Googoosh', 'Kamyar', 'Ahmad Saeedi', 'Panida']);
+  // Without a readable homepage list the Credits order still stands.
+  const noHome = { ASSETS:{ fetch:async (req) => new URL(req.url).pathname === '/data/homepage.json' ? new Response('x', {status:404}) : jsonResponse(credits) } };
+  assert.deepEqual(names(await api.buildArtistIndexHtml(noHome, 'en')), ['Ahmad Saeedi', 'Kamyar', 'Panida', 'Googoosh']);
+});
+
+test('on the real data Googoosh is the first artist name on the Credits page', async () => {
+  const api = worker();
+  const read = (name) => JSON.parse(fs.readFileSync(new URL('../merajmirzaei-site (4)/data/' + name, import.meta.url), 'utf8'));
+  const env = { ASSETS:{ fetch:async (req) => jsonResponse(read(new URL(req.url).pathname.split('/').pop())) } };
+  const html = await api.buildArtistIndexHtml(env, 'fa');
+  const names = [...html.matchAll(/<a href="[^"]*">([^<]+)<\/a>/g)].map((m) => m[1]);
+  assert.equal(names[0], 'گوگوش');
+  assert.equal(new Set(names).size, names.length);
 });
