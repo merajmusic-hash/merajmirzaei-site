@@ -343,11 +343,18 @@ const PERSON_SAME_AS = [
   'https://youtube.com/@miragesohi',
   'https://www.instagram.com/merajmirzaei_music',
 ];
+// Discogs, MusicBrainz and Genius are listed for Miragesohi as well as for
+// the Person: they are the same human's pages (MusicBrainz carries the
+// Miragesohi alias, Discogs names it in the profile), and without them
+// search engines only ever tied those three to "Meraj Mirzaei".
 const MIRAGE_SAME_AS = [
   'https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9',
   APPLE_MUSIC_ARTIST,
   'https://www.youtube.com/@Miragesohi',
   'https://www.instagram.com/merajmirzaei_music/',
+  'https://www.discogs.com/artist/18296784-Meraj-Mirzaei',
+  'https://musicbrainz.org/artist/5d52a3f9-f059-4c47-9f4e-0bdb61317fe3',
+  'https://genius.com/merajmirzaei',
 ];
 
 // jobTitle/description per language — the English strings are exactly what
