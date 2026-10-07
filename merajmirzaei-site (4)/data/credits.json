@@ -1,6 +1,6 @@
 [
   {
-    "id": "mirage-peyvastegi",
+    "id": "miragesohi-peyvastegi",
     "artist_en": "Miragesohi",
     "artist_fa": "میراژسهی",
     "title_en": "Peyvastegi",
@@ -46,7 +46,7 @@
     "_adminRevision": "67ed8a15-d212-4bd8-a139-c91691222eb2"
   },
   {
-    "id": "mirage-farangis",
+    "id": "miragesohi-farangis",
     "artist_en": "Miragesohi",
     "artist_fa": "میراژسهی",
     "title_en": "Farangis",
@@ -91,7 +91,7 @@
     ]
   },
   {
-    "id": "mirage-labet-bekhandeh",
+    "id": "miragesohi-labet-bekhandeh",
     "artist_en": "Miragesohi",
     "artist_fa": "میراژسهی",
     "title_en": "Labet Bekhandeh",
@@ -144,7 +144,7 @@
     ]
   },
   {
-    "id": "mirage-baz-baroon-remix",
+    "id": "miragesohi-baz-baroon-remix",
     "artist_en": "Miragesohi",
     "artist_fa": "میراژسهی",
     "title_en": "Baz Baroon (Remix)",
@@ -153,7 +153,7 @@
     "album_name": "",
     "year": "2025",
     "label": "",
-    "cover_url": "/images/covers/mirage-baz-baroon-remix.jpg",
+    "cover_url": "/images/covers/miragesohi-baz-baroon-remix.jpg",
     "artist_image": "",
     "spotify_artist_url": "https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9",
     "start_seconds": "",
@@ -197,7 +197,7 @@
     ]
   },
   {
-    "id": "mirage-baz-baroon",
+    "id": "miragesohi-baz-baroon",
     "artist_en": "Miragesohi",
     "artist_fa": "میراژسهی",
     "title_en": "Baz Baroon",
@@ -250,7 +250,7 @@
     ]
   },
   {
-    "id": "mirage-thunder",
+    "id": "miragesohi-thunder",
     "artist_en": "Miragesohi",
     "artist_fa": "میراژسهی",
     "title_en": "Thunder",
