@@ -307,6 +307,18 @@ footer a:hover{color:var(--brass)}
   .linkrow{flex-direction:row}
   .btn{display:inline-block}
 }
+.profiles{margin-top:48px}
+section.profiles{margin-top:0}
+.pf-wrap{display:grid;grid-template-columns:minmax(0,1fr);gap:34px}
+.profiles .eyebrow{font-size:11px;line-height:normal;color:var(--brass);margin:0}
+.pf-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.pf-list a{display:flex;align-items:center;gap:14px;min-height:56px;padding:0 2px;border-bottom:1px solid var(--line);color:var(--text);text-decoration:none;font-size:15px;transition:color .15s}
+.pf-list a:hover,.pf-list a:focus-visible{color:var(--brass)}
+.pf-list svg{width:22px;height:22px;flex:none;color:var(--brass)}
+.pf-name{flex:1;min-width:0;overflow-wrap:anywhere}
+.pf-go{flex:none;color:var(--muted);font-size:16px;transition:color .15s}
+.pf-list a:hover .pf-go,.pf-list a:focus-visible .pf-go{color:var(--brass)}
+@media(min-width:700px){.pf-wrap{grid-template-columns:repeat(2,minmax(0,1fr));gap:48px}}
 </style>
 <script type="application/ld+json">
 {
@@ -388,6 +400,26 @@ footer a:hover{color:var(--brass)}
   <p>For two decades my name sat in the credits of other people's records. Miragesohi started in 2025 as the place where I write and release my own — same room, same ears, no client on the other side of the glass.</p>
   <p>Official releases, music videos, studio moments and sound-design ideas all live on the channel.</p>
   <div class="linkrow"><a class="btn" href="releases.html">New releases</a></div>
+</section>
+<section class="profiles" id="profiles" aria-label="Official profiles">
+  <div class="pf-wrap">
+    <div class="pf-group">
+      <div class="rail"><p class="eyebrow">Listen — Miragesohi</p><div class="ticks"></div><div class="peak"></div></div>
+      <ul class="pf-list">
+      <li><a href="https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9" target="_blank" rel="noopener noreferrer me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M7 10.2c3.2-.9 6.8-.6 9.6 1" stroke-linecap="round"/><path d="M7.6 13c2.7-.7 5.7-.4 8 .9" stroke-linecap="round"/><path d="M8.2 15.6c2.1-.5 4.5-.3 6.3.7" stroke-linecap="round"/></svg><span class="pf-name">Miragesohi on Spotify</span><span class="pf-go" aria-hidden="true">→</span></a></li>
+      <li><a href="https://music.apple.com/gb/artist/miragesohi/6817275780" target="_blank" rel="noopener noreferrer me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M10.4 15.6V8.4l5.2-1.2v7.1" stroke-linejoin="round"/><circle cx="8.9" cy="15.7" r="1.6" fill="currentColor" stroke="none"/><circle cx="14.1" cy="14.4" r="1.6" fill="currentColor" stroke="none"/></svg><span class="pf-name">Miragesohi on Apple Music</span><span class="pf-go" aria-hidden="true">→</span></a></li>
+      <li><a href="https://www.youtube.com/@Miragesohi" target="_blank" rel="noopener noreferrer me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10.3 9.1v5.8l5.1-2.9Z" fill="currentColor" stroke="none"/></svg><span class="pf-name">Miragesohi on YouTube</span><span class="pf-go" aria-hidden="true">→</span></a></li>
+      </ul>
+    </div>
+    <div class="pf-group">
+      <div class="rail"><p class="eyebrow">Credits — Meraj Mirzaei</p><div class="ticks"></div><div class="peak"></div></div>
+      <ul class="pf-list">
+      <li><a href="https://www.discogs.com/artist/18296784-Meraj-Mirzaei" target="_blank" rel="noopener noreferrer me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><circle cx="12" cy="12" r="5.2"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="pf-name">Meraj Mirzaei on Discogs</span><span class="pf-go" aria-hidden="true">→</span></a></li>
+      <li><a href="https://musicbrainz.org/artist/5d52a3f9-f059-4c47-9f4e-0bdb61317fe3" target="_blank" rel="noopener noreferrer me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="2.5"/><path d="M5 6v12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6"/><path d="M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/></svg><span class="pf-name">Meraj Mirzaei on MusicBrainz</span><span class="pf-go" aria-hidden="true">→</span></a></li>
+      <li><a href="https://genius.com/merajmirzaei" target="_blank" rel="noopener noreferrer me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4" stroke-linecap="round"/></svg><span class="pf-name">Meraj Mirzaei on Genius</span><span class="pf-go" aria-hidden="true">→</span></a></li>
+      </ul>
+    </div>
+  </div>
 </section>
 </main>
 
