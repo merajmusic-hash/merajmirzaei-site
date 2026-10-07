@@ -344,15 +344,15 @@ const PERSON_SAME_AS = [
   'https://www.instagram.com/merajmirzaei_music',
 ];
 // Discogs, MusicBrainz and Genius are listed for Miragesohi as well as for
-// the Person: they are the same human's pages (MusicBrainz carries the
-// Miragesohi alias, Discogs names it in the profile), and without them
-// search engines only ever tied those three to "Meraj Mirzaei".
+// the Person. Discogs has a separate Miragesohi artist page (created with
+// his own releases, 2026-10-07), so Miragesohi links to that one and the
+// Person keeps the Meraj Mirzaei page; MusicBrainz and Genius are shared.
 const MIRAGE_SAME_AS = [
   'https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9',
   APPLE_MUSIC_ARTIST,
   'https://www.youtube.com/@Miragesohi',
   'https://www.instagram.com/merajmirzaei_music/',
-  'https://www.discogs.com/artist/18296784-Meraj-Mirzaei',
+  'https://www.discogs.com/artist/18373596-Miragesohi',
   'https://musicbrainz.org/artist/5d52a3f9-f059-4c47-9f4e-0bdb61317fe3',
   'https://genius.com/merajmirzaei',
 ];
