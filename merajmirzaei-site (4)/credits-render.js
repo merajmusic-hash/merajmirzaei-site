@@ -46,6 +46,12 @@
   var RE_SPOTIFY_PLAYABLE = /open\.spotify\.com\/(album|track)\/([A-Za-z0-9]+)/i;
   var RE_YOUTUBE_WATCH = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{6,})/i;
   var RE_YOUTUBE_CHANNEL = /youtube\.com\/(@|channel\/)/i;
+  // Apple Music release and artist pages (with or without a storefront
+  // segment). Kept out of the card's single "extra" slot so the Telegram
+  // download stays where it was; shown on the release page and the
+  // releases link row instead.
+  var RE_APPLE_MUSIC = /music\.apple\.com\//i;
+  var RE_APPLE_ARTIST = /music\.apple\.com\/(?:[a-z]{2}\/)?artist\//i;
 
   function spotifyPlayable(links){
     var l = findLink(links, RE_SPOTIFY_PLAYABLE);
@@ -73,6 +79,7 @@
       if(RE_SPOTIFY_PLAYABLE.test(l.url)) return false;
       if(RE_YOUTUBE_WATCH.test(l.url)) return false;
       if(RE_YOUTUBE_CHANNEL.test(l.url)) return false;
+      if(RE_APPLE_MUSIC.test(l.url)) return false;
       return true;
     });
   }
@@ -439,13 +446,15 @@
         var releases = data.filter(function(e){ return onPage(e, 'releases'); }).sort(byOrder);
         renderGrid(releases);
 
-        var artistLink = null, channelLink = null;
-        for(var i=0;i<releases.length && (!artistLink || !channelLink);i++){
+        var artistLink = null, channelLink = null, appleArtistLink = null;
+        for(var i=0;i<releases.length && (!artistLink || !channelLink || !appleArtistLink);i++){
           artistLink = artistLink || findLink(releases[i].links, RE_SPOTIFY_ARTIST);
           channelLink = channelLink || findLink(releases[i].links, RE_YOUTUBE_CHANNEL);
+          appleArtistLink = appleArtistLink || findLink(releases[i].links, RE_APPLE_ARTIST);
         }
         var linkrowHtml = '';
         if(artistLink) linkrowHtml += '<a class="btn" href="'+esc(artistLink.url)+'" target="_blank" rel="noopener noreferrer">Spotify</a>\n  ';
+        if(appleArtistLink) linkrowHtml += '<a class="btn" href="'+esc(appleArtistLink.url)+'" target="_blank" rel="noopener noreferrer">Apple Music</a>\n  ';
         if(channelLink) linkrowHtml += '<a class="btn" href="'+esc(channelLink.url)+'" target="_blank" rel="noopener noreferrer">YouTube</a>';
         var linkrowMount = document.querySelector(cfg.linkrowMount);
         if(linkrowMount) linkrowMount.innerHTML = linkrowHtml;

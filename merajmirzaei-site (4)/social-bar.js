@@ -24,6 +24,8 @@
       svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10.3 9.1v5.8l5.1-2.9Z" fill="currentColor" stroke="none"/></svg>' },
     { name: 'Spotify', url: 'https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9',
       svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M7 10.2c3.2-.9 6.8-.6 9.6 1" stroke-linecap="round"/><path d="M7.6 13c2.7-.7 5.7-.4 8 .9" stroke-linecap="round"/><path d="M8.2 15.6c2.1-.5 4.5-.3 6.3.7" stroke-linecap="round"/></svg>' },
+    { name: 'Apple Music', url: 'https://music.apple.com/gb/artist/miragesohi/6817275780',
+      svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M10.4 15.6V8.4l5.2-1.2v7.1" stroke-linejoin="round"/><circle cx="8.9" cy="15.7" r="1.6" fill="currentColor" stroke="none"/><circle cx="14.1" cy="14.4" r="1.6" fill="currentColor" stroke="none"/></svg>' },
   ];
 
   var SWITCH_WIDTH = 1180; // px; see comment above

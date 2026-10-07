@@ -330,16 +330,22 @@ const FAVICON_LINKS =
 
 // Official profile URLs shared by the site's identity graph. The current
 // Miragesohi Spotify artist was verified through Spotify's oEmbed endpoint.
+// The Miragesohi Apple Music artist page (verified 2026-10-07) and the
+// Discogs ARTIST page (not the empty Discogs user account, which carries
+// neither name and gave search engines nothing to match).
+const APPLE_MUSIC_ARTIST = 'https://music.apple.com/gb/artist/miragesohi/6817275780';
 const PERSON_SAME_AS = [
   'https://musicbrainz.org/artist/5d52a3f9-f059-4c47-9f4e-0bdb61317fe3',
-  'https://www.discogs.com/user/Merajmusic',
+  'https://www.discogs.com/artist/18296784-Meraj-Mirzaei',
   'https://genius.com/merajmirzaei',
   'https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9',
+  APPLE_MUSIC_ARTIST,
   'https://youtube.com/@miragesohi',
   'https://www.instagram.com/merajmirzaei_music',
 ];
 const MIRAGE_SAME_AS = [
   'https://open.spotify.com/artist/0MMVa85QISJ2PbwS9xrYX9',
+  APPLE_MUSIC_ARTIST,
   'https://www.youtube.com/@Miragesohi',
   'https://www.instagram.com/merajmirzaei_music/',
 ];
@@ -613,6 +619,10 @@ const RE_SPOTIFY_PLAYABLE = /open\.spotify\.com\/(album|track)\/([A-Za-z0-9]+)/i
 const RE_SPOTIFY_ARTIST = /open\.spotify\.com\/artist\//i;
 const RE_YOUTUBE_WATCH = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{6,})/i;
 const RE_YOUTUBE_CHANNEL = /youtube\.com\/(@|channel\/)/i;
+// Apple Music release (album/single/song) and artist pages, with or
+// without a storefront segment (music.apple.com/gb/album/…).
+const RE_APPLE_PLAYABLE = /music\.apple\.com\/(?:[a-z]{2}\/)?(?:album|song)\//i;
+const RE_APPLE_ARTIST = /music\.apple\.com\/(?:[a-z]{2}\/)?artist\//i;
 
 function findLink(links, re) {
   if (!Array.isArray(links)) return null;
@@ -622,6 +632,18 @@ function findLink(links, re) {
 function verifiedSameAs(entry) {
   const hit = findLink(entry.links, RE_SPOTIFY_PLAYABLE);
   return hit ? hit.url : null;
+}
+
+// A recording's JSON-LD sameAs: every verified streaming page of THIS
+// release (Spotify and Apple Music), as one URL or a list.
+function recordingSameAs(entry) {
+  const urls = [];
+  const sp = verifiedSameAs(entry);
+  if (sp) urls.push(sp);
+  const am = findLink(entry.links, RE_APPLE_PLAYABLE);
+  if (am) urls.push(am.url);
+  if (!urls.length) return null;
+  return urls.length === 1 ? urls[0] : urls;
 }
 
 // Links that are not the artist-profile link, the page-level YouTube
@@ -636,6 +658,10 @@ function extraLinksFor(entry) {
     if (RE_SPOTIFY_PLAYABLE.test(l.url)) return false;
     if (RE_YOUTUBE_WATCH.test(l.url)) return false;
     if (RE_YOUTUBE_CHANNEL.test(l.url)) return false;
+    // Apple Music gets its own fixed, localized button (see appleLink in
+    // renderRecordingDetailContent), so it is never a generic extra.
+    if (RE_APPLE_PLAYABLE.test(l.url)) return false;
+    if (RE_APPLE_ARTIST.test(l.url)) return false;
     return true;
   });
 }
@@ -649,6 +675,7 @@ const KNOWN_EXTRA_LINK_PLATFORMS = {
   'rj.app': 'Radio Javan',
   'radiojavan.com': 'Radio Javan',
   't.me': 'Telegram',
+  'music.apple.com': 'Apple Music',
 };
 
 function platformNameForUrl(url) {
@@ -900,7 +927,7 @@ function buildOneRecordingNode(entry, lang) {
   if (roleName) node.contributor = { '@type': 'Role', roleName, contributor: { '@id': PERSON_ID } };
   if (entry.album_name) node.inAlbum = { '@type': 'MusicAlbum', name: entry.album_name };
   if (entry.year) node.datePublished = String(entry.year);
-  const sameAs = verifiedSameAs(entry);
+  const sameAs = recordingSameAs(entry);
   if (sameAs) node.sameAs = sameAs;
 
   return { node, artistNode, usesMirage };
@@ -1031,8 +1058,8 @@ const RELEASE_TYPE_LABELS = {
 };
 
 const RECORDING_LABELS = {
-  en: { listenSpotify: 'Listen on Spotify', watchYoutube: 'Watch on YouTube', partOf: 'From the release', year: 'Year', home: 'Studio home', artistSpotify: 'Artist on Spotify', aboutTrack: 'About this track', backToTrack: 'Back to track', lyrics: 'Lyrics' },
-  fa: { listenSpotify: 'شنیدن در اسپاتیفای', watchYoutube: 'تماشا در یوتیوب', partOf: 'بخشی از', year: 'سال', home: 'صفحه اصلی استودیو', artistSpotify: 'صفحه هنرمند در اسپاتیفای', aboutTrack: 'درباره این قطعه', backToTrack: 'بازگشت به قطعه', lyrics: 'متن ترانه' },
+  en: { listenSpotify: 'Listen on Spotify', listenApple: 'Listen on Apple Music', watchYoutube: 'Watch on YouTube', partOf: 'From the release', year: 'Year', home: 'Studio home', artistSpotify: 'Artist on Spotify', aboutTrack: 'About this track', backToTrack: 'Back to track', lyrics: 'Lyrics' },
+  fa: { listenSpotify: 'شنیدن در اسپاتیفای', listenApple: 'شنیدن در اپل موزیک', watchYoutube: 'تماشا در یوتیوب', partOf: 'بخشی از', year: 'سال', home: 'صفحه اصلی استودیو', artistSpotify: 'صفحه هنرمند در اسپاتیفای', aboutTrack: 'درباره این قطعه', backToTrack: 'بازگشت به قطعه', lyrics: 'متن ترانه' },
 };
 
 function buildRecordingTitleText(entry, lang) {
@@ -1144,8 +1171,10 @@ function renderRecordingDetailContent(entry, lang, hub, story, hasLyrics) {
   const hasStory = !!(storyText && String(storyText).trim());
   const aboutHref = hasStory ? pathFor(lang, hub + '/' + slugifyName(entry.id) + '/about') : null;
 
+  const appleLink = findLink(entry.links, RE_APPLE_PLAYABLE);
   const linkButtons = [];
   if (sp) linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(sp.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(L.listenSpotify)}</a>`);
+  if (appleLink) linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(appleLink.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(L.listenApple)}</a>`);
   if (ytLink) linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(ytLink.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(L.watchYoutube)}</a>`);
   if (artistLink) linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(artistLink.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(L.artistSpotify)}</a>`);
   for (const l of extraLinksFor(entry)) {
@@ -1388,6 +1417,8 @@ function buildLyricsPageContent(entry, lang, hub, text, opts) {
     linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(pathFor(lang, hub + '/' + slugifyName(entry.id) + '/about'))}">${escapeHtmlAttr(L.aboutTrack)}</a>`);
   }
   if (sp) linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(sp.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(L.listenSpotify)}</a>`);
+  const appleLink = findLink(entry.links, RE_APPLE_PLAYABLE);
+  if (appleLink) linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(appleLink.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(L.listenApple)}</a>`);
   if (ytLink) linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(ytLink.url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttr(L.watchYoutube)}</a>`);
   linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(pathFor(lang, hub))}">${escapeHtmlAttr((lang === 'fa' ? 'بازگشت به ' : 'Back to ') + NAV_LABELS[hub][lang])}</a>`);
   linkButtons.push(`<a class="btn" href="${escapeHtmlAttr(pathFor(lang, 'home'))}">${escapeHtmlAttr(L.home)}</a>`);
