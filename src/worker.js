@@ -371,7 +371,7 @@ function buildPersonNode(lang) {
     '@type': 'Person',
     '@id': PERSON_ID,
     name: 'Meraj Mirzaei',
-    alternateName: ['معراج میرزایی', 'Miragesohi', 'میراژسهی', 'MIRAGE'],
+    alternateName: ['معراج میرزایی', 'Miragesohi', 'میراژسهی'],
     jobTitle: loc.jobTitle,
     description: loc.description,
     url: SITE_ORIGIN + '/',
@@ -402,7 +402,7 @@ function buildMirageNode() {
     '@type': 'MusicGroup',
     '@id': MIRAGE_ID,
     name: 'Miragesohi',
-    alternateName: ['میراژسهی', 'MIRAGE'],
+    alternateName: 'میراژسهی',
     genre: ['Deep house', 'Melodic electronic', 'Trap', 'Pop'],
     foundingDate: '2025',
     member: { '@id': PERSON_ID },
@@ -799,7 +799,7 @@ function normalizeForMatch(s) {
 
 // A story or a credits entry is identified by any (title, artist) pair
 // drawn from its own EN/FA fields — song-stories.json's own "artist_en"
-// field is actually Farsi text for every non-MIRAGE entry (an upstream
+// field is actually Farsi text for every non-Miragesohi entry (an upstream
 // quirk in how that file was produced), so matching only works by
 // checking all four title×artist combinations rather than assuming
 // title_en pairs with artist_en.
@@ -891,7 +891,7 @@ function primaryHubFor(entry) {
 }
 
 // Builds one MusicRecording/MusicAlbum node, reusing a stable per-artist
-// @id (and the single canonical MIRAGE node) instead of a fresh anonymous
+// @id (and the single canonical Miragesohi node) instead of a fresh anonymous
 // artist object every time. Shared by the hub pages' full recordings
 // @graph and by a single recording's own detail page, so both always
 // describe an entry identically. Returns null when there is no verified
@@ -982,6 +982,14 @@ const RENAMED_RECORDING_IDS = {
   'new-1790330185189-7ht8i': 'miragesohi-dor-az-tasavor',
   'new-1790441193810-5wt4t': 'miragesohi-didi-ey-tanha-omidam',
   'new-1788546862191-9eahs': 'amir-abbas-hassanzadeh-be-ki-begam',
+  // 2026-10-07: the artist's own songs moved from the retired name's
+  // "mirage-" addresses to "miragesohi-" ones.
+  'mirage-peyvastegi': 'miragesohi-peyvastegi',
+  'mirage-farangis': 'miragesohi-farangis',
+  'mirage-labet-bekhandeh': 'miragesohi-labet-bekhandeh',
+  'mirage-baz-baroon-remix': 'miragesohi-baz-baroon-remix',
+  'mirage-baz-baroon': 'miragesohi-baz-baroon',
+  'mirage-thunder': 'miragesohi-thunder',
 };
 
 function currentRecordingId(id) {
@@ -2853,7 +2861,7 @@ function buildGalleryPeopleIndex(creditsData) {
   const me = { kind: 'person', en: 'Meraj Mirzaei', fa: 'معراج میرزایی', slug: 'about' };
   const mirage = { kind: 'mirage', en: 'Miragesohi', fa: 'Miragesohi', slug: 'miragesohi' };
   add('Meraj Mirzaei', me); add('معراج میرزایی', me);
-  add('Miragesohi', mirage); add('MIRAGE', mirage);
+  add('Miragesohi', mirage);
   for (const e of titledEntriesFor(creditsData || [], 'credits')) {
     if (!e.artist_en || e.artist_en === 'Miragesohi') continue;
     const artistSlug = slugifyName(e.artist_en);
@@ -4309,7 +4317,7 @@ async function handleRequest(request, env, ctx) {
     }
 
     // The artist page was renamed from /mirage to /miragesohi (and its
-    // fa/ twin) when the MIRAGE alias became the artist's primary name.
+    // fa/ twin) when the artist's name changed to Miragesohi.
     // A permanent redirect keeps every old bookmark/backlink working and
     // tells search engines to transfer the old URL's ranking signal to
     // the new one, rather than leaving /mirage to 404.

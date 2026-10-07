@@ -639,8 +639,8 @@ test('on the real data Googoosh is the first artist name on the Credits page', a
 
 test('the career block is on every Miragesohi page and nowhere else', () => {
   const api = worker();
-  for (const path of ['/miragesohi', '/fa/miragesohi', '/releases', '/fa/releases', '/releases/mirage-thunder',
-    '/fa/releases/miragesohi-dor-az-tasavor', '/releases/mirage-baz-baroon/lyrics', '/fa/releases/mirage-farangis/about']) {
+  for (const path of ['/miragesohi', '/fa/miragesohi', '/releases', '/fa/releases', '/releases/miragesohi-thunder',
+    '/fa/releases/miragesohi-dor-az-tasavor', '/releases/miragesohi-baz-baroon/lyrics', '/fa/releases/miragesohi-farangis/about']) {
     assert.equal(api.isMiragesohiPagePath(path), true, path);
   }
   for (const path of ['/', '/fa/', '/credits', '/fa/credits', '/credits/kamyar-danse', '/credits/artist/googoosh',

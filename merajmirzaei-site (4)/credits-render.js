@@ -1,6 +1,6 @@
 // Renders credits.html / releases.html / the homepage artist wall (both
 // languages) from /data/credits.json. credits.html and releases.html share
-// one uniform track-card component, so every card (client credit or MIRAGE
+// one uniform track-card component, so every card (client credit or Miragesohi
 // release, with or without audio) has identical structure and size. The
 // homepage ('roster' page) renders a photo-tile grid of selected artists
 // instead. Each page sets window.__CREDITS_CONFIG__ = { lang: 'en'|'fa',
