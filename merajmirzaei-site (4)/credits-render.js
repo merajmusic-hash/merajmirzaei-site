@@ -125,6 +125,20 @@
     for(var i=0;i<entries.length;i++){ if(entries[i].cover_url) return entries[i].cover_url; }
     return '';
   }
+  // The words an image carries for Google Images and screen readers —
+  // the same wording the worker uses on the server-rendered pages
+  // (coverAltText in src/worker.js), so a picture is described the same
+  // way wherever it appears.
+  function coverAlt(entry){
+    var title = lang === 'fa' ? (entry.title_fa || entry.title_en) : (entry.title_en || entry.title_fa);
+    var artist = lang === 'fa' ? (entry.artist_fa || entry.artist_en) : (entry.artist_en || entry.artist_fa);
+    if(!title) return artist || '';
+    if(!artist) return lang === 'fa' ? 'کاور ' + title : title + ' — cover art';
+    return lang === 'fa' ? 'کاور ' + title + ' از ' + artist : title + ' by ' + artist + ' — cover art';
+  }
+  function artistAltName(nameEn, entries){
+    return lang === 'fa' ? (entries[0].artist_fa || nameEn) : nameEn;
+  }
   function spotifyArtistUrlOf(entries){
     for(var i=0;i<entries.length;i++){ if(entries[i].spotify_artist_url) return entries[i].spotify_artist_url; }
     return '';
@@ -145,7 +159,7 @@
     var nameFa = entries[0].artist_fa || '';
     var slug = slugify(nameEn);
     var cls = 'aw-tile' + (img ? ' has-photo' : '');
-    var imgHtml = img ? '<img class="aw-img" src="'+esc(img)+'" loading="lazy" alt="">' : '';
+    var imgHtml = img ? '<img class="aw-img" src="'+esc(img)+'" loading="lazy" alt="'+esc(artistAltName(nameEn, entries))+'">' : '';
     var nameHtml = '<span class="aw-name"><span class="aw-en">'+esc(nameEn)+'</span>'
       + (nameFa ? '<span class="aw-fa">'+esc(nameFa)+'</span>' : '') + '</span>';
     // The artist's own indexable page, not a query-string filter on the
@@ -179,7 +193,7 @@
     var syncImg = artistImageOf(entries) || coverArtOf(entries);
     var photoCls = 'ar-photo' + (syncImg ? ' has-photo' : '');
     var photoHtml = syncImg
-      ? '<img class="ar-img" src="'+esc(syncImg)+'" loading="lazy" alt="">'
+      ? '<img class="ar-img" src="'+esc(syncImg)+'" loading="lazy" alt="'+esc(artistAltName(nameEn, entries))+'">'
       : coverFallbackSvg();
 
     var nameHtml = '<span class="ar-name">'
@@ -257,7 +271,7 @@
         var photoSlot = group && group.querySelector('.ar-photo');
         if(!photoSlot) return;
         photoSlot.classList.add('has-photo');
-        photoSlot.innerHTML = '<img class="ar-img" src="'+esc(img)+'" loading="lazy" alt="">';
+        photoSlot.innerHTML = '<img class="ar-img" src="'+esc(img)+'" loading="lazy" alt="'+esc(artistAltName(name, artistEntries))+'">';
       });
     });
 
@@ -347,7 +361,7 @@
       : '';
 
     var coverHtml = entry.cover_url
-      ? '<img class="tc-img" src="'+esc(entry.cover_url)+'" loading="lazy" alt="">'
+      ? '<img class="tc-img" src="'+esc(entry.cover_url)+'" loading="lazy" alt="'+esc(coverAlt(entry))+'">'
       : coverFallbackSvg();
 
     var artistHtml = artistLink

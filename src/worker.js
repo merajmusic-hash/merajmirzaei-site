@@ -614,7 +614,18 @@ const ROLE_NAME_LABELS = {
 
 function roleNameFor(entry, lang) {
   const labels = ROLE_NAME_LABELS[lang];
-  return ROLE_ORDER.filter((f) => entry[f]).map((f) => labels[f]).join(', ');
+  return ROLE_ORDER.filter((f) => entry[f]).map((f) => labels[f]).join(lang === 'fa' ? '، ' : ', ');
+}
+
+// The words a cover image carries for Google Images and screen readers:
+// which song it is and whose — never an empty alt, since the cover is the
+// only picture most song pages have.
+function coverAltText(entry, lang) {
+  const title = lang === 'fa' ? (entry.title_fa || entry.title_en) : (entry.title_en || entry.title_fa);
+  const artist = lang === 'fa' ? (entry.artist_fa || entry.artist_en) : (entry.artist_en || entry.artist_fa);
+  if (!title) return artist || '';
+  if (!artist) return lang === 'fa' ? `کاور ${title}` : `${title} — cover art`;
+  return lang === 'fa' ? `کاور ${title} از ${artist}` : `${title} by ${artist} — cover art`;
 }
 
 // Same URL-shape patterns credits-render.js uses to find each kind of link
@@ -1173,7 +1184,7 @@ function renderRecordingDetailContent(entry, lang, hub, story, hasLyrics) {
   const rolesBlock = roleBadges ? `<div class="tc-roles" style="justify-content:flex-start;margin-top:10px">${roleBadges}</div>` : '';
 
   const coverBlock = isLikelyImageUrl(entry.cover_url)
-    ? `<div class="tc-cover" style="width:180px;height:180px;flex:none"><img class="tc-img" src="${escapeHtmlAttr(entry.cover_url)}" alt="" loading="lazy"></div>`
+    ? `<div class="tc-cover" style="width:180px;height:180px;flex:none"><img class="tc-img" src="${escapeHtmlAttr(entry.cover_url)}" alt="${escapeHtmlAttr(coverAltText(entry, lang))}" loading="lazy"></div>`
     : '';
 
   const { sp, ytLink, spotifyEmbed, youtubeEmbed } = recordingEmbeds(entry, title);
@@ -1231,9 +1242,14 @@ function buildStoryTitleText(entry, lang) {
     : `About "${title}" | Meraj Mirzaei`;
 }
 
+// Google shows roughly the first 155 characters of a description, so a
+// long story is cut there, at the end of a word, never in the middle of one.
 function buildStoryDescriptionText(storyText) {
-  const s = String(storyText || '').trim();
-  return s.length > 200 ? s.slice(0, 197) + '…' : s;
+  const s = String(storyText || '').replace(/\s+/g, ' ').trim();
+  if (s.length <= 155) return s;
+  const cut = s.slice(0, 154);
+  const lastSpace = cut.lastIndexOf(' ');
+  return (lastSpace > 100 ? cut.slice(0, lastSpace) : cut).replace(/[\s,،;؛:—–-]+$/, '') + '…';
 }
 
 function buildStoryPageContent(entry, lang, hub, storyText) {
@@ -1416,7 +1432,7 @@ function buildLyricsPageContent(entry, lang, hub, text, opts) {
     : `Full lyrics of “${titleBoth}” by ${artistBoth}${yearPart}. ${lyricsRoleSentence(entry, lang, true)}`;
 
   const coverBlock = isLikelyImageUrl(entry.cover_url)
-    ? `<div class="tc-cover" style="width:120px;height:120px;flex:none"><img class="tc-img" src="${escapeHtmlAttr(entry.cover_url)}" alt="${escapeHtmlAttr(title + ' — ' + artist)}" loading="lazy"></div>`
+    ? `<div class="tc-cover" style="width:120px;height:120px;flex:none"><img class="tc-img" src="${escapeHtmlAttr(entry.cover_url)}" alt="${escapeHtmlAttr(coverAltText(entry, lang))}" loading="lazy"></div>`
     : '';
 
   const { sp, ytLink, spotifyEmbed, youtubeEmbed } = recordingEmbeds(entry, title);
@@ -1496,12 +1512,17 @@ function buildArtistPageContent(entries, lang, artistSlug, lyricsMap) {
   const first = entries[0];
   const primary = lang === 'fa' ? (first.artist_fa || first.artist_en) : (first.artist_en || first.artist_fa);
   const alt = lang === 'fa' ? first.artist_en : first.artist_fa;
-  const photo = entries.map((e) => e.artist_image).find(Boolean) || entries.map((e) => e.cover_url).find(Boolean);
+  const ownPhoto = entries.map((e) => e.artist_image).find(Boolean);
+  const coverEntry = entries.find((e) => e.cover_url);
+  const photo = ownPhoto || (coverEntry && coverEntry.cover_url);
+  // A real photo of the artist is named as the artist; a cover standing in
+  // for one is named as the cover it is.
+  const photoAlt = ownPhoto ? primary : (coverEntry ? coverAltText(coverEntry, lang) : primary);
   const spotifyArtistUrl = entries.map((e) => e.spotify_artist_url).find(Boolean);
   const trackCountText = lang === 'fa' ? `${entries.length} اثر` : `${entries.length} track${entries.length === 1 ? '' : 's'}`;
 
   const photoBlock = isLikelyImageUrl(photo)
-    ? `<div class="tc-cover" style="width:120px;height:120px;flex:none"><img class="tc-img" src="${escapeHtmlAttr(photo)}" alt="" loading="lazy"></div>`
+    ? `<div class="tc-cover" style="width:120px;height:120px;flex:none"><img class="tc-img" src="${escapeHtmlAttr(photo)}" alt="${escapeHtmlAttr(photoAlt)}" loading="lazy"></div>`
     : '';
 
   const headerHtml = `<div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-bottom:10px">`
@@ -1517,7 +1538,7 @@ function buildArtistPageContent(entries, lang, artistSlug, lyricsMap) {
     const titleAlt = lang === 'fa' ? entry.title_en : entry.title_fa;
     const href = pathFor(lang, 'credits/' + slugifyName(entry.id));
     const cover = isLikelyImageUrl(entry.cover_url)
-      ? `<div class="tc-cover"><img class="tc-img" src="${escapeHtmlAttr(entry.cover_url)}" alt="" loading="lazy"></div>`
+      ? `<div class="tc-cover"><img class="tc-img" src="${escapeHtmlAttr(entry.cover_url)}" alt="${escapeHtmlAttr(coverAltText(entry, lang))}" loading="lazy"></div>`
       : '';
     const roleBadges = ROLE_ORDER.filter((f) => entry[f])
       .map((f) => `<span class="tc-role">${escapeHtmlAttr(ROLE_NAME_LABELS[lang][f])}</span>`)
@@ -2954,8 +2975,8 @@ function buildGalleryViewerJson(items, lang, index) {
 }
 
 const GALLERY_PHOTO_LABELS = {
-  en: { gallery: 'Gallery', photo: 'Photo', prev: 'Previous', next: 'Next', featuring: 'Featuring', from: 'A photo from the Meraj Mirzaei gallery' },
-  fa: { gallery: 'گالری', photo: 'عکس', prev: 'قبلی', next: 'بعدی', featuring: 'در این عکس', from: 'عکسی از گالری معراج میرزایی' },
+  en: { gallery: 'Gallery', photo: 'Photo', prev: 'Previous', next: 'Next', featuring: 'Featuring', of: 'of', from: 'in the Meraj Mirzaei gallery' },
+  fa: { gallery: 'گالری', photo: 'عکس', prev: 'قبلی', next: 'بعدی', featuring: 'در این عکس', of: 'از', from: 'در گالری معراج میرزایی' },
 };
 
 function faDigits(n) {
@@ -2988,7 +3009,11 @@ function galleryPhotoTexts(e, i, total, lang, index) {
   const num = L.photo + ' ' + (lang === 'fa' ? faDigits(i + 1) : String(i + 1));
   const heading = [who, cap].filter(Boolean).join(' — ') || num;
   const title = (heading === num ? num : heading + ' — ' + num) + ' | ' + L.gallery + (who ? '' : ' — ' + (lang === 'fa' ? 'معراج میرزایی' : 'Meraj Mirzaei'));
-  const description = L.from + (who ? ' — ' + L.featuring + ': ' + who : '') + (cap ? ' — ' + cap : '') + '.';
+  // The photo's number is part of the description, so two photos with the
+  // same people and no caption still describe themselves differently.
+  const totalText = lang === 'fa' ? faDigits(total) : String(total);
+  const description = num + ' ' + L.of + ' ' + totalText + ' ' + L.from
+    + (who ? ' — ' + L.featuring + ': ' + who : '') + (cap ? ' — ' + cap : '') + '.';
   return { heading, title, description, num };
 }
 
@@ -3949,7 +3974,7 @@ function buildReleaseCardsHtml(creditsData, lang) {
     const artist = lang === 'fa' ? (entry.artist_fa || entry.artist_en) : (entry.artist_en || entry.artist_fa);
     const href = pathFor(lang, 'releases/' + slugifyName(entry.id));
     const cover = isLikelyImageUrl(entry.cover_url)
-      ? `<div class="tc-cover"><img class="tc-img" src="${escapeHtmlAttr(entry.cover_url)}" alt="" loading="lazy" width="120" height="120"></div>`
+      ? `<div class="tc-cover"><img class="tc-img" src="${escapeHtmlAttr(entry.cover_url)}" alt="${escapeHtmlAttr(coverAltText(entry, lang))}" loading="lazy" width="120" height="120"></div>`
       : '';
     const roles = ROLE_ORDER.filter((f) => entry[f])
       .map((f) => `<span class="tc-role">${escapeHtmlAttr(ROLE_NAME_LABELS[lang][f])}</span>`).join('');
@@ -4054,7 +4079,7 @@ const CAREER_BLOCK_CSS = '<style>'
 const CAREER_BLOCK_SCRIPT = '<script>(function(){'
   + 'var tiles=document.querySelectorAll(".cb-tile[data-spotify]");'
   + 'Array.prototype.forEach.call(tiles,function(t){'
-  + 'function show(src){if(!src)return;var img=new Image();img.className="cb-img";img.alt="";'
+  + 'function show(src){if(!src)return;var img=new Image();img.className="cb-img";img.alt=(t.textContent||"").trim();'
   + 'img.onload=function(){t.insertBefore(img,t.firstChild);t.classList.add("has-photo");};img.src=src;}'
   + 'var cover=t.getAttribute("data-cover");'
   + 'fetch("https://open.spotify.com/oembed?url="+encodeURIComponent(t.getAttribute("data-spotify")))'
@@ -4100,7 +4125,10 @@ function buildCareerBlockHtml(creditsData, homepageOrder, lang) {
     const ready = a.image || (a.spotify ? '' : a.cover);
     if (ready) {
       return `<a class="cb-tile has-photo" href="${escapeHtmlAttr(href)}">`
-        + `<img class="cb-img" src="${escapeHtmlAttr(ready)}" alt="" loading="lazy">${name}</a>`;
+        + `<img class="cb-img" src="${escapeHtmlAttr(ready)}" alt="${escapeHtmlAttr(lang === 'fa' ? a.fa : a.en)}" loading="lazy" `
+        // A photo that fails to load leaves the plain named tile, never a
+        // broken-image mark with the name printed a second time over it.
+        + `onerror="this.parentNode.classList.remove('has-photo');this.remove()">${name}</a>`;
     }
     const lookup = a.spotify
       ? ` data-spotify="${escapeHtmlAttr(a.spotify)}"` + (a.cover ? ` data-cover="${escapeHtmlAttr(a.cover)}"` : '')

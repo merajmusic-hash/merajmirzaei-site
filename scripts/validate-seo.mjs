@@ -19,6 +19,9 @@
 //     a song without lyrics has none (404)
 //   - an untitled ("Pending") entry's slug 404s rather than serving a
 //     fabricated page
+//   - every page has one <title> and one meta description, no two pages
+//     share either, and no description runs past what Google shows
+//   - no <img> is missing its alt text or carries an empty one
 //   - sitemap.xml contains exactly the same canonical URL set (static
 //     pages + every titled recording, both languages) — no omissions,
 //     nothing stale
@@ -93,6 +96,39 @@ function findStoryForEntry(stories, entry) {
   return null;
 }
 
+// Every page's title and description, to catch two pages sharing one.
+const seenTitles = new Map();
+const seenDescriptions = new Map();
+
+function decodeEntities(s) {
+  return s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+}
+
+function checkHeadAndImages(path, html) {
+  const titles = [...html.matchAll(/<title>([\s\S]*?)<\/title>/g)].map((m) => decodeEntities(m[1].trim()));
+  if (titles.length !== 1 || !titles[0]) {
+    fail(`${path}: expected exactly 1 non-empty <title>, found ${titles.length}`);
+  } else if (seenTitles.has(titles[0])) {
+    fail(`${path}: same <title> as ${seenTitles.get(titles[0])}: "${titles[0]}"`);
+  } else {
+    seenTitles.set(titles[0], path);
+  }
+
+  const descs = [...html.matchAll(/<meta\s+name="description"\s+content="([^"]*)"/g)].map((m) => decodeEntities(m[1].trim()));
+  if (descs.length !== 1 || !descs[0]) {
+    fail(`${path}: expected exactly 1 non-empty meta description, found ${descs.length}`);
+  } else {
+    if (seenDescriptions.has(descs[0])) fail(`${path}: same meta description as ${seenDescriptions.get(descs[0])}`);
+    else seenDescriptions.set(descs[0], path);
+    if (descs[0].length > 170) fail(`${path}: meta description is ${descs[0].length} characters (Google cuts it off near 160)`);
+  }
+
+  const imgs = html.replace(/<script\b[\s\S]*?<\/script>/g, '').match(/<img\b[^>]*>/g) || [];
+  for (const tag of imgs) {
+    if (!/\salt="[^"]+"/.test(tag)) fail(`${path}: image without alt text: ${tag.slice(0, 120)}`);
+  }
+}
+
 async function checkPage(path, { requireOgImagePrefix = 'https://merajmirzaei.com/images/portrait.jpg' } = {}) {
   const url = BASE + path;
   const res = await fetch(url);
@@ -101,6 +137,8 @@ async function checkPage(path, { requireOgImagePrefix = 'https://merajmirzaei.co
     return;
   }
   const html = await res.text();
+
+  checkHeadAndImages(path, html);
 
   const scripts = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
   if (scripts.length !== 1) {
