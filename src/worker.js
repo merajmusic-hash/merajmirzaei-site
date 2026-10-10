@@ -404,15 +404,41 @@ function buildWebsiteNode() {
   };
 }
 
-function buildMirageNode() {
+// Miragesohi is the artist himself, not a band or a project he belongs to.
+// The node used to be a MusicGroup "founded" in 2025 with Meraj Mirzaei as
+// its "member", and search engines read that back as "the solo musical
+// project and artistic alias of Meraj Mirzaei". It is now typed as a person
+// who is a musical artist (MusicGroup stays in the type list because that is
+// the type music services use for every artist, solo ones included, and it
+// keeps `genre` valid), carries no founding date and no member, and names
+// Meraj Mirzaei as his other name. The canonical Person node above and this
+// one list each other's names and share the same official profile URLs,
+// which is how the two names are tied to one human being.
+const MIRAGE_LOCALIZED = {
+  en: {
+    jobTitle: 'Singer, composer and music producer',
+    description: 'Miragesohi is a singer, composer and producer based in London, born Meraj Mirzaei in Tehran. His music is deep house and melodic electronic with Eastern colour, alongside emotional trap and pop.',
+  },
+  fa: {
+    jobTitle: 'خواننده، آهنگساز و پرودیوسر',
+    description: 'میراژسهی (Miragesohi) خواننده، آهنگساز و پرودیوسر مقیم لندن است، متولد تهران و با نام اصلی معراج میرزایی. موسیقی او دیپ هاوس و ملودیک الکترونیک با رنگ و فضای شرقی است، در کنار ترپ و پاپ احساسی.',
+  },
+};
+
+function buildMirageNode(lang) {
+  const loc = MIRAGE_LOCALIZED[lang === 'fa' ? 'fa' : 'en'];
   return {
-    '@type': 'MusicGroup',
+    '@type': ['MusicGroup', 'Person'],
     '@id': MIRAGE_ID,
     name: 'Miragesohi',
-    alternateName: 'میراژسهی',
+    alternateName: ['میراژسهی', 'Meraj Mirzaei', 'معراج میرزایی'],
+    jobTitle: loc.jobTitle,
+    description: loc.description,
+    url: SITE_ORIGIN + '/miragesohi',
+    image: PORTRAIT_URL,
+    birthPlace: { '@type': 'Place', name: 'Tehran, Iran' },
+    homeLocation: { '@type': 'Place', name: 'London, United Kingdom' },
     genre: ['Deep house', 'Melodic electronic', 'Trap', 'Pop'],
-    foundingDate: '2025',
-    member: { '@id': PERSON_ID },
     sameAs: MIRAGE_SAME_AS,
   };
 }
@@ -540,7 +566,7 @@ function buildPageNode(slug, lang) {
         about: { '@id': MIRAGE_ID },
       };
     case 'miragesohi':
-      return buildMirageNode();
+      return buildMirageNode(lang);
     case 'gallery':
       return {
         '@type': 'ImageGallery',
@@ -1633,7 +1659,7 @@ async function buildEntityGraph(pathname, env) {
         rec.node['@id'] = recordingId;
         rec.node.url = trackUrl;
         if (rec.artistNode) nodes.push(rec.artistNode);
-        if (rec.usesMirage) nodes.push(buildMirageNode());
+        if (rec.usesMirage) nodes.push(buildMirageNode(lang));
         nodes.push(rec.node);
       }
 
@@ -1758,7 +1784,7 @@ async function buildEntityGraph(pathname, env) {
         result.node['@id'] = recordingId;
         result.node.url = pageUrl;
         if (result.artistNode) nodes.push(result.artistNode);
-        if (result.usesMirage) nodes.push(buildMirageNode());
+        if (result.usesMirage) nodes.push(buildMirageNode(lang));
         nodes.push(result.node);
         const title = lang === 'fa' ? (entry.title_fa || entry.title_en) : (entry.title_en || entry.title_fa);
         nodes.push({
@@ -1804,7 +1830,7 @@ async function buildEntityGraph(pathname, env) {
     const creditsData = await readCreditsReadOnly(env);
     if (creditsData) {
       const { nodes: recNodes, usesMirage } = buildRecordingsGraph(creditsData, slug, lang);
-      if (usesMirage && slug !== 'miragesohi') nodes.push(buildMirageNode());
+      if (usesMirage && slug !== 'miragesohi') nodes.push(buildMirageNode(lang));
       nodes.push(...recNodes);
     }
   }
