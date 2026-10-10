@@ -334,6 +334,9 @@ const FAVICON_LINKS =
 // Discogs ARTIST page (not the empty Discogs user account, which carries
 // neither name and gave search engines nothing to match).
 const APPLE_MUSIC_ARTIST = 'https://music.apple.com/gb/artist/miragesohi/6817275780';
+// The Wikidata item for Miragesohi (created by the owner, 2026-10-10). Google's
+// knowledge graph reads Wikidata directly, so both identity nodes point at it.
+const WIKIDATA_ITEM = 'https://www.wikidata.org/wiki/Q141689970';
 const PERSON_SAME_AS = [
   'https://musicbrainz.org/artist/5d52a3f9-f059-4c47-9f4e-0bdb61317fe3',
   'https://www.discogs.com/artist/18296784-Meraj-Mirzaei',
@@ -342,6 +345,7 @@ const PERSON_SAME_AS = [
   APPLE_MUSIC_ARTIST,
   'https://youtube.com/@miragesohi',
   'https://www.instagram.com/merajmirzaei_music',
+  WIKIDATA_ITEM,
 ];
 // Discogs, MusicBrainz and Genius are listed for Miragesohi as well as for
 // the Person. Discogs has a separate Miragesohi artist page (created with
@@ -355,6 +359,7 @@ const MIRAGE_SAME_AS = [
   'https://www.discogs.com/artist/18373596-Miragesohi',
   'https://musicbrainz.org/artist/5d52a3f9-f059-4c47-9f4e-0bdb61317fe3',
   'https://genius.com/merajmirzaei',
+  WIKIDATA_ITEM,
 ];
 
 // jobTitle/description per language — the English strings are exactly what
