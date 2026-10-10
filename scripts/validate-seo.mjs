@@ -205,6 +205,22 @@ async function checkPage(path, { requireOgImagePrefix = 'https://merajmirzaei.co
     }
   }
 
+  // Miragesohi is the artist himself. Wherever his node appears it must be
+  // a person (not a band "founded" in 2025 that Meraj Mirzaei is a "member"
+  // of), and his own pages must not define him as merely a name or a project
+  // — search engines repeated exactly that wording back.
+  for (const node of graph.filter((n) => n.name === 'Miragesohi' && n['@id'] === 'https://merajmirzaei.com/miragesohi#miragesohi')) {
+    const types = [].concat(node['@type']);
+    if (!types.includes('Person')) fail(`${path}: the Miragesohi node must be typed as a person`);
+    if ('member' in node || 'foundingDate' in node) fail(`${path}: the Miragesohi node must not be a founded group with members`);
+    if (!/singer|خواننده/.test(node.description || '')) fail(`${path}: the Miragesohi node must describe him as an artist`);
+  }
+  if (/^(\/fa)?\/(miragesohi|releases)$/.test(path)) {
+    for (const phrase of ['artist name of', 'artistic name of', 'as the place where', 'نام هنری معراج میرزایی']) {
+      if (html.includes(phrase)) fail(`${path}: page still defines Miragesohi as "${phrase}" instead of as an artist`);
+    }
+  }
+
   // The phone rules shared by every page (SITE_WIDE_CSS in the worker).
   if ((html.match(/<style id="siteWide">/g) || []).length !== 1) fail(`${path}: expected the shared phone rules exactly once`);
 
