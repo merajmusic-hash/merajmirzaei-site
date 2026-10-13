@@ -371,11 +371,11 @@ const MIRAGE_SAME_AS = [
 const PERSON_LOCALIZED = {
   en: {
     jobTitle: 'Music Producer and Mix & Mastering Engineer',
-    description: 'Music producer, mix and mastering engineer and sound designer based in London, with over 20 years of work across Persian, electronic and international music.',
+    description: 'Music producer, mix and mastering engineer and sound designer based in London, working professionally since 2001 across Persian, electronic and international music.',
   },
   fa: {
     jobTitle: 'پرودیوسر و مهندس میکس و مستر',
-    description: 'معراج میرزایی (Meraj Mirzaei)، با نام هنری میراژسهی (Miragesohi) — پرودیوسر، مهندس میکس و مستر و ساند دیزاینر در لندن. بیش از ۲۰ سال کار در موسیقی ایرانی، الکترونیک و بین‌المللی.',
+    description: 'معراج میرزایی (Meraj Mirzaei)، با نام هنری میراژسهی (Miragesohi) — پرودیوسر، مهندس میکس و مستر و ساند دیزاینر در لندن. کار حرفه‌ای از سال ۱۳۸۰ در موسیقی ایرانی، الکترونیک و بین‌المللی.',
   },
 };
 
@@ -392,7 +392,7 @@ function buildPersonNode(lang) {
     image: PORTRAIT_URL,
     homeLocation: { '@type': 'Place', name: 'London, United Kingdom' },
     address: { '@type': 'PostalAddress', addressLocality: 'London', addressCountry: 'United Kingdom' },
-    knowsAbout: ['Audio mixing', 'Audio mastering', 'Music production', 'Sound design', 'Deep house', 'Persian pop music'],
+    knowsAbout: ['Audio mixing', 'Audio mastering', 'Music production', 'Sound design', 'Pop music', 'Electronic music'],
     sameAs: PERSON_SAME_AS,
   };
 }
@@ -424,11 +424,11 @@ function buildWebsiteNode() {
 const MIRAGE_LOCALIZED = {
   en: {
     jobTitle: 'Singer, composer and music producer',
-    description: 'Miragesohi is a singer, composer and producer based in London, born Meraj Mirzaei in Tehran. His music is deep house and melodic electronic with Eastern colour, alongside emotional trap and pop.',
+    description: 'Miragesohi is a singer, composer and producer based in London, born Meraj Mirzaei in Tehran. His music is pop with an electronic flavour.',
   },
   fa: {
     jobTitle: 'خواننده، آهنگساز و پرودیوسر',
-    description: 'میراژسهی (Miragesohi) خواننده، آهنگساز و پرودیوسر مقیم لندن است، متولد تهران و با نام اصلی معراج میرزایی. موسیقی او دیپ هاوس و ملودیک الکترونیک با رنگ و فضای شرقی است، در کنار ترپ و پاپ احساسی.',
+    description: 'میراژسهی (Miragesohi) خواننده، آهنگساز و پرودیوسر مقیم لندن است، متولد تهران و با نام اصلی معراج میرزایی. موسیقی او پاپ با رنگ و بوی الکترونیک است.',
   },
 };
 
@@ -445,7 +445,7 @@ function buildMirageNode(lang) {
     image: PORTRAIT_URL,
     birthPlace: { '@type': 'Place', name: 'Tehran, Iran' },
     homeLocation: { '@type': 'Place', name: 'London, United Kingdom' },
-    genre: ['Deep house', 'Melodic electronic', 'Trap', 'Pop'],
+    genre: ['Pop', 'Electronic'],
     sameAs: MIRAGE_SAME_AS,
   };
 }
