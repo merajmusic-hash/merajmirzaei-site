@@ -308,7 +308,11 @@ for (const path of STATIC_PAGES) {
 const creditsData = await (await fetch(BASE + '/data/credits.json')).json();
 const expectedSitemapUrls = new Set(STATIC_PAGES.map((p) => 'https://merajmirzaei.com' + p));
 let recordingPageCount = 0;
-const artistSlugs = new Set();
+const homepageArtists = await (await fetch(BASE + '/data/homepage.json')).json();
+const featured = new Set(homepageArtists.map((entry) => slugify(entry.artist_en)));
+const artistSlugs = new Set(creditsData.filter((entry) => entry.pages?.includes('credits') &&
+  entry.artist_en && entry.artist_en !== 'Miragesohi' && featured.has(slugify(entry.artist_en)))
+  .map((entry) => slugify(entry.artist_en)));
 
 const storiesData = await (await fetch(BASE + '/data/song-stories.json')).json().catch(() => null);
 let storyPageCount = 0;

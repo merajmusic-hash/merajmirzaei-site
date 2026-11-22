@@ -1098,17 +1098,19 @@ function parseLyricsSlug(slug) {
   return m ? { hub: m[1], recordingSlug: m[2] } : null;
 }
 
-// Every titled credits-page entry for one artist, in hub order — the
-// source both the per-artist page and the artist's @id in the
-// entity-SEO graph are built from.
-function findArtistEntries(creditsData, artistSlug) {
-  return creditsData
-    .filter((e) => {
-      if (!Array.isArray(e.pages) || !e.pages.includes('credits')) return false;
-      if (!(e.title_en || e.title_fa)) return false;
-      return !!e.artist_en && slugifyName(e.artist_en) === artistSlug;
-    })
+// A featured artist gets a profile even while their track titles are being verified.
+function artistProfileEntries(creditsData, homepageOrder) {
+  const featured = new Set(homepageOrder);
+  return creditsData.filter((entry) => entry.artist_en && entry.pages?.includes('credits') &&
+    (entry.title_en || entry.title_fa || featured.has(slugifyName(entry.artist_en))))
     .sort((a, b) => (a.order || 0) - (b.order || 0));
+}
+
+async function readArtistEntries(env, slug) {
+  const credits = await readCreditsReadOnly(env);
+  if (!credits) return [];
+  return artistProfileEntries(credits, await readHomepageOrderReadOnly(env))
+    .filter((entry) => slugifyName(entry.artist_en) === slug);
 }
 
 const RELEASE_TYPE_LABELS = {
@@ -1535,7 +1537,10 @@ function buildArtistTitleText(entries, lang) {
 function buildArtistDescriptionText(entries, lang) {
   const first = entries[0];
   const primary = lang === 'fa' ? (first.artist_fa || first.artist_en) : (first.artist_en || first.artist_fa);
-  const n = entries.length;
+  const n = entries.filter((entry) => entry.title_en || entry.title_fa).length;
+  if (!n) return lang === 'fa'
+    ? `همکاری معراج میرزایی با ${primary}. نام قطعه‌ها پس از تأیید در همین صفحه منتشر می‌شود.`
+    : `Meraj Mirzaei’s work with ${primary}. Track titles will be listed here once verified.`;
   return lang === 'fa'
     ? `${n} اثر با ${primary} که معراج میرزایی روی آن‌ها اعتبار دارد — میکس، مسترینگ، تنظیم یا پروداکشن.`
     : `${n} recording${n === 1 ? '' : 's'} with ${primary} credited to Meraj Mirzaei — mix, mastering, arrangement or production.`;
@@ -1552,7 +1557,8 @@ function buildArtistPageContent(entries, lang, artistSlug, lyricsMap) {
   // for one is named as the cover it is.
   const photoAlt = ownPhoto ? primary : (coverEntry ? coverAltText(coverEntry, lang) : primary);
   const spotifyArtistUrl = entries.map((e) => e.spotify_artist_url).find(Boolean);
-  const trackCountText = lang === 'fa' ? `${entries.length} اثر` : `${entries.length} track${entries.length === 1 ? '' : 's'}`;
+  const tracks = entries.filter((entry) => entry.title_en || entry.title_fa);
+  const trackCountText = lang === 'fa' ? `${tracks.length} اثر` : `${tracks.length} track${tracks.length === 1 ? '' : 's'}`;
 
   const photoBlock = isLikelyImageUrl(photo)
     ? `<div class="tc-cover" style="width:120px;height:120px;flex:none"><img class="tc-img" src="${escapeHtmlAttr(photo)}" alt="${escapeHtmlAttr(photoAlt)}" loading="lazy"></div>`
@@ -1563,10 +1569,10 @@ function buildArtistPageContent(entries, lang, artistSlug, lyricsMap) {
     + '<div>'
     + `<h1 class="atitle" style="margin-bottom:4px">${escapeHtmlAttr(primary)}</h1>`
     + (alt ? `<p class="stand" style="margin-bottom:4px">${escapeHtmlAttr(alt)}</p>` : '')
-    + `<p class="eyebrow" style="margin-bottom:0">${escapeHtmlAttr(trackCountText)}</p>`
+    + (tracks.length ? `<p class="eyebrow" style="margin-bottom:0">${escapeHtmlAttr(trackCountText)}</p>` : '')
     + '</div></div>';
 
-  const trackCards = entries.map((entry) => {
+  const trackCards = tracks.map((entry) => {
     const title = lang === 'fa' ? (entry.title_fa || entry.title_en) : (entry.title_en || entry.title_fa);
     const titleAlt = lang === 'fa' ? entry.title_en : entry.title_fa;
     const href = pathFor(lang, 'credits/' + slugifyName(entry.id));
@@ -1605,7 +1611,10 @@ function buildArtistPageContent(entries, lang, artistSlug, lyricsMap) {
   return '<main class="wrap article">'
     + headerHtml
     + '<div class="hr"></div>'
-    + `<div class="trackcard-grid">${trackCards}</div>`
+    + (tracks.length ? `<div class="trackcard-grid">${trackCards}</div>`
+      : `<p class="stand">${escapeHtmlAttr(buildArtistDescriptionText(entries, lang))}</p>`
+        + `<p>${escapeHtmlAttr(ROLE_ORDER.filter((role) => entries.some((entry) => entry[role]))
+          .map((role) => ROLE_NAME_LABELS[lang][role]).join(lang === 'fa' ? '، ' : ', '))}</p>`)
     + `<div class="linkrow" style="margin-top:28px">${linkButtons.join('')}</div>`
     + '</main>';
 }
@@ -1712,8 +1721,7 @@ async function buildEntityGraph(pathname, env) {
 
   const artistSlug = parseArtistSlug(slug);
   if (artistSlug) {
-    const creditsData = await readCreditsReadOnly(env);
-    const entries = creditsData ? findArtistEntries(creditsData, artistSlug.artistSlug) : [];
+    const entries = await readArtistEntries(env, artistSlug.artistSlug);
     if (entries.length) {
       const first = entries[0];
       const artistId = SITE_ORIGIN + '/credits#artist-' + artistSlug.artistSlug;
@@ -2317,9 +2325,7 @@ async function tryServeArtistPage(env, pathname) {
   const lang = m[1] ? 'fa' : 'en';
   const artistSlug = m[2];
 
-  const creditsData = await readCreditsReadOnly(env);
-  if (!creditsData) return null;
-  const entries = findArtistEntries(creditsData, artistSlug);
+  const entries = await readArtistEntries(env, artistSlug);
   if (!entries.length) return null; // unknown artist slug — no fabricated page
 
   const shellPath = (lang === 'fa' ? '/fa/' : '/') + 'credits.html';
@@ -4026,24 +4032,23 @@ async function buildArtistIndexHtml(env, lang) {
   const creditsData = await readCreditsReadOnly(env);
   if (!creditsData) return null;
 
+  const homepageOrder = await readHomepageOrderReadOnly(env);
   const bySlug = new Map();
-  for (const entry of titledEntriesFor(creditsData, 'credits')) {
+  for (const entry of artistProfileEntries(creditsData, homepageOrder)) {
     if (!entry.artist_en || entry.artist_en === 'Miragesohi') continue;
     const slug = slugifyName(entry.artist_en);
     if (!bySlug.has(slug)) {
       bySlug.set(slug, {
         slug,
         label: lang === 'fa' ? (entry.artist_fa || entry.artist_en) : entry.artist_en,
-        count: 0,
       });
     }
-    bySlug.get(slug).count += 1;
   }
   if (!bySlug.size) return null;
 
   // Same order as the homepage wall and the list right below this one
   // (not alphabetical, which put the best-known names anywhere).
-  const artists = artistsInSiteOrder([...bySlug.values()], await readHomepageOrderReadOnly(env));
+  const artists = artistsInSiteOrder([...bySlug.values()], homepageOrder);
   const L = ARTIST_INDEX_LABELS[lang] || ARTIST_INDEX_LABELS.en;
 
   const links = artists.map((a) => {
@@ -4215,7 +4220,6 @@ async function buildSitemapXml(env) {
   const storiesData = creditsData ? await readStoriesReadOnly(env) : null;
   const lyricsMap = creditsData ? await readLyricsReadOnly(env) : new Map();
   if (creditsData) {
-    const artistSlugs = new Set();
     for (const hub of ['credits', 'releases']) {
       const entries = titledEntriesFor(creditsData, hub);
       for (const entry of entries) {
@@ -4239,11 +4243,10 @@ async function buildSitemapXml(env) {
           urls.push({ loc: SITE_ORIGIN + pathFor('fa', slug + '/lyrics'), priority: '0.6' });
         }
 
-        if (hub === 'credits' && entry.artist_en && entry.artist_en !== 'Miragesohi') {
-          artistSlugs.add(slugifyName(entry.artist_en));
-        }
       }
     }
+    const artistEntries = artistProfileEntries(creditsData, await readHomepageOrderReadOnly(env));
+    const artistSlugs = new Set(artistEntries.filter((e) => e.artist_en !== 'Miragesohi').map((e) => slugifyName(e.artist_en)));
     for (const artistSlug of artistSlugs) {
       const slug = 'credits/artist/' + artistSlug;
       urls.push({ loc: SITE_ORIGIN + pathFor('en', slug), priority: '0.5' });
@@ -4376,8 +4379,8 @@ async function handleRequest(request, env, ctx) {
 
     // Canonical production URLs use HTTPS. Keep local HTTP previews working,
     // and preserve the method, path and query when redirecting production.
-    if (url.protocol === 'http:' &&
-        (url.hostname === 'merajmirzaei.com' || url.hostname === 'www.merajmirzaei.com')) {
+    if (url.hostname === 'www.merajmirzaei.com' ||
+        (url.hostname === 'merajmirzaei.com' && url.protocol === 'http:')) {
       url.protocol = 'https:';
       url.hostname = 'merajmirzaei.com';
       url.port = '';
