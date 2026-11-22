@@ -52,6 +52,7 @@ test('production HTTP redirects before handling requests and preserves path and 
   const api = worker();
   for (const [url, options, expected] of [
     ['http://merajmirzaei.com/services?lang=fa', {}, 'https://merajmirzaei.com/services?lang=fa'],
+    ['https://www.merajmirzaei.com/fa/credits?artist=kamyar', {}, 'https://merajmirzaei.com/fa/credits?artist=kamyar'],
     ['http://www.merajmirzaei.com/fa/miragesohi', {}, 'https://merajmirzaei.com/fa/miragesohi'],
     ['http://merajmirzaei.com/admin/login', {method:'POST', body:'password=test'}, 'https://merajmirzaei.com/admin/login'],
   ]) {
@@ -618,8 +619,8 @@ test('the Credits page lists artist names in the homepage order, then the Credit
   const homepage = [{artist_en:'Kamyar', order:1}, {artist_en:'Googoosh', order:0}, {artist_en:'Reza Sadeghi', order:2}];
   const env = { ASSETS:{ fetch:async (req) => jsonResponse(new URL(req.url).pathname === '/data/homepage.json' ? homepage : credits) } };
   const names = (html) => [...html.matchAll(/<a href="[^"]*">([^<]+)<\/a>/g)].map((m) => m[1]);
-  assert.deepEqual(names(await api.buildArtistIndexHtml(env, 'fa')), ['گوگوش', 'کامیار', 'احمد سعیدی', 'پانیدا']);
-  assert.deepEqual(names(await api.buildArtistIndexHtml(env, 'en')), ['Googoosh', 'Kamyar', 'Ahmad Saeedi', 'Panida']);
+  assert.deepEqual(names(await api.buildArtistIndexHtml(env, 'fa')), ['گوگوش', 'کامیار', 'رضا صادقی', 'احمد سعیدی', 'پانیدا']);
+  assert.deepEqual(names(await api.buildArtistIndexHtml(env, 'en')), ['Googoosh', 'Kamyar', 'Reza Sadeghi', 'Ahmad Saeedi', 'Panida']);
   // Without a readable homepage list the Credits order still stands.
   const noHome = { ASSETS:{ fetch:async (req) => new URL(req.url).pathname === '/data/homepage.json' ? new Response('x', {status:404}) : jsonResponse(credits) } };
   assert.deepEqual(names(await api.buildArtistIndexHtml(noHome, 'en')), ['Ahmad Saeedi', 'Kamyar', 'Panida', 'Googoosh']);

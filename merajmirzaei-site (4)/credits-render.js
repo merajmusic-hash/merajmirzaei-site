@@ -172,6 +172,7 @@
   var MORE_TEXT = { en:'Full credit sheet →', fa:'کارنامه کامل ←' };
 
   function trackCountLabel(n){
+    if(!n) return lang === 'fa' ? 'در انتظار تأیید عنوان' : 'Titles pending';
     if(lang === 'fa') return faDigits(n) + ' ' + 'اثر';
     return n + (n === 1 ? ' track' : ' tracks');
   }
@@ -204,7 +205,7 @@
     var header = '<button class="artist-row" type="button" aria-expanded="false" data-artist="'+slug+'">'
       + '<span class="'+photoCls+'">'+photoHtml+'</span>'
       + nameHtml
-      + '<span class="ar-count">'+esc(trackCountLabel(entries.length))+'</span>'
+      + '<span class="ar-count">'+esc(trackCountLabel(entries.filter(function(e){ return e.title_en || e.title_fa; }).length))+'</span>'
       + '<span class="ar-chevron" aria-hidden="true">⌄</span>'
       + '</button>';
 
